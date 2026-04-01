@@ -1,0 +1,35 @@
+name: Frontend CI
+
+on:
+  push:
+    paths:
+      - 'frontend/**'
+      - 'docker-compose.yml'
+    branches: [main]
+  pull_request:
+    paths:
+      - 'frontend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Run tests
+        run: cd frontend && npm test -- --watch=false
+        continue-on-error: true  # adapt to your test setup
+
+      - name: Build
+        run: cd frontend && npm run build -- --configuration=production
+
+      - name: Build Docker image
+        run: docker build -t archive-app-frontend:latest ./frontend

@@ -1,0 +1,9 @@
+{
+  "name": "archive-app",
+  "version": "0.0.1",
+  "scripts": {
+    "start": "ng serve",
+    "build": "ng build"
+  },
+  "NOTE": "This is a placeholder. Replace with your actual Angular package.json."
+}

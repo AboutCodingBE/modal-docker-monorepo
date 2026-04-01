@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MODAL — Archive Browser</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Layout ── */
+  .app-layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f2f5;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 160px;
+    min-width: 160px;
+    background: #1a2744;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    color: #fff;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px 24px;
+  }
+
+  .logo-badge {
+    width: 32px;
+    height: 32px;
+    background: #3b6ef5;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .logo-text {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 8px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.65);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .nav-item svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .nav-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+  }
+
+  .nav-item.active {
+    background: #3b6ef5;
+    color: #fff;
+  }
+
+  .sidebar-version {
+    margin-top: auto;
+    padding: 16px 16px 0;
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Main content ── */
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 28px 32px;
+  }
+
+  /* ── Content header ── */
+  .content-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .header-title h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px;
+  }
+
+  .header-title p {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #3b6ef5;
+    color: #fff;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+
+  .btn-primary svg { width: 14px; height: 14px; }
+  .btn-primary:hover { background: #2d5ce0; }
+
+  .btn-secondary {
+    font-family: inherit;
+    background: #fff;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    padding: 9px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+
+  .btn-secondary:hover { background: #f9fafb; }
+
+  .btn-ghost {
+    font-family: inherit;
+    background: transparent;
+    color: #6b7280;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+
+  .btn-ghost:hover { color: #111827; }
+
+  /* ── Cards grid ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .empty-state {
+    color: #9ca3af;
+    font-size: 14px;
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 0;
+  }
+
+  /* ── Archive card ── */
+  .archive-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 18px 18px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.15s;
+    cursor: pointer;
+  }
+
+  .archive-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .card-icon {
+    width: 40px;
+    height: 40px;
+    background: #f9fafb;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .archive-card:hover .card-icon {
+    background: #eff6ff;
+    color: #3b6ef5;
+  }
+
+  .card-icon svg { width: 20px; height: 20px; }
+
+  /* Status badges */
+  .status-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  .status-analysed { color: #15803d; background: #dcfce7; }
+  .status-ingested { color: #374151; background: #f1f5f9; }
+  .status-in_progress { color: #b45309; background: #fef3c7; }
+  .status-failed { color: #b91c1c; background: #fee2e2; }
+
+  .card-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+    word-break: break-word;
+  }
+
+  .card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6b7280;
+  }
+
+  .meta-item svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+  /* Card footer */
+  .card-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid #f3f4f6;
+    padding: 12px 0;
+    margin-top: auto;
+  }
+
+  .btn-card-result {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: none;
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+  }
+
+  .btn-card-result svg { width: 13px; height: 13px; }
+  .btn-card-result:hover { background: #dbeafe; }
+
+  .btn-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 8px;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    font-family: inherit;
+  }
+
+  .btn-card-icon svg { width: 13px; height: 13px; }
+
+  .btn-card-icon:hover {
+    color: #3b6ef5;
+    border-color: #bfdbfe;
+  }
+
+  .btn-card-analyse {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #111827;
+    color: #fff;
+    border: none;
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+  }
+
+  .btn-card-analyse svg { width: 12px; height: 12px; }
+  .btn-card-analyse:hover { background: #1f2937; }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 480px;
+    max-width: calc(100vw - 32px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .modal-header h2 {
+    font-size: 17px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+  }
+
+  .btn-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+  }
+
+  .btn-close svg { width: 18px; height: 18px; }
+  .btn-close:hover { color: #374151; background: #f3f4f6; }
+
+  .modal-body {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px 24px 20px;
+    border-top: 1px solid #f3f4f6;
+  }
+
+  /* ── Form ── */
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #6b7280;
+    text-transform: uppercase;
+  }
+
+  .form-input {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-size: 14px;
+    color: #111827;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+
+  .form-input::placeholder { color: #9ca3af; }
+
+  .form-input:focus {
+    border-color: #3b6ef5;
+    box-shadow: 0 0 0 3px rgba(59, 110, 245, 0.12);
+  }
+
+  .form-input[readonly] {
+    background: #f9fafb;
+    cursor: default;
+  }
+
+  .folder-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .folder-row .form-input {
+    flex: 1;
+    min-width: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-badge">M</div>
+      <span class="logo-text">MODAL</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+        Archieven
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        Zoeken
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        Configuratie
+      </a>
+    </nav>
+    <div class="sidebar-version">MODAL V1.2.0</div>
+  </aside>
+
+  <!-- ── Main content ── -->
+  <div class="main-content">
+
+    <!-- Header -->
+    <div class="content-header">
+      <div class="header-title">
+        <h1>Archive Browser</h1>
+        <p>Beheer en verken uw digitale collecties</p>
+      </div>
+      <button class="btn-primary" onclick="openModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+        Nieuw Archief
+      </button>
+    </div>
+
+    <!-- Cards grid -->
+    <div class="cards-grid" id="cardsGrid"></div>
+
+  </div>
+
+</div>
+
+<!-- ── Modal: Nieuw Archief Toevoegen ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalBackdrop(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Nieuw Archief Toevoegen</h2>
+      <button class="btn-close" onclick="closeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6 18 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Naam van het archief</label>
+        <input class="form-input" type="text" placeholder="Bijv. Project_Antwerpen_2026" id="archiveName">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Locatie op schijf</label>
+        <div class="folder-row">
+          <input class="form-input" type="text" readonly placeholder="Selecteer een map..." id="folderPath">
+          <button class="btn-secondary" onclick="selectFolder()">Select Folder</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal()">Annuleren</button>
+      <button class="btn-primary" onclick="ingestArchive()">Archief Ingesten</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Mock data ──
+const archives = [
+  {
+    id: 1,
+    name: 'ADVN_VEA260_VUJO',
+    date: '2026-02-13',
+    files: 438,
+    status: 'analysed'
+  },
+  {
+    id: 2,
+    name: 'Collectie_Van_Damme_2025',
+    date: '2026-01-20',
+    files: 1250,
+    status: 'ingested'
+  },
+  {
+    id: 3,
+    name: 'Radio_Archief_VRT_S01',
+    date: '2026-01-05',
+    files: 89,
+    status: 'analysed'
+  }
+];
+
+// ── SVG icons as strings ──
+const icons = {
+  database: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>',
+  dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>',
+  refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>'
+};
+
+// ── Render cards ──
+function renderCards() {
+  const grid = document.getElementById('cardsGrid');
+
+  if (archives.length === 0) {
+    grid.innerHTML = '<div class="empty-state">Nog geen archieven aangemaakt. Klik op "Nieuw Archief" om te beginnen.</div>';
+    return;
+  }
+
+  grid.innerHTML = archives.map(archive => {
+    const statusClass = `status-${archive.status}`;
+    const statusLabel = archive.status.toUpperCase();
+
+    const footerButtons = archive.status === 'analysed'
+      ? `<button class="btn-card-result" onclick="event.stopPropagation()">
+            ${icons.dashboard} <span>Resultaten</span>
+          </button>
+          <button class="btn-card-icon" onclick="event.stopPropagation()" title="Opnieuw analyseren">
+            ${icons.refresh}
+          </button>`
+      : `<button class="btn-card-analyse" onclick="event.stopPropagation()">
+            ${icons.play} <span>Analyse Starten</span>
+          </button>`;
+
+    return `
+      <div class="archive-card" onclick="openArchive(${archive.id})">
+        <div class="card-top">
+          <div class="card-icon">${icons.database}</div>
+          <span class="status-badge ${statusClass}">${statusLabel}</span>
+        </div>
+        <h3 class="card-name">${archive.name}</h3>
+        <div class="card-meta">
+          <div class="meta-item">${icons.clock} <span>${archive.date}</span></div>
+          <div class="meta-item">${icons.file} <span>${archive.files} bestanden</span></div>
+        </div>
+        <div class="card-footer">
+          ${footerButtons}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Modal controls ──
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  document.getElementById('archiveName').value = '';
+  document.getElementById('folderPath').value = '';
+}
+
+function closeModalBackdrop(e) {
+  if (e.target === e.currentTarget) closeModal();
+}
+
+function selectFolder() {
+  // Simulates Tauri folder picker
+  document.getElementById('folderPath').value = 'E:/USB_DRIVE/Archieven_VRT';
+}
+
+function ingestArchive() {
+  const name = document.getElementById('archiveName').value;
+  const path = document.getElementById('folderPath').value;
+  if (!name || !path) return;
+
+  archives.push({
+    id: archives.length + 1,
+    name: name,
+    date: new Date().toISOString().split('T')[0],
+    files: Math.floor(Math.random() * 500) + 50,
+    status: 'ingested'
+  });
+
+  closeModal();
+  renderCards();
+}
+
+function openArchive(id) {
+  // Would navigate to archive detail screen
+  console.log('Open archive', id);
+}
+
+// ── Init ──
+renderCards();
+</script>
+</body>
+</html>
