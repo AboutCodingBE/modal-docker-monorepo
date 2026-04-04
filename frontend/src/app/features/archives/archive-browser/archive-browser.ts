@@ -1,14 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { Archive } from '../../../models/archive.model';
+import { ArchiveService } from '../../../services/archive.service';
 import { ArchiveCard } from '../archive-card/archive-card';
 import { NewArchiveModal } from '../new-archive-modal/new-archive-modal';
-
-// Placeholder data until backend is wired up
-const MOCK_ARCHIVES: Archive[] = [
-  { id: 1, name: 'ADVN_VEA260_VUJO', date: '2026-02-13', files: 438, status: 'analysed' },
-  { id: 2, name: 'Collectie_Van_Damme_2025', date: '2026-01-20', files: 1250, status: 'ingested' },
-  { id: 3, name: 'Radio_Archief_VRT_S01', date: '2026-01-05', files: 89, status: 'analysed' },
-];
 
 @Component({
   selector: 'app-archive-browser',
@@ -16,9 +10,26 @@ const MOCK_ARCHIVES: Archive[] = [
   templateUrl: './archive-browser.html',
   styleUrl: './archive-browser.css',
 })
-export class ArchiveBrowser {
-  archives = signal<Archive[]>(MOCK_ARCHIVES);
+export class ArchiveBrowser implements OnInit {
+  archives = signal<Archive[]>([]);
+  loading = signal(true);
+  loadError = signal(false);
   modalOpen = signal(false);
+
+  constructor(private archiveService: ArchiveService) {}
+
+  ngOnInit(): void {
+    this.archiveService.getAll().subscribe({
+      next: (archives) => {
+        this.archives.set(archives);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loadError.set(true);
+        this.loading.set(false);
+      },
+    });
+  }
 
   openModal(): void {
     this.modalOpen.set(true);
@@ -29,7 +40,7 @@ export class ArchiveBrowser {
   }
 
   onArchiveCreated(archive: Archive): void {
-    this.archives.update((list) => [...list, archive]);
+    this.archives.update((list) => [archive, ...list]);
     this.closeModal();
   }
 }

@@ -3,7 +3,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2>Nieuw Archief Toevoegen</h2>
-        <button class="btn-close" (click)="close()">
+        <button class="btn-close" (click)="close()" [disabled]="submitting()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 6 6 18"/><path d="M6 6 18 18"/>
           </svg>
@@ -19,6 +19,7 @@
             placeholder="Bijv. Project_Antwerpen_2026"
             [value]="archiveName()"
             (input)="archiveName.set($any($event.target).value)"
+            [disabled]="submitting()"
           />
         </div>
 
@@ -32,7 +33,7 @@
               placeholder="Selecteer een map..."
               [value]="folderPath()"
             />
-            <button class="btn-secondary" (click)="selectFolder()" [disabled]="selectingFolder()">
+            <button class="btn-secondary" (click)="selectFolder()" [disabled]="selectingFolder() || submitting()">
               {{ selectingFolder() ? 'Bezig...' : 'Select Folder' }}
             </button>
           </div>
@@ -42,16 +43,20 @@
             </p>
           }
         </div>
+
+        @if (submitError()) {
+          <p class="submit-error">{{ submitError() }}</p>
+        }
       </div>
 
       <div class="modal-footer">
-        <button class="btn-ghost" (click)="close()">Annuleren</button>
+        <button class="btn-ghost" (click)="close()" [disabled]="submitting()">Annuleren</button>
         <button
           class="btn-primary"
           (click)="submit()"
-          [disabled]="!archiveName() || !folderPath()"
+          [disabled]="!archiveName() || !folderPath() || submitting()"
         >
-          Archief Ingesten
+          {{ submitting() ? 'Bezig met ingesten...' : 'Archief Ingesten' }}
         </button>
       </div>
     </div>

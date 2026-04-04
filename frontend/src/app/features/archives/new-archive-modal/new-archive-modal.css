@@ -123,6 +123,15 @@
   margin: 0;
 }
 
+.submit-error {
+  font-size: 12px;
+  color: #b91c1c;
+  background: #fee2e2;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 0;
+}
+
 .btn-primary {
   display: inline-flex;
   align-items: center;

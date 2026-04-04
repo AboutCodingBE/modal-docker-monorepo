@@ -1,6 +1,7 @@
 import { Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AgentService } from '../../../services/agent.service';
+import { ArchiveService } from '../../../services/archive.service';
 import { Archive } from '../../../models/archive.model';
 
 @Component({
@@ -19,12 +20,16 @@ export class NewArchiveModal {
   folderPath = signal('');
   agentUnavailable = signal(false);
   selectingFolder = signal(false);
+  submitting = signal(false);
+  submitError = signal<string | null>(null);
 
-  private nextId = 100;
-
-  constructor(private agentService: AgentService) {}
+  constructor(
+    private agentService: AgentService,
+    private archiveService: ArchiveService,
+  ) {}
 
   close(): void {
+    if (this.submitting()) return;
     this.reset();
     this.closed.emit();
   }
@@ -60,23 +65,28 @@ export class NewArchiveModal {
   }
 
   submit(): void {
-    if (!this.archiveName() || !this.folderPath()) return;
+    if (!this.archiveName() || !this.folderPath() || this.submitting()) return;
 
-    const archive: Archive = {
-      id: this.nextId++,
-      name: this.archiveName(),
-      date: new Date().toISOString().split('T')[0],
-      files: 0,
-      status: 'ingested',
-    };
+    this.submitting.set(true);
+    this.submitError.set(null);
 
-    this.archiveCreated.emit(archive);
-    this.reset();
+    this.archiveService.create(this.archiveName(), this.folderPath()).subscribe({
+      next: (archive) => {
+        this.archiveCreated.emit(archive);
+        this.reset();
+      },
+      error: (err) => {
+        this.submitError.set(err.error?.detail ?? 'Er is een fout opgetreden.');
+        this.submitting.set(false);
+      },
+    });
   }
 
   private reset(): void {
     this.archiveName.set('');
     this.folderPath.set('');
     this.agentUnavailable.set(false);
+    this.submitError.set(null);
+    this.submitting.set(false);
   }
 }

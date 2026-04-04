@@ -1,7 +1,7 @@
 export type ArchiveStatus = 'analysed' | 'ingested' | 'in_progress' | 'failed';
 
 export interface Archive {
-  id: number;
+  id: string;
   name: string;
   date: string;
   files: number;

@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import httpx
 
 from app.config import settings
+from app.get_archive_overview.router import router as archives_router
+from app.create_new_archive.router import router as create_archive_router
 
 app = FastAPI(title="Archive Analysis API")
 
@@ -13,6 +15,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(archives_router)
+app.include_router(create_archive_router)
 
 
 @app.get("/api/health")

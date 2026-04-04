@@ -3,6 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.models import Archive
 
+_STATUS_MAP = {
+    "pending": "ingested",
+    "in_progress": "in_progress",
+    "completed": "analysed",
+    "failed": "failed",
+}
+
 
 class ArchiveRepository:
     def __init__(self, session: AsyncSession):
@@ -18,9 +25,9 @@ class ArchiveRepository:
             {
                 "id": str(a.id),
                 "name": a.name,
-                "created_at": a.created_at.isoformat() if a.created_at else None,
-                "analysis_status": a.analysis_status,
-                "file_count": a.file_count,
+                "date": a.created_at.date().isoformat() if a.created_at else "",
+                "files": a.file_count,
+                "status": _STATUS_MAP.get(a.analysis_status, "ingested"),
             }
             for a in archives
         ]

@@ -64,3 +64,12 @@
   text-align: center;
   padding: 60px 0;
 }
+
+.error-state {
+  color: #b91c1c;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

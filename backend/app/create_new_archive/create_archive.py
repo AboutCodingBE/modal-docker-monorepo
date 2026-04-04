@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.create_new_archive.archive_repository import ArchiveRepository
 from app.create_new_archive.file_repository import FileRepository
 from app.create_new_archive.folder_analysis import FolderAnalysis
+from app.shared.models import Archive
 
 
 class CreateArchive:
@@ -12,7 +13,7 @@ class CreateArchive:
         self._session = session
         self._folder_analysis = FolderAnalysis()
 
-    async def execute(self, name: str, path: str) -> None | str:
+    async def execute(self, name: str, path: str) -> Archive | str:
         """
         Validates inputs, persists the archive, then runs and persists the folder analysis.
 
@@ -48,4 +49,4 @@ class CreateArchive:
         total_size = sum(e.get("size_bytes") or 0 for e in entries)
 
         await archive_repo.update_statistics(archive, file_count, directory_count, total_size)
-        return None
+        return archive

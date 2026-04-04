@@ -13,6 +13,7 @@ class ArchiveRepository:
         archive = Archive(name=name, root_path=root_path)
         self._session.add(archive)
         await self._session.flush()
+        await self._session.refresh(archive)
         return archive
 
     async def update_status(self, archive: Archive, status: str, error_message: str | None = None) -> None:
