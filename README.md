@@ -85,17 +85,22 @@ pip install -r requirements.txt
 python agent.py --dev
 ```
 
-The "command not found" is likely because either python isn't on your PATH (some systems only have python3) or Flask isn't installed globally — which is exactly what the venv solves.
-For packaging: PyInstaller bundles everything — your code, Python itself, and all installed packages — into a single standalone binary. It doesn't use or need the venv at runtime. The venv is purely a development tool. When you run pyinstaller --onefile agent.py, it inspects the current environment, grabs all dependencies, and bakes them into the executable. The end user just double-clicks the binary. No Python, no venv, nothing to install.
-So the two worlds are completely separate: venv for development, PyInstaller binary for distribution. They don't interfere with each other.
-One small tip: when you eventually build the binary, do it from inside the venv so PyInstaller only picks up the agent's dependencies (Flask, flask-cors) and not anything else you might have installed globally. Keeps the binary lean.
-
 ### Backend
 
 ```bash
 cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
+```
+
+#### Using Alembic
+
+Make sure that the database container has started! 
+When you develop for the first time on this project or you have new migration files, please execute the following: 
+
+```bash
+ cd backend                                                                                                                                                                                                
+DATABASE_URL=postgresql://archiveuser:archivepass@localhost:5432/modaldb venv/bin/alembic upgrade head 
 ```
 
 ### Frontend

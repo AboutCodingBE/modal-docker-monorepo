@@ -1,23 +1,27 @@
-from contextlib import contextmanager
-from collections.abc import Generator
+from collections.abc import AsyncGenerator
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from shared.config import db_settings
+from app.config import settings
 
-engine = create_engine(db_settings.url, pool_pre_ping=True)
-_SessionFactory = sessionmaker(bind=engine)
+# Convert the standard postgresql:// URL to the asyncpg driver scheme.
+def _async_url(url: str) -> str:
+    for prefix in ("postgresql+psycopg2://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+asyncpg://" + url[len(prefix):]
+    return url
 
 
-@contextmanager
-def get_session() -> Generator[Session, None, None]:
-    session = _SessionFactory()
-    try:
-        yield session
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
+engine = create_async_engine(_async_url(settings.database_url), pool_pre_ping=True)
+_session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """FastAPI dependency that yields a database session per request."""
+    async with _session_factory() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise

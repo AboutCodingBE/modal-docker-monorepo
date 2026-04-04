@@ -16,7 +16,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://archiveuser:archivepass@db:5432/archivedb
+      - DATABASE_URL=postgresql://archiveuser:archivepass@db:5432/modaldb
       - TIKA_URL=http://tika:9998
       - AGENT_URL=http://host.docker.internal:9090
     depends_on:
@@ -51,7 +51,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-ARGS", "pg_isready", "-U", "archiveuser", "-d", "archivedb"]
+      test: ["CMD", "pg_isready", "-U", "archiveuser", "-d", "modaldb"]
       interval: 5s
       timeout: 3s
       retries: 5
