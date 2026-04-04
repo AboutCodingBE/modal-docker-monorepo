@@ -90,7 +90,7 @@ python agent.py --dev
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+venv/bin/uvicorn app.main:app --reload   #if you are working with a virtual environment called venv
 ```
 
 #### Using Alembic
@@ -102,13 +102,34 @@ When you develop for the first time on this project or you have new migration fi
  cd backend                                                                                                                                                                                                
 DATABASE_URL=postgresql://archiveuser:archivepass@localhost:5432/modaldb venv/bin/alembic upgrade head 
 ```
+#### The .env file
+
+The backend needs to support two environments for DATABASE_URL:
+
+- In Docker: postgresql+asyncpg://archiveuser:archivepass@db:5432/modaldb
+- Local dev: postgresql+asyncpg://archiveuser:archivepass@localhost:5432/modaldb
+
+I created a .env file in the backend directory with the local dev
+DATABASE_URL. Updated app/config.py to load from .env using
+pydantic-settings. Added .env to .gitignore. Added a .env.example
+with the local dev defaults so other developers know what to set.
+
+The docker-compose.yml should keep setting DATABASE_URL as an
+environment variable, which will override the .env file when
+running in Docker.
+
+**How pydantic-settings uses it:** 
+when your FastAPI app starts, pydantic-settings looks for values in this order (highest priority first):
+
+1. Environment variables — set by Docker, the OS, or the command line
+2. .env file — loaded from disk as a fallback
 
 ### Frontend
 
 ```bash
 cd frontend
 npm install
-ng serve
+npm start
 ```
 
 ### Agent
@@ -116,7 +137,7 @@ ng serve
 ```bash
 cd agent
 pip install -r requirements.txt
-python agent.py
+python agent.py  # activate virtual environment first if you have it. 
 ```
 
 ## Building the Agent Binary

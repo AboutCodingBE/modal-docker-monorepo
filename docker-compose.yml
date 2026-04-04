@@ -16,7 +16,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://archiveuser:archivepass@db:5432/modaldb
+      - DATABASE_URL=postgresql+asyncpg://archiveuser:archivepass@db:5432/modaldb
       - TIKA_URL=http://tika:9998
       - AGENT_URL=http://host.docker.internal:9090
     depends_on:

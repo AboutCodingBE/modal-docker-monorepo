@@ -15,13 +15,7 @@ from app.shared.models import Base  # noqa: F401 — registers all models on Bas
 config = context.config
 
 # Set the DB URL from app settings (overrides the empty placeholder in alembic.ini).
-# Always use asyncpg so the same driver works for both the app and migrations.
-_url = settings.database_url
-for _prefix in ("postgresql+psycopg2://", "postgresql://"):
-    if _url.startswith(_prefix):
-        _url = "postgresql+asyncpg://" + _url[len(_prefix):]
-        break
-config.set_main_option("sqlalchemy.url", _url)
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
