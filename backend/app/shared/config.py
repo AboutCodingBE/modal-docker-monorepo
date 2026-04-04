@@ -7,8 +7,8 @@ class DatabaseSettings(BaseSettings):
     host: str = "localhost"
     port: int = 5432
     name: str = "modaldb"
-    user: str = "user"
-    password: str = "password"
+    user: str = "archiveuser"
+    password: str = "archivepass"
 
     @property
     def url(self) -> str:

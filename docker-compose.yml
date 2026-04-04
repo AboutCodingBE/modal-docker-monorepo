@@ -45,7 +45,7 @@ services:
     environment:
       - POSTGRES_USER=archiveuser
       - POSTGRES_PASSWORD=archivepass
-      - POSTGRES_DB=archivedb
+      - POSTGRES_DB=modaldb
     ports:
       - "5432:5432"
     volumes:
