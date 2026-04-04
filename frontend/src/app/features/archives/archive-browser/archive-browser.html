@@ -1,0 +1,32 @@
+<div class="browser-wrapper">
+  <div class="content-header">
+    <div class="header-title">
+      <h1>Archive Browser</h1>
+      <p>Beheer en verken uw digitale collecties</p>
+    </div>
+    <button class="btn-primary" (click)="openModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 10v6"/><path d="M9 13h6"/>
+        <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+      </svg>
+      Nieuw Archief
+    </button>
+  </div>
+
+  <div class="cards-grid">
+    @if (archives().length === 0) {
+      <div class="empty-state">
+        Nog geen archieven aangemaakt. Klik op "Nieuw Archief" om te beginnen.
+      </div>
+    }
+    @for (archive of archives(); track archive.id) {
+      <app-archive-card [archive]="archive" />
+    }
+  </div>
+</div>
+
+<app-new-archive-modal
+  [isOpen]="modalOpen()"
+  (closed)="closeModal()"
+  (archiveCreated)="onArchiveCreated($event)"
+/>

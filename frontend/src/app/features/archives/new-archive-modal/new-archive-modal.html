@@ -1,0 +1,59 @@
+@if (isOpen()) {
+  <div class="modal-overlay" (click)="onBackdropClick($event)">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Nieuw Archief Toevoegen</h2>
+        <button class="btn-close" (click)="close()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18"/><path d="M6 6 18 18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Naam van het archief</label>
+          <input
+            class="form-input"
+            type="text"
+            placeholder="Bijv. Project_Antwerpen_2026"
+            [value]="archiveName()"
+            (input)="archiveName.set($any($event.target).value)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Locatie op schijf</label>
+          <div class="folder-row">
+            <input
+              class="form-input"
+              type="text"
+              readonly
+              placeholder="Selecteer een map..."
+              [value]="folderPath()"
+            />
+            <button class="btn-secondary" (click)="selectFolder()" [disabled]="selectingFolder()">
+              {{ selectingFolder() ? 'Bezig...' : 'Select Folder' }}
+            </button>
+          </div>
+          @if (agentUnavailable()) {
+            <p class="agent-warning">
+              Start de Local Agent om bestanden van uw machine te selecteren.
+            </p>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="close()">Annuleren</button>
+        <button
+          class="btn-primary"
+          (click)="submit()"
+          [disabled]="!archiveName() || !folderPath()"
+        >
+          Archief Ingesten
+        </button>
+      </div>
+    </div>
+  </div>
+}

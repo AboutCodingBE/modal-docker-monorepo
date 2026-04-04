@@ -1,0 +1,66 @@
+.browser-wrapper {
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.content-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.header-title h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 4px;
+}
+
+.header-title p {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #3b6ef5;
+  color: #fff;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.btn-primary svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-primary:hover {
+  background: #2d5ce0;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.empty-state {
+  color: #9ca3af;
+  font-size: 14px;
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 0;
+}
