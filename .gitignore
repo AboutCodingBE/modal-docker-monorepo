@@ -28,3 +28,6 @@ agent/build/
 # Environment
 .env
 .env.local
+venv/
+.venv/
+/frontend/.angular/

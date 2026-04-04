@@ -218,23 +218,35 @@ def open_browser():
 # Main entry point
 # ---------------------------------------------------------------------------
 def main():
+    import argparse
     import atexit
     import signal
 
+    parser = argparse.ArgumentParser(description="Archive App Local Agent")
+    parser.add_argument(
+        "--dev",
+        action="store_true",
+        help="Dev mode: skip Docker lifecycle management and browser opening. "
+             "Only starts the filesystem bridge API on localhost:9090.",
+    )
+    args = parser.parse_args()
+
     logger.info("=" * 50)
-    logger.info("Archive App Agent starting")
+    logger.info("Archive App Agent starting%s", " [DEV MODE]" if args.dev else "")
     logger.info("=" * 50)
 
-    # Start Docker services
-    start_docker_services()
+    if not args.dev:
+        # Start Docker services
+        start_docker_services()
 
-    # Ensure cleanup on exit
-    atexit.register(stop_docker_services)
+        # Ensure cleanup on exit
+        atexit.register(stop_docker_services)
+
+        # Open browser in background thread
+        threading.Thread(target=open_browser, daemon=True).start()
+
     signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
-
-    # Open browser in background thread
-    threading.Thread(target=open_browser, daemon=True).start()
 
     # Start the agent API
     port = CONFIG["agent_port"]
