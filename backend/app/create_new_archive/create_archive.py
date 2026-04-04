@@ -33,7 +33,7 @@ class CreateArchive:
         archive = await archive_repo.persist(name, path)
 
         try:
-            entries = self._folder_analysis.analyze(archive.id, path)
+            entries = await self._folder_analysis.analyze(archive.id, path)
         except Exception as e:
             await archive_repo.update_status(archive, "failed", error_message=str(e))
             return f"Fout bij analyseren map: {e}"
