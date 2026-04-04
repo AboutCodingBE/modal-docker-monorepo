@@ -12,6 +12,7 @@ import json
 import logging
 import mimetypes
 import os
+import platform
 import subprocess
 import sys
 import threading
@@ -127,43 +128,64 @@ def file_content():
 
 
 # ---------------------------------------------------------------------------
-# Folder picker (tkinter)
+# Folder picker (platform-native via subprocess)
 # ---------------------------------------------------------------------------
-_folder_result = None
-_folder_event = threading.Event()
-
-
 def _open_folder_dialog() -> str | None:
     """
-    Open a native folder dialog. Tkinter must run on the main thread on macOS,
-    so we signal the main thread and wait for the result.
+    Open a native folder picker dialog synchronously using platform tools:
+    - macOS:   osascript (AppleScript choose folder)
+    - Linux:   zenity --file-selection --directory
+    - Windows: PowerShell FolderBrowserDialog
     """
-    global _folder_result
-    _folder_result = None
-    _folder_event.clear()
+    system = platform.system()
+    try:
+        if system == "Darwin":
+            result = subprocess.run(
+                [
+                    "osascript", "-e",
+                    'POSIX path of (choose folder with prompt "Select Archive Folder")',
+                ],
+                capture_output=True,
+                text=True,
+            )
+            folder = result.stdout.strip().rstrip("/")
+            return folder if folder else None
 
-    def _show_dialog():
-        global _folder_result
-        try:
-            import tkinter as tk
-            from tkinter import filedialog
+        elif system == "Linux":
+            result = subprocess.run(
+                ["zenity", "--file-selection", "--directory", "--title=Select Archive Folder"],
+                capture_output=True,
+                text=True,
+            )
+            folder = result.stdout.strip()
+            return folder if folder else None
 
-            root = tk.Tk()
-            root.withdraw()
-            root.attributes("-topmost", True)
-            folder = filedialog.askdirectory(title="Select Archive Folder")
-            root.destroy()
-            _folder_result = folder if folder else None
-        except Exception as e:
-            logger.error(f"Folder dialog error: {e}")
-            _folder_result = None
-        finally:
-            _folder_event.set()
+        elif system == "Windows":
+            script = (
+                "Add-Type -AssemblyName System.Windows.Forms;"
+                "$d = New-Object System.Windows.Forms.FolderBrowserDialog;"
+                "$d.Description = 'Select Archive Folder';"
+                "$d.ShowNewFolderButton = $false;"
+                "if ($d.ShowDialog() -eq 'OK') { $d.SelectedPath }"
+            )
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", script],
+                capture_output=True,
+                text=True,
+            )
+            folder = result.stdout.strip()
+            return folder if folder else None
 
-    thread = threading.Thread(target=_show_dialog)
-    thread.start()
-    _folder_event.wait(timeout=300)  # 5 min timeout for user to pick
-    return _folder_result
+        else:
+            logger.error(f"Unsupported platform for folder picker: {system}")
+            return None
+
+    except FileNotFoundError as e:
+        logger.error(f"Folder picker tool not found: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Folder dialog error: {e}")
+        return None
 
 
 # ---------------------------------------------------------------------------

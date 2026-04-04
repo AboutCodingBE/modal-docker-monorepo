@@ -50,4 +50,7 @@ libc++abi: terminating due to uncaught exception of type NSException
 zsh: abort      python agent.py --dev
 ```
 
-Going for a different solution.
+Going for a different solution with platform-native dialogs using subprocess:
+- macOS: osascript (choose folder)
+- Linux: zenity --file-selection --directory
+- Windows: PowerShell (System.Windows.Forms.FolderBrowserDialog)
