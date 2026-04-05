@@ -96,21 +96,39 @@ def list_files():
     if not root or not os.path.isdir(root):
         return jsonify({"error": "Invalid or missing path"}), 400
 
-    files = []
+    entries = []
     root_path = Path(root)
-    for file_path in root_path.rglob("*"):
-        if file_path.is_file():
-            stat = file_path.stat()
-            files.append({
+
+    # Collect and sort all entries so parent directories always come before children
+    all_paths = sorted(root_path.rglob("*"), key=lambda p: len(p.parts))
+
+    for file_path in all_paths:
+        relative_path = str(file_path.relative_to(root_path))
+        parent_folder = str(file_path.parent.relative_to(root_path))
+        if file_path.is_dir():
+            entries.append({
                 "name": file_path.name,
-                "relative_path": str(file_path.relative_to(root_path)),
+                "relative_path": relative_path,
                 "absolute_path": str(file_path),
-                "parent_folder": str(file_path.parent.relative_to(root_path)),
+                "parent_folder": parent_folder,
+                "is_directory": True,
+                "size_bytes": None,
+                "modified": None,
+            })
+        elif file_path.is_file():
+            stat = file_path.stat()
+            entries.append({
+                "name": file_path.name,
+                "relative_path": relative_path,
+                "absolute_path": str(file_path),
+                "parent_folder": parent_folder,
+                "is_directory": False,
                 "size_bytes": stat.st_size,
                 "modified": stat.st_mtime,
             })
 
-    return jsonify({"root": root, "total_files": len(files), "files": files})
+    files = [e for e in entries if not e["is_directory"]]
+    return jsonify({"root": root, "total_files": len(files), "files": entries})
 
 
 @app.get("/file-content")
