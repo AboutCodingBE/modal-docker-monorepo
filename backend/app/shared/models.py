@@ -92,7 +92,6 @@ class AnalysisTask(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
-    task_type: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     total_files: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     processed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

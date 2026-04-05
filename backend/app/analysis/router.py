@@ -76,7 +76,6 @@ async def tasks_for_archive(archive_id: uuid.UUID, db: AsyncSession = Depends(ge
             percentage = round((task.processed / task.total_files) * 100)
         return {
             "task_id": str(task.id),
-            "task_type": task.task_type,
             "status": task.status,
             "total_files": task.total_files,
             "processed": task.processed,

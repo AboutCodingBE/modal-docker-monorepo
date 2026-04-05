@@ -7,4 +7,5 @@ export interface Archive {
   files: number;
   status: ArchiveStatus;
   progress?: number;
+  tika_task_id?: string;
 }

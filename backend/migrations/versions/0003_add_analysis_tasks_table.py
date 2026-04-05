@@ -22,7 +22,6 @@ def upgrade() -> None:
         "analysis_tasks",
         sa.Column("id", UUID(as_uuid=True), primary_key=True),
         sa.Column("archive_id", UUID(as_uuid=True), sa.ForeignKey("archives.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("task_type", sa.String(50), nullable=False),
         sa.Column("status", sa.String(20), nullable=False, server_default="pending"),
         sa.Column("total_files", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("processed", sa.Integer(), nullable=False, server_default="0"),

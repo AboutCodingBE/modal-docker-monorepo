@@ -10,12 +10,10 @@ from app.shared.models import AnalysisTask
 async def create_task(
     session: AsyncSession,
     archive_id: uuid.UUID,
-    task_type: str,
     total_files: int,
 ) -> AnalysisTask:
     task = AnalysisTask(
         archive_id=archive_id,
-        task_type=task_type,
         status="pending",
         total_files=total_files,
     )
