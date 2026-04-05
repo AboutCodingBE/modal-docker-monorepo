@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Archive } from '../../../models/archive.model';
 import { ArchiveService } from '../../../services/archive.service';
@@ -19,7 +20,7 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
 
   private progressSubs = new Map<string, Subscription>();
 
-  constructor(private archiveService: ArchiveService) {}
+  constructor(private archiveService: ArchiveService, private router: Router) {}
 
   ngOnInit(): void {
     this.archiveService.getAll().subscribe({
@@ -53,6 +54,10 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
     if (archive.tika_task_id) {
       this._trackProgress(archive.id, archive.tika_task_id);
     }
+  }
+
+  openArchive(id: string): void {
+    this.router.navigate(['/archives', id]);
   }
 
   private _trackProgress(archiveId: string, taskId: string): void {

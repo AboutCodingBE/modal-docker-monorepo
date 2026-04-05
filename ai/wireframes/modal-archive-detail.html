@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MODAL — Archief Detail</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Layout ── */
+  .app-layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f2f5;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 160px;
+    min-width: 160px;
+    background: #1a2744;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    color: #fff;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px 24px;
+  }
+
+  .logo-badge {
+    width: 32px;
+    height: 32px;
+    background: #3b6ef5;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .logo-text {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 8px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.65);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .nav-item svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .nav-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+  }
+
+  .nav-item.active {
+    background: #3b6ef5;
+    color: #fff;
+  }
+
+  /* ── Main content ── */
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 28px 32px;
+  }
+
+  /* ── Top bar ── */
+  .top-bar {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .btn-back {
+    font-family: inherit;
+    background: #fff;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    padding: 9px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+    margin-top: 2px;
+  }
+
+  .btn-back:hover {
+    background: #f9fafb;
+  }
+
+  .archive-info h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px;
+  }
+
+  .archive-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .archive-path {
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  .archive-date {
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  .archive-date strong {
+    color: #374151;
+    font-weight: 600;
+  }
+
+  /* ── Panels (shared card style) ── */
+  .panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 14px;
+  }
+
+  /* ── Archive summary (flow 1) ── */
+  .archive-summary-stats {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+  }
+
+  .summary-item {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .summary-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #6b7280;
+    text-transform: uppercase;
+  }
+
+  .summary-value {
+    font-size: 17px;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .filetypes-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #6b7280;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .archive-filetype-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .filetype-tag {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 10px;
+    background: #f0f2f5;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    color: #374151;
+    transition: background 0.15s;
+  }
+
+  .filetype-tag:hover {
+    background: #e5e7eb;
+  }
+
+  .filetype-tag strong {
+    font-weight: 700;
+    color: #111827;
+  }
+
+  /* ── Folder Browser ── */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .breadcrumb-segment {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .breadcrumb-segment:hover {
+    background: #f0f2f5;
+    color: #111827;
+  }
+
+  .breadcrumb-segment.current {
+    font-weight: 600;
+    color: #111827;
+    cursor: default;
+    background: #f0f2f5;
+  }
+
+  .breadcrumb-segment.current:hover {
+    background: #f0f2f5;
+    color: #111827;
+  }
+
+  .breadcrumb-sep {
+    color: #9ca3af;
+    font-size: 12px;
+  }
+
+  .files-summary {
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
+
+  .subfolders-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #6b7280;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .folder-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+  }
+
+  .folder-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #374151;
+    transition: background 0.15s, border-color 0.15s;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .folder-card:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+  }
+
+  .folder-card-icon { font-size: 15px; }
+  .no-subfolders { font-size: 13px; color: #9ca3af; font-style: italic; }
+
+  /* ── Dashboard stats (flow 3) ── */
+  .scope-indicator {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 16px;
+  }
+
+  .scope-indicator .path {
+    font-weight: 600;
+    color: #374151;
+    background: #f0f2f5;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 16px 18px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #6b7280;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .filetype-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+  }
+
+  .filetype-detail-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 14px;
+    text-align: center;
+    transition: background 0.15s;
+  }
+
+  .filetype-detail-card:hover {
+    background: #f0f2f5;
+  }
+
+  .filetype-detail-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    margin-bottom: 4px;
+  }
+
+  .filetype-detail-count {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .no-files-msg {
+    font-size: 13px;
+    color: #9ca3af;
+    font-style: italic;
+    padding: 8px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-badge">M</div>
+      <span class="logo-text">MODAL</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Archieven
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Instellingen
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ── Main content ── -->
+  <div class="main-content">
+
+    <!-- Top bar -->
+    <div class="top-bar">
+      <button class="btn-back">← Overzicht</button>
+      <div class="archive-info">
+        <h1>Gemeentearchief Brugge</h1>
+        <div class="archive-meta">
+          <div class="archive-path">/Volumes/ExternalDrive/gemeentearchief-brugge</div>
+          <div class="archive-date">Aangemaakt: <strong>2026-03-16</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Archive-level summary (flow 1) -->
+    <div class="panel">
+      <div class="archive-summary-stats">
+        <div class="summary-item">
+          <span class="summary-label">Totaal bestanden:</span>
+          <span class="summary-value" id="archiveTotal">—</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Bestandstypen:</span>
+          <span class="summary-value" id="archiveTypes">—</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Mappen:</span>
+          <span class="summary-value" id="archiveFolders">—</span>
+        </div>
+      </div>
+      <div class="filetypes-label">Bestandstypen in dit archief</div>
+      <div class="archive-filetype-grid" id="archiveFiletypeGrid"></div>
+    </div>
+
+    <!-- Folder browser -->
+    <div class="panel">
+      <div class="panel-title">Archief browser</div>
+      <div class="breadcrumb" id="breadcrumb"></div>
+      <div class="files-summary" id="filesSummary"></div>
+      <div id="subfoldersLabel" class="subfolders-label"></div>
+      <div class="folder-grid" id="folderGrid"></div>
+    </div>
+
+    <!-- Dashboard (flow 3: current folder only) -->
+    <div class="panel">
+      <div class="panel-title">Inhoud huidige map</div>
+      <div class="scope-indicator">
+        Resultaten voor: <span class="path" id="scopePath">/</span>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Bestanden in deze map</div>
+          <div class="stat-value" id="statTotal">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Bestandstypen</div>
+          <div class="stat-value" id="statTypes">—</div>
+        </div>
+      </div>
+      <div class="panel-title">Bestandstypen</div>
+      <div class="filetype-detail-grid" id="filetypeGrid"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const archiveData = {
+  name: 'Gemeentearchief Brugge',
+  created: '2026-03-16',
+  tree: {
+    '/': {
+      files: [
+        { name: 'README.md', ext: '.md' },
+        { name: 'inventaris.xlsx', ext: '.xlsx' },
+        { name: 'metadata.json', ext: '.json' },
+      ],
+      subfolders: ['Briefwisseling', 'Notariële akten', 'Kaarten en plannen', 'Foto-archief', 'Registers']
+    },
+    '/Briefwisseling': {
+      files: [
+        ...Array(45).fill(null).map((_, i) => ({ name: `brief_${1850+Math.floor(i/3)}_${(i%3)+1}.pdf`, ext: '.pdf' })),
+        ...Array(12).fill(null).map((_, i) => ({ name: `brief_scan_${i+1}.tiff`, ext: '.tiff' })),
+        ...Array(8).fill(null).map((_, i) => ({ name: `transcriptie_${i+1}.docx`, ext: '.docx' })),
+      ],
+      subfolders: ['Inkomend 1850-1900', 'Uitgaand 1850-1900', 'Inkomend 1900-1950']
+    },
+    '/Briefwisseling/Inkomend 1850-1900': {
+      files: [
+        ...Array(22).fill(null).map((_, i) => ({ name: `ink_brief_${1850+i}.pdf`, ext: '.pdf' })),
+        ...Array(5).fill(null).map((_, i) => ({ name: `bijlage_${i+1}.jpg`, ext: '.jpg' })),
+      ],
+      subfolders: []
+    },
+    '/Briefwisseling/Uitgaand 1850-1900': {
+      files: Array(18).fill(null).map((_, i) => ({ name: `uit_brief_${1850+i}.pdf`, ext: '.pdf' })),
+      subfolders: []
+    },
+    '/Briefwisseling/Inkomend 1900-1950': {
+      files: [
+        ...Array(30).fill(null).map((_, i) => ({ name: `ink_brief_${1900+i}.pdf`, ext: '.pdf' })),
+        ...Array(4).fill(null).map((_, i) => ({ name: `foto_bijlage_${i+1}.jpg`, ext: '.jpg' })),
+      ],
+      subfolders: []
+    },
+    '/Notariële akten': {
+      files: [
+        ...Array(120).fill(null).map((_, i) => ({ name: `akte_${1800+Math.floor(i/2)}.pdf`, ext: '.pdf' })),
+        ...Array(15).fill(null).map((_, i) => ({ name: `register_${i+1}.pdf`, ext: '.pdf' })),
+        ...Array(8).fill(null).map((_, i) => ({ name: `index_${i+1}.xlsx`, ext: '.xlsx' })),
+      ],
+      subfolders: ['Testamenten', 'Koopakten', 'Huwelijkscontracten']
+    },
+    '/Notariële akten/Testamenten': {
+      files: Array(38).fill(null).map((_, i) => ({ name: `testament_${1810+i}.pdf`, ext: '.pdf' })),
+      subfolders: []
+    },
+    '/Notariële akten/Koopakten': {
+      files: Array(52).fill(null).map((_, i) => ({ name: `koopakte_${1815+Math.floor(i/2)}.pdf`, ext: '.pdf' })),
+      subfolders: []
+    },
+    '/Notariële akten/Huwelijkscontracten': {
+      files: Array(24).fill(null).map((_, i) => ({ name: `huwelijk_${1820+i}.pdf`, ext: '.pdf' })),
+      subfolders: []
+    },
+    '/Kaarten en plannen': {
+      files: [
+        ...Array(35).fill(null).map((_, i) => ({ name: `kaart_${i+1}.tiff`, ext: '.tiff' })),
+        ...Array(20).fill(null).map((_, i) => ({ name: `plan_${i+1}.jpg`, ext: '.jpg' })),
+        ...Array(10).fill(null).map((_, i) => ({ name: `legende_${i+1}.pdf`, ext: '.pdf' })),
+      ],
+      subfolders: ['Stadsplannen', 'Kadaster']
+    },
+    '/Kaarten en plannen/Stadsplannen': {
+      files: Array(18).fill(null).map((_, i) => ({ name: `stadsplan_${1850+i*5}.tiff`, ext: '.tiff' })),
+      subfolders: []
+    },
+    '/Kaarten en plannen/Kadaster': {
+      files: [
+        ...Array(14).fill(null).map((_, i) => ({ name: `kadaster_${i+1}.tiff`, ext: '.tiff' })),
+        ...Array(6).fill(null).map((_, i) => ({ name: `perceelindex_${i+1}.xlsx`, ext: '.xlsx' })),
+      ],
+      subfolders: []
+    },
+    '/Foto-archief': {
+      files: [
+        ...Array(200).fill(null).map((_, i) => ({ name: `foto_${String(i+1).padStart(4,'0')}.jpg`, ext: '.jpg' })),
+        ...Array(30).fill(null).map((_, i) => ({ name: `neg_${i+1}.tiff`, ext: '.tiff' })),
+        { name: 'foto_index.xlsx', ext: '.xlsx' },
+        { name: 'beschrijvingen.docx', ext: '.docx' },
+      ],
+      subfolders: ['Personen', 'Gebouwen', 'Evenementen']
+    },
+    '/Foto-archief/Personen': {
+      files: Array(80).fill(null).map((_, i) => ({ name: `portret_${i+1}.jpg`, ext: '.jpg' })),
+      subfolders: []
+    },
+    '/Foto-archief/Gebouwen': {
+      files: Array(65).fill(null).map((_, i) => ({ name: `gebouw_${i+1}.jpg`, ext: '.jpg' })),
+      subfolders: []
+    },
+    '/Foto-archief/Evenementen': {
+      files: Array(55).fill(null).map((_, i) => ({ name: `event_${i+1}.jpg`, ext: '.jpg' })),
+      subfolders: []
+    },
+    '/Registers': {
+      files: [
+        ...Array(25).fill(null).map((_, i) => ({ name: `register_bevolking_${1850+i*5}.pdf`, ext: '.pdf' })),
+        ...Array(10).fill(null).map((_, i) => ({ name: `register_scan_${i+1}.tiff`, ext: '.tiff' })),
+      ],
+      subfolders: ['Bevolkingsregisters', 'Burgerlijke stand']
+    },
+    '/Registers/Bevolkingsregisters': {
+      files: Array(40).fill(null).map((_, i) => ({ name: `bevolking_${1850+i*2}.pdf`, ext: '.pdf' })),
+      subfolders: []
+    },
+    '/Registers/Burgerlijke stand': {
+      files: [
+        ...Array(30).fill(null).map((_, i) => ({ name: `geboorte_${1850+i*3}.pdf`, ext: '.pdf' })),
+        ...Array(25).fill(null).map((_, i) => ({ name: `overlijden_${1850+i*3}.pdf`, ext: '.pdf' })),
+        ...Array(20).fill(null).map((_, i) => ({ name: `huwelijk_${1850+i*3}.pdf`, ext: '.pdf' })),
+      ],
+      subfolders: []
+    }
+  }
+};
+
+let currentPath = '/';
+
+function getAllFiles(path) {
+  const node = archiveData.tree[path];
+  if (!node) return [];
+  let files = [...node.files];
+  for (const sub of node.subfolders) {
+    const subPath = path === '/' ? '/' + sub : path + '/' + sub;
+    files = files.concat(getAllFiles(subPath));
+  }
+  return files;
+}
+
+function renderArchiveSummary() {
+  const allFiles = getAllFiles('/');
+  document.getElementById('archiveTotal').textContent = allFiles.length.toLocaleString('nl-BE');
+
+  const typeCounts = {};
+  allFiles.forEach(f => {
+    const ext = f.ext || 'no_extension';
+    typeCounts[ext] = (typeCounts[ext] || 0) + 1;
+  });
+
+  document.getElementById('archiveTypes').textContent = Object.keys(typeCounts).length;
+  const folderCount = Object.keys(archiveData.tree).length - 1;
+  document.getElementById('archiveFolders').textContent = folderCount;
+
+  const sorted = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+  document.getElementById('archiveFiletypeGrid').innerHTML = sorted.map(([ext, count]) =>
+    `<span class="filetype-tag">${ext} <strong>${count}</strong></span>`
+  ).join('');
+}
+
+function renderBreadcrumb() {
+  const el = document.getElementById('breadcrumb');
+  const parts = currentPath === '/' ? ['/'] : ['/', ...currentPath.split('/').filter(Boolean)];
+  let html = '';
+
+  parts.forEach((part, i) => {
+    const isLast = i === parts.length - 1;
+    const pathUpTo = i === 0 ? '/' : '/' + parts.slice(1, i + 1).join('/');
+    if (i > 0) html += '<span class="breadcrumb-sep">›</span>';
+    const label = part === '/' ? '📁 /' : part;
+    if (isLast) {
+      html += `<span class="breadcrumb-segment current">${label}</span>`;
+    } else {
+      html += `<button class="breadcrumb-segment" onclick="navigateTo('${pathUpTo}')">${label}</button>`;
+    }
+  });
+
+  el.innerHTML = html;
+}
+
+function renderFolders() {
+  const node = archiveData.tree[currentPath];
+  if (!node) return;
+
+  const fileCount = node.files.length;
+  document.getElementById('filesSummary').innerHTML =
+    `📄 ${fileCount} bestand${fileCount !== 1 ? 'en' : ''} direct in deze map`;
+
+  const label = document.getElementById('subfoldersLabel');
+  const grid = document.getElementById('folderGrid');
+
+  if (node.subfolders.length === 0) {
+    label.textContent = '';
+    grid.innerHTML = '<div class="no-subfolders">Geen submappen</div>';
+    return;
+  }
+
+  label.textContent = `${node.subfolders.length} submappen`;
+
+  grid.innerHTML = node.subfolders.map(name => {
+    const subPath = currentPath === '/' ? '/' + name : currentPath + '/' + name;
+    return `<div class="folder-card" onclick="navigateTo('${subPath}')">
+      <span class="folder-card-icon">📁</span>
+      ${name}
+    </div>`;
+  }).join('');
+}
+
+function renderDashboard() {
+  const node = archiveData.tree[currentPath];
+  if (!node) return;
+
+  const directFiles = node.files;
+
+  document.getElementById('scopePath').textContent = currentPath;
+  document.getElementById('statTotal').textContent = directFiles.length.toLocaleString('nl-BE');
+
+  const typeCounts = {};
+  directFiles.forEach(f => {
+    const ext = f.ext || 'no_extension';
+    typeCounts[ext] = (typeCounts[ext] || 0) + 1;
+  });
+
+  document.getElementById('statTypes').textContent = Object.keys(typeCounts).length;
+
+  const sorted = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+
+  document.getElementById('filetypeGrid').innerHTML = sorted.length > 0
+    ? sorted.map(([ext, count]) => `
+      <div class="filetype-detail-card">
+        <div class="filetype-detail-name">${ext}</div>
+        <div class="filetype-detail-count">${count}</div>
+      </div>
+    `).join('')
+    : '<div class="no-files-msg">Geen bestanden direct in deze map</div>';
+}
+
+function navigateTo(path) {
+  currentPath = path;
+  renderBreadcrumb();
+  renderFolders();
+  renderDashboard();
+}
+
+renderArchiveSummary();
+navigateTo('/');
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { Component, input, computed } from '@angular/core';
+import { Component, input, output, computed } from '@angular/core';
 import { Archive } from '../../../models/archive.model';
 import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
 
@@ -10,6 +10,7 @@ import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
 })
 export class ArchiveCard {
   archive = input.required<Archive>();
+  cardClicked = output<string>();
 
   statusLabel = computed(() => {
     const labels: Record<string, string> = {
