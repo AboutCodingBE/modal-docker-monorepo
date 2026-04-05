@@ -25,13 +25,13 @@ class FolderAnalysis:
             resp.raise_for_status()
             data = resp.json()
 
-        discovered_at = datetime.now(timezone.utc).isoformat()
+        discovered_at = datetime.now(timezone.utc)
         entries = []
 
         for f in data["files"]:
             _, ext = os.path.splitext(f["name"])
             modified_at = (
-                datetime.fromtimestamp(f["modified"], tz=timezone.utc).isoformat()
+                datetime.fromtimestamp(f["modified"], tz=timezone.utc)
                 if f.get("modified")
                 else None
             )
