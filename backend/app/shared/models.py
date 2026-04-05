@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, BigInteger, ForeignKey, String, Text, DateTime, CheckConstraint
+from sqlalchemy import Boolean, BigInteger, ForeignKey, Integer, String, Text, DateTime, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -78,3 +78,21 @@ class File(Base):
     archive: Mapped["Archive"] = relationship("Archive", back_populates="files")
     parent: Mapped["File | None"] = relationship("File", remote_side="File.id", back_populates="children")
     children: Mapped[list["File"]] = relationship("File", back_populates="parent", cascade="all, delete-orphan")
+    tika_analysis: Mapped["TikaAnalysis | None"] = relationship("TikaAnalysis", back_populates="file", uselist=False)
+
+
+class TikaAnalysis(Base):
+    __tablename__ = "tika_analyses"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False, unique=True)
+    mime_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    tika_parser: Mapped[str | None] = mapped_column(Text, nullable=True)
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    language: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    word_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    author: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    content_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    analyzed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    file: Mapped["File"] = relationship("File", back_populates="tika_analysis")
