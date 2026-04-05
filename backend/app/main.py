@@ -6,6 +6,7 @@ from app.config import settings
 from app.get_archive_overview.router import router as archives_router
 from app.create_new_archive.router import router as create_archive_router
 from app.analysis.router import router as analysis_router
+from app.archive_detail.router import router as archive_detail_router
 
 app = FastAPI(title="Archive Analysis API")
 
@@ -20,6 +21,7 @@ app.add_middleware(
 app.include_router(archives_router)
 app.include_router(create_archive_router)
 app.include_router(analysis_router)
+app.include_router(archive_detail_router)
 
 
 @app.get("/api/health")
