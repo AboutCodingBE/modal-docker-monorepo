@@ -7,7 +7,7 @@
         <path d="M3 12A9 3 0 0 0 21 12"/>
       </svg>
     </div>
-    <span class="status-badge" [class]="statusClass">{{ statusLabel }}</span>
+    <span class="status-badge" [class]="statusClass()">{{ statusLabel() }}</span>
   </div>
 
   <h3 class="card-name">{{ archive().name }}</h3>
@@ -28,6 +28,12 @@
     </div>
   </div>
 
+  @if (showProgressBar()) {
+    <div class="card-progress">
+      <app-progress-bar [percentage]="progress()" />
+    </div>
+  }
+
   <div class="card-footer">
     @if (archive().status === 'analysed') {
       <button class="btn-card-result" (click)="$event.stopPropagation()">
@@ -39,13 +45,9 @@
         </svg>
         <span>Resultaten</span>
       </button>
-      <button class="btn-card-icon" (click)="$event.stopPropagation()" title="Opnieuw analyseren">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-          <path d="M3 3v5h5"/>
-          <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
-          <path d="M16 16h5v5"/>
-        </svg>
+    } @else if (archive().status === 'in_progress') {
+      <button class="btn-card-analyse" disabled>
+        <span>Bezig met analyse...</span>
       </button>
     } @else {
       <button class="btn-card-analyse" (click)="$event.stopPropagation()">
@@ -55,5 +57,12 @@
         <span>Analyse Starten</span>
       </button>
     }
+    <button class="btn-card-delete" (click)="$event.stopPropagation()" title="Archief verwijderen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+        <line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
+      </svg>
+    </button>
   </div>
 </div>

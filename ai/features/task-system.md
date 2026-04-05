@@ -4,7 +4,7 @@ Tika processing into the ingestion flow.
 ## Task Tracking (reusable for all future analyses)
 
 1. New model in app/analysis/models.py: AnalysisTask
-   (id, archive_id FK, task_type VARCHAR, status enum
+   (id, archive_id FK, status enum
    [pending/running/completed/failed], total_files, processed,
    failed_count, started_at, completed_at).
    Generate Alembic migration.
@@ -44,6 +44,20 @@ Tika processing into the ingestion flow.
     - Skip directories
 
 8. All datetime fields must be datetime objects, not strings.
+
+### The SSE event structure
+
+```json
+{
+  "task_id": "uuid",
+  "status": "running",
+  "total_files": 438,
+  "processed": 127,
+  "failed_count": 2,
+  "current_file": "documents/report.pdf",
+  "percentage": 29
+}
+```
 
 ## Future analyses (NER, classification, etc.)
 

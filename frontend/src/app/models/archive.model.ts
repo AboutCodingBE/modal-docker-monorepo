@@ -6,4 +6,5 @@ export interface Archive {
   date: string;
   files: number;
   status: ArchiveStatus;
+  progress?: number;
 }
