@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+from datetime import datetime, timezone
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,6 +27,19 @@ class PerformTikaAnalysis:
         if value == "" or value is None:
             return None
         return str(value).strip()
+
+    def _parse_datetime(self, value) -> datetime | None:
+        """Parses a Tika date string into a datetime object, or returns None."""
+        raw = self._ensure_single_value(value)
+        if raw is None:
+            return None
+        try:
+            dt = datetime.fromisoformat(raw)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+        except (ValueError, TypeError):
+            return None
 
     async def execute(self, archive_id: uuid.UUID) -> None | str:
         files = await self._file_repo.get_by_archive(archive_id)
@@ -70,7 +84,7 @@ class PerformTikaAnalysis:
             parsers = tika[2]
             tika_parser = ", ".join(parsers) if isinstance(parsers, list) else str(parsers)
             lang = self._ensure_single_value(tika[3])
-            creation_date = self._ensure_single_value(tika[4])
+            creation_date = self._parse_datetime(tika[4])
             creator = self._ensure_single_value(tika[5])
 
             if content and len(str(content).strip()) > 0:
