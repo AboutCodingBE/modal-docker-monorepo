@@ -12,11 +12,8 @@ router = APIRouter(prefix="/api/archives", tags=["archive-detail"])
 @router.get("/{archive_id}/stats")
 async def archive_stats(archive_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     repo = ArchiveDetailRepository(db)
-
-    archive = await repo.get_archive(archive_id)
-    if archive is None:
+    if await repo.get_archive(archive_id) is None:
         raise HTTPException(status_code=404, detail="Archive not found")
-
     return await repo.get_stats(archive_id)
 
 
@@ -27,13 +24,6 @@ async def archive_folder(
     db: AsyncSession = Depends(get_db),
 ):
     repo = ArchiveDetailRepository(db)
-
-    archive = await repo.get_archive(archive_id)
-    if archive is None:
+    if await repo.get_archive(archive_id) is None:
         raise HTTPException(status_code=404, detail="Archive not found")
-
-    folder = await repo.get_folder(archive_id, path)
-    if folder is None:
-        raise HTTPException(status_code=404, detail="Folder not found")
-
-    return folder
+    return await repo.get_folder(archive_id, path)

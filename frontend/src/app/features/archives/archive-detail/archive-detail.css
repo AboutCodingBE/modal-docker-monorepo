@@ -311,3 +311,9 @@
   font-style: italic;
   padding: 8px 0;
 }
+
+.loading-msg {
+  font-size: 13px;
+  color: #9ca3af;
+  padding: 8px 0;
+}
