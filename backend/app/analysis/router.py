@@ -35,6 +35,7 @@ def _task_to_event(task) -> str:
 async def _progress_stream(task_id: uuid.UUID, db: AsyncSession):
     try:
         while True:
+            db.expire_all()
             task = await task_tracker.get_task(db, task_id)
             if task is None:
                 yield f"data: {json.dumps({'error': 'task not found'})}\n\n"
