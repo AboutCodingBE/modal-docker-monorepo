@@ -9,16 +9,16 @@ os.environ['TIKA_SERVER_ENDPOINT'] = settings.tika_url
 from tika import parser, language, detector
 
 
-def TIKA_text_extract(file_path):
+def TIKA_text_extract(file_content: bytes):
     """
-    Extracts text and metadata from a file using Apache Tika.
+    Extracts text and metadata from file content bytes using Apache Tika.
 
     Returns a tuple of (mime_type, text, tika_parser, text_language, creation_date, creator),
     or the string "None" if extraction fails.
     """
     try:
-        parsed = parser.from_file(
-            file_path,
+        parsed = parser.from_buffer(
+            file_content,
             serverEndpoint=f"{settings.tika_url}/",
             requestOptions={'timeout': 300},
         )
@@ -27,7 +27,7 @@ def TIKA_text_extract(file_path):
         metadata = parsed.get('metadata', {})
 
         text_language = language.from_buffer(text)
-        file_mimetype = detector.from_file(file_path)
+        file_mimetype = detector.from_buffer(file_content)
 
         creation_date = metadata.get('dcterms:created') or None
         creator = metadata.get('dc:creator', '')
@@ -39,9 +39,9 @@ def TIKA_text_extract(file_path):
         return "None"
 
 
-def tika_extract_correspondents(file_path):
+def tika_extract_correspondents(file_content: bytes):
     """
-    Extracts email correspondent metadata from a file using Apache Tika.
+    Extracts email correspondent metadata from file content bytes using Apache Tika.
 
     Returns a tuple of (sender_email, sender_name, recipient_email, recipient_name, cc_name),
     or the string "None" if extraction fails.
@@ -54,8 +54,8 @@ def tika_extract_correspondents(file_path):
         return []
 
     try:
-        parsed = parser.from_file(
-            file_path,
+        parsed = parser.from_buffer(
+            file_content,
             serverEndpoint=f"{settings.tika_url}/",
             requestOptions={'timeout': 300},
         )

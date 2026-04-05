@@ -1,8 +1,10 @@
 import asyncio
 import uuid
 
+import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.perform_tika_analysis.file_repository import FileRepository
 from app.perform_tika_analysis.tika_extractor import TIKA_text_extract
 from app.perform_tika_analysis.tika_repository import TikaRepository
@@ -42,8 +44,22 @@ class PerformTikaAnalysis:
 
             num_processed_files += 1
 
-            # Run the blocking tika call in a thread so the event loop stays free.
-            tika = await asyncio.to_thread(TIKA_text_extract, file_path)
+            # Fetch file content from the agent — the backend has no direct filesystem access.
+            try:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(
+                        f"{settings.agent_url}/file-content",
+                        params={"path": file_path},
+                        timeout=300.0,
+                    )
+                    resp.raise_for_status()
+                    file_content = resp.content
+            except Exception as e:
+                print(f"Kon bestand niet ophalen van agent voor {file_name}: {e}")
+                continue
+
+            # Run the blocking Tika call in a thread so the event loop stays free.
+            tika = await asyncio.to_thread(TIKA_text_extract, file_content)
 
             if not isinstance(tika, (tuple, list)) or len(tika) < 6:
                 print(f"{file_name}: invalid Tika output, skipping.")
