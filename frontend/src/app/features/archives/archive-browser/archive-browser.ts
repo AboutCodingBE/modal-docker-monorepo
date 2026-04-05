@@ -61,13 +61,12 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
         this.archives.update((list) =>
           list.map((a) => {
             if (a.id !== archiveId) return a;
-            const isTerminal = event.status === 'completed' || event.status === 'failed';
+            const isCompleted = event.status === 'completed';
+            const isFailed = event.status === 'failed';
             return {
               ...a,
-              progress: event.percentage,
-              status: isTerminal
-                ? event.status === 'completed' ? 'analysed' : 'failed'
-                : 'in_progress',
+              progress: isCompleted ? 100 : event.percentage,
+              status: isCompleted ? 'ingested' : isFailed ? 'failed' : 'in_progress',
             };
           })
         );

@@ -9,7 +9,7 @@ from app.config import settings
 from app.perform_tika_analysis.file_repository import FileRepository
 from app.perform_tika_analysis.tika_extractor import TIKA_text_extract
 from app.perform_tika_analysis.tika_repository import TikaRepository
-from app.perform_tika_analysis.text_functions import normalize_newlines, get_word_count, file_filter, path_filter
+from app.perform_tika_analysis.text_functions import normalize_newlines, get_word_count, path_filter
 from app.analysis import task_tracker
 
 
@@ -56,7 +56,7 @@ class PerformTikaAnalysis:
                 file_name = file["name"]
                 file_id = file["id"]
 
-                if not (file_filter(file_name) and path_filter(file_path)):
+                if not path_filter(file_path):
                     print(f"{file_name} is ignored.")
                     continue
 
