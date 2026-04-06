@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Archive } from '../../../models/archive.model';
 import { ArchiveService } from '../../../services/archive.service';
+import { TaskProgressService } from '../../../services/task-progress.service';
 import { ArchiveCard } from '../archive-card/archive-card';
 import { NewArchiveModal } from '../new-archive-modal/new-archive-modal';
 
@@ -18,15 +19,21 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
   loadError = signal(false);
   modalOpen = signal(false);
 
-  private progressSubs = new Map<string, Subscription>();
+  private updatesSub?: Subscription;
 
-  constructor(private archiveService: ArchiveService, private router: Router) {}
+  constructor(
+    private archiveService: ArchiveService,
+    private taskProgress: TaskProgressService,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.archiveService.getAll().subscribe({
       next: (archives) => {
         this.archives.set(archives);
         this.loading.set(false);
+        this._subscribeToUpdates();
+        this.taskProgress.loadAndTrack();
       },
       error: () => {
         this.loadError.set(true);
@@ -36,7 +43,7 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.progressSubs.forEach((sub) => sub.unsubscribe());
+    this.updatesSub?.unsubscribe();
   }
 
   openModal(): void {
@@ -47,40 +54,34 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
     this.modalOpen.set(false);
   }
 
+  openArchive(id: string): void {
+    this.router.navigate(['/archives', id]);
+  }
+
   onArchiveCreated(archive: Archive): void {
     this.archives.update((list) => [archive, ...list]);
     this.closeModal();
 
     if (archive.tika_task_id) {
-      this._trackProgress(archive.id, archive.tika_task_id);
+      this.taskProgress.track(archive.id, archive.tika_task_id);
     }
   }
 
-  openArchive(id: string): void {
-    this.router.navigate(['/archives', id]);
-  }
-
-  private _trackProgress(archiveId: string, taskId: string): void {
-    const sub = this.archiveService.subscribeToProgress(taskId).subscribe({
-      next: (event) => {
-        this.archives.update((list) =>
-          list.map((a) => {
-            if (a.id !== archiveId) return a;
-            const isCompleted = event.status === 'completed';
-            const isFailed = event.status === 'failed';
-            return {
-              ...a,
-              progress: isCompleted ? 100 : event.percentage,
-              status: isCompleted ? 'ingested' : isFailed ? 'failed' : 'in_progress',
-            };
-          })
-        );
-      },
-      complete: () => {
-        this.progressSubs.delete(taskId);
-      },
+  private _subscribeToUpdates(): void {
+    this.updatesSub = this.taskProgress.updates$.subscribe((update) => {
+      this.archives.update((list) =>
+        list.map((a) => {
+          if (a.id !== update.archiveId) return a;
+          const { status, percentage } = update.event;
+          const isCompleted = status === 'completed';
+          const isFailed = status === 'failed';
+          return {
+            ...a,
+            progress: isCompleted ? 100 : percentage,
+            status: isCompleted ? 'ingested' : isFailed ? 'failed' : 'in_progress',
+          };
+        })
+      );
     });
-
-    this.progressSubs.set(taskId, sub);
   }
 }

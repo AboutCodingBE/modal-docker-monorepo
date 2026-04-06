@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Archive } from '../models/archive.model';
-import { SseProgressEvent } from '../shared/progress-bar/progress-bar';
 
 export interface MimeTypeCount {
   mime_type: string;
@@ -47,24 +46,4 @@ export class ArchiveService {
     });
   }
 
-  subscribeToProgress(taskId: string): Observable<SseProgressEvent> {
-    return new Observable((observer) => {
-      const source = new EventSource(`/api/analysis/tasks/${taskId}/progress`);
-
-      source.onmessage = (event) => {
-        try {
-          observer.next(JSON.parse(event.data) as SseProgressEvent);
-        } catch {
-          // ignore malformed events
-        }
-      };
-
-      source.onerror = () => {
-        source.close();
-        observer.complete();
-      };
-
-      return () => source.close();
-    });
-  }
 }

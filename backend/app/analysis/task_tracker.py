@@ -77,6 +77,15 @@ async def get_tasks_for_archive(
     return list(result.scalars().all())
 
 
+async def get_active_tasks(session: AsyncSession) -> list[AnalysisTask]:
+    result = await session.execute(
+        select(AnalysisTask)
+        .where(AnalysisTask.status.in_(["pending", "running"]))
+        .order_by(AnalysisTask.started_at.desc().nullslast())
+    )
+    return list(result.scalars().all())
+
+
 async def _get(session: AsyncSession, task_id: uuid.UUID) -> AnalysisTask | None:
     result = await session.execute(
         select(AnalysisTask).where(AnalysisTask.id == task_id)

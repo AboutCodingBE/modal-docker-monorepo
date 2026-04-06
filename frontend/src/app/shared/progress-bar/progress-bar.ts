@@ -6,7 +6,7 @@ export interface SseProgressEvent {
   total_files: number;
   processed: number;
   failed_count: number;
-  current_file: string;
+  current_file: string | null;
   percentage: number;
 }
 

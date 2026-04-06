@@ -51,6 +51,27 @@ async def _progress_stream(task_id: uuid.UUID, db: AsyncSession):
         pass
 
 
+@router.get("/active")
+async def active_tasks(db: AsyncSession = Depends(get_db)):
+    tasks = await task_tracker.get_active_tasks(db)
+
+    def _shape(task):
+        percentage = 0
+        if task.total_files and task.total_files > 0:
+            percentage = round((task.processed / task.total_files) * 100)
+        return {
+            "task_id": str(task.id),
+            "archive_id": str(task.archive_id),
+            "status": task.status,
+            "total_files": task.total_files,
+            "processed": task.processed,
+            "failed_count": task.failed_count,
+            "percentage": percentage,
+        }
+
+    return [_shape(t) for t in tasks]
+
+
 @router.get("/{task_id}/progress")
 async def task_progress(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     task = await task_tracker.get_task(db, task_id)
