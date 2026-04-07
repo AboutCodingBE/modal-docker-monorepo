@@ -79,7 +79,7 @@ From the agent directory:
 
 ```bash
 cd agent
-python3 -m venv venv
+python3 -m venv venv    # In case there is no virtual environment yet. 
 source venv/bin/activate        # on Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python agent.py --dev
@@ -89,6 +89,7 @@ python agent.py --dev
 
 ```bash
 cd backend
+python3 -m venv venv    # In case there is no virtual environmnet yet
 pip install -r requirements.txt
 venv/bin/uvicorn app.main:app --reload   #if you are working with a virtual environment called venv
 ```
@@ -131,31 +132,4 @@ cd frontend
 npm install
 npm start
 ```
-
-### Agent
-
-```bash
-cd agent
-pip install -r requirements.txt
-python agent.py  # activate virtual environment first if you have it. 
-```
-
-## Building the Agent Binary
-
-```bash
-cd agent
-pip install pyinstaller
-bash build.sh
-# Output: dist/archive-agent
-```
-
-## CI/CD
-
-Each component has its own GitHub Actions pipeline, triggered only by changes to its directory:
-
-| Pipeline | Trigger path | Output |
-|----------|-------------|--------|
-| Frontend | `frontend/**` | Docker image |
-| Backend  | `backend/**`  | Docker image |
-| Agent    | `agent/**`    | Native binary (Linux, macOS, Windows) |
 
