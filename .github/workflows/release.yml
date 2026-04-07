@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            zip_name: archive-app-linux.zip
+            binary: agent/dist/archive-agent
+          - os: macos-latest
+            zip_name: archive-app-macos.zip
+            binary: agent/dist/archive-agent
+          - os: windows-latest
+            zip_name: archive-app-windows.zip
+            binary: agent/dist/archive-agent.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r agent/requirements.txt
+          pip install pyinstaller
+
+      - name: Build binary (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cd agent
+          pyinstaller --onefile --name archive-agent --add-data "config.json:." agent.py
+
+      - name: Build binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd agent
+          pyinstaller --onefile --name archive-agent --add-data "config.json;." agent.py
+
+      - name: Make binary executable (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: chmod +x ${{ matrix.binary }}
+
+      - name: Create zip (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          zip ${{ matrix.zip_name }} \
+            ${{ matrix.binary }} \
+            docker-compose.prod.yml \
+            agent/config.json \
+            README-RELEASE.md
+
+      - name: Create zip (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path `
+            ${{ matrix.binary }}, `
+            docker-compose.prod.yml, `
+            agent/config.json, `
+            README-RELEASE.md `
+            -DestinationPath ${{ matrix.zip_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.zip_name }}
+          path: ${{ matrix.zip_name }}
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            archive-app-linux.zip
+            archive-app-macos.zip
+            archive-app-windows.zip
