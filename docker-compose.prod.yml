@@ -1,0 +1,56 @@
+services:
+  frontend:
+    image: ghcr.io/OWNER/archive-app-frontend:latest
+    ports:
+      - "4200:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  backend:
+    image: ghcr.io/OWNER/archive-app-backend:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://archiveuser:archivepass@db:5432/modaldb
+      - TIKA_URL=http://tika:9998
+      - AGENT_URL=http://host.docker.internal:9090
+    depends_on:
+      db:
+        condition: service_healthy
+      tika:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  tika:
+    image: apache/tika:latest
+    ports:
+      - "9998:9998"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9998/tika"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=archiveuser
+      - POSTGRES_PASSWORD=archivepass
+      - POSTGRES_DB=modaldb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "archiveuser", "-d", "modaldb"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
