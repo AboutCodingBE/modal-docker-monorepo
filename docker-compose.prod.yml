@@ -11,6 +11,8 @@ services:
     image: ghcr.io/aboutcodingbe/archive-app-backend:latest
     ports:
       - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - DATABASE_URL=postgresql+asyncpg://archiveuser:archivepass@db:5432/modaldb
       - TIKA_URL=http://tika:9998
