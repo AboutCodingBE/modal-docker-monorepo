@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: ghcr.io/aboutcoding/archive-app-frontend:latest
+    image: ghcr.io/aboutcodingbe/archive-app-frontend:latest
     ports:
       - "4200:80"
     depends_on:
@@ -8,7 +8,7 @@ services:
         condition: service_healthy
 
   backend:
-    image: ghcr.io/aboutcoding/archive-app-backend:latest
+    image: ghcr.io/aboutcodingbe/archive-app-backend:latest
     ports:
       - "8000:8000"
     environment:
@@ -31,7 +31,7 @@ services:
     ports:
       - "9998:9998"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9998/tika"]
+      test: ["CMD-SHELL", "echo > /dev/tcp/localhost/9998 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
