@@ -1,6 +1,6 @@
 {
   "agent_port": 9090,
   "frontend_url": "http://localhost:4200",
-  "compose_file": "../docker-compose.prod.yml",
+  "compose_file": "docker-compose.prod.yml",
   "log_file": "~/.archive-app/agent.log"
 }

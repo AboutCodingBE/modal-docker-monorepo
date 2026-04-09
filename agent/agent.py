@@ -34,9 +34,17 @@ DEFAULT_CONFIG = {
 }
 
 
+def _base_dir() -> Path:
+    """Returns the directory containing the executable (PyInstaller bundle)
+    or the script file (normal Python run)."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).parent
+    return Path(__file__).parent
+
+
 def load_config() -> dict:
     config = DEFAULT_CONFIG.copy()
-    config_path = Path(__file__).parent / "config.json"
+    config_path = _base_dir() / "config.json"
     if config_path.exists():
         with open(config_path) as f:
             config.update(json.load(f))
@@ -210,7 +218,7 @@ def _open_folder_dialog() -> str | None:
 # Docker lifecycle management
 # ---------------------------------------------------------------------------
 def get_compose_path() -> str:
-    return str(Path(__file__).parent / CONFIG["compose_file"])
+    return str((_base_dir() / CONFIG["compose_file"]).resolve())
 
 
 def start_docker_services():
