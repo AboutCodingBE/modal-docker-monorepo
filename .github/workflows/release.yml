@@ -51,25 +51,26 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x ${{ matrix.binary }}
 
-      - name: Create zip (Linux/macOS)
+      - name: Stage release files (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          zip ${{ matrix.zip_name }} \
-            ${{ matrix.binary }} \
-            docker-compose.prod.yml \
-            agent/config.json \
-            README-RELEASE.md
+          mkdir release-staging
+          cp ${{ matrix.binary }} release-staging/archive-agent
+          cp docker-compose.prod.yml release-staging/docker-compose.prod.yml
+          cp README-RELEASE.md release-staging/README-RELEASE.md
+          echo '{"agent_port":9090,"frontend_url":"http://localhost:4200","compose_file":"docker-compose.prod.yml","log_file":"~/.archive-app/agent.log"}' > release-staging/config.json
+          cd release-staging && zip ../${{ matrix.zip_name }} *
 
-      - name: Create zip (Windows)
+      - name: Stage release files (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path `
-            ${{ matrix.binary }}, `
-            docker-compose.prod.yml, `
-            agent/config.json, `
-            README-RELEASE.md `
-            -DestinationPath ${{ matrix.zip_name }}
+          New-Item -ItemType Directory release-staging
+          Copy-Item ${{ matrix.binary }} release-staging/archive-agent.exe
+          Copy-Item docker-compose.prod.yml release-staging/docker-compose.prod.yml
+          Copy-Item README-RELEASE.md release-staging/README-RELEASE.md
+          '{"agent_port":9090,"frontend_url":"http://localhost:4200","compose_file":"docker-compose.prod.yml","log_file":"~/.archive-app/agent.log"}' | Out-File -FilePath release-staging/config.json -Encoding utf8
+          Compress-Archive -Path release-staging/* -DestinationPath ${{ matrix.zip_name }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
