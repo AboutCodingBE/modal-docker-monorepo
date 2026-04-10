@@ -18,6 +18,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.request
 import webbrowser
 from pathlib import Path
 
@@ -90,6 +91,18 @@ def health():
 @app.get("/startup-status")
 def startup_status():
     return jsonify(_startup_status)
+
+
+@app.get("/health/backend")
+def health_backend():
+    """Proxy health check to the frontend/backend (avoids CORS on the loading page)."""
+    try:
+        with urllib.request.urlopen("http://localhost:4200/api/health", timeout=2) as resp:
+            if resp.status == 200:
+                return jsonify({"status": "ok"})
+    except Exception:
+        pass
+    return jsonify({"status": "unavailable"}), 503
 
 
 @app.get("/loading")
@@ -186,7 +199,7 @@ def loading_page():
   </div>
   <script>
     const FRONTEND = 'http://localhost:4200';
-    const AGENT    = 'http://localhost:9090';
+    const AGENT    = '';
     const messages = [
       'Starting database...',
       'Starting analysis services...',
@@ -232,12 +245,12 @@ def loading_page():
       setTimeout(checkStartupStatus, 3000);
     }
 
-    // Poll frontend health — redirect when ready
+    // Poll backend health via agent proxy (same origin — no CORS)
     async function checkHealth() {
       if (stopped) return;
       try {
-        const res = await fetch(FRONTEND + '/api/health', {
-          signal: AbortSignal.timeout(2000),
+        const res = await fetch(AGENT + '/health/backend', {
+          signal: AbortSignal.timeout(3000),
         });
         if (res.ok) {
           stop();
