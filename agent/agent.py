@@ -189,10 +189,12 @@ def _open_folder_dialog() -> str | None:
         elif system == "Windows":
             script = (
                 "Add-Type -AssemblyName System.Windows.Forms;"
+                "$topmost = New-Object System.Windows.Forms.Form;"
+                "$topmost.TopMost = $true;"
                 "$d = New-Object System.Windows.Forms.FolderBrowserDialog;"
                 "$d.Description = 'Select Archive Folder';"
                 "$d.ShowNewFolderButton = $false;"
-                "if ($d.ShowDialog() -eq 'OK') { $d.SelectedPath }"
+                "if ($d.ShowDialog($topmost) -eq 'OK') { $d.SelectedPath }"
             )
             result = subprocess.run(
                 ["powershell", "-NoProfile", "-Command", script],
