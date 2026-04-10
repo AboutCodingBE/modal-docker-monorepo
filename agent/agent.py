@@ -179,9 +179,14 @@ def _open_folder_dialog() -> str | None:
 
         elif system == "Linux":
             result = subprocess.run(
-                ["zenity", "--file-selection", "--directory", "--title=Select Archive Folder"],
+                [
+                    "zenity", "--file-selection", "--directory",
+                    "--title=Select Archive Folder",
+                    "--modal",
+                ],
                 capture_output=True,
                 text=True,
+                env={**os.environ, "GDK_BACKEND": "x11"},
             )
             folder = result.stdout.strip()
             return folder if folder else None
@@ -189,7 +194,6 @@ def _open_folder_dialog() -> str | None:
         elif system == "Windows":
             script = (
                 "Add-Type -AssemblyName System.Windows.Forms;"
-                "Add-Type -AssemblyName Microsoft.VisualBasic;"
                 "$topmost = New-Object System.Windows.Forms.Form;"
                 "$topmost.TopMost = $true;"
                 "$topmost.StartPosition = 'CenterScreen';"
