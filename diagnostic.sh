@@ -87,7 +87,7 @@ check_agent_port() {
     PORT_PID[9090]="$pid"
     PORT_PROC[9090]="$proc"
 
-    if echo "$proc" | grep -qiE "archive-agent|python"; then
+    if echo "$proc" | grep -qiE "^archive-a|^python"; then
         PORT_STATUS[9090]="app"
         ok "Port 9090 (Agent):$pad IN USE by $proc (PID $pid) ${GREEN}✔ App process${RESET}"
     else
@@ -264,6 +264,24 @@ echo -e "${BOLD}╚════════════════════�
 
 print_ports
 print_docker
+
+# Summary: if everything is free, say so and skip the menu
+all_free=true
+for port in 9090 4200 8000 9998 5432; do
+    if [[ "${PORT_STATUS[$port]:-free}" != "free" ]]; then
+        all_free=false
+        break
+    fi
+done
+
+if $all_free; then
+    echo ""
+    ok "${GREEN}All ports are free. No running Archive App processes found."
+    ok "The application can be started without problem.${RESET}"
+    echo ""
+    exit 0
+fi
+
 show_menu
 
 echo ""
