@@ -58,6 +58,8 @@ jobs:
           cp ${{ matrix.binary }} release-staging/archive-agent
           cp docker-compose.prod.yml release-staging/docker-compose.prod.yml
           cp README-RELEASE.md release-staging/README-RELEASE.md
+          cp diagnostic.sh release-staging/diagnostic.sh
+          chmod +x release-staging/diagnostic.sh
           echo '{"agent_port":9090,"frontend_url":"http://localhost:4200","compose_file":"docker-compose.prod.yml","log_file":"~/.archive-app/agent.log"}' > release-staging/config.json
           cd release-staging && zip ../${{ matrix.zip_name }} *
 
@@ -69,6 +71,7 @@ jobs:
           Copy-Item ${{ matrix.binary }} release-staging/archive-agent.exe
           Copy-Item docker-compose.prod.yml release-staging/docker-compose.prod.yml
           Copy-Item README-RELEASE.md release-staging/README-RELEASE.md
+          Copy-Item diagnostic.ps1 release-staging/diagnostic.ps1
           '{"agent_port":9090,"frontend_url":"http://localhost:4200","compose_file":"docker-compose.prod.yml","log_file":"~/.archive-app/agent.log"}' | Out-File -FilePath release-staging/config.json -Encoding utf8
           Compress-Archive -Path release-staging/* -DestinationPath ${{ matrix.zip_name }}
 
