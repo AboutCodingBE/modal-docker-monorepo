@@ -190,11 +190,11 @@ def loading_page():
 </head>
 <body>
   <div class="card" id="card">
-    <div class="logo">Archive App</div>
-    <div class="tagline">Document Intelligence</div>
+    <div class="logo">MODAL</div>
+    <div class="tagline">Archief browser</div>
     <div class="spinner-wrap"><div class="spinner"></div></div>
     <div class="error-icon">&#9888;&#65039;</div>
-    <div class="status" id="status">Starting Archive App...</div>
+    <div class="status" id="status">MODAL app bezig met opstarten...</div>
     <div class="error-box" id="error-box"></div>
   </div>
   <script>
