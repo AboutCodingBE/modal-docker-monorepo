@@ -74,7 +74,7 @@ lsof_port() {
 check_agent_port() {
     local pad="       "
     local lsof_info pid proc
-    lsof_info=$(lsof_port 9090)
+    lsof_info=$(lsof_port 9090) || true
 
     if [[ -z "$lsof_info" ]]; then
         PORT_STATUS[9090]="free"
@@ -121,7 +121,7 @@ check_docker_port() {
 
     # No matching container — fall back to lsof to detect any foreign occupant
     local lsof_info pid proc
-    lsof_info=$(lsof_port "$port")
+    lsof_info=$(lsof_port "$port") || true
 
     if [[ -n "$lsof_info" ]]; then
         pid=$(echo "$lsof_info"  | awk '{print $1}')
@@ -265,21 +265,23 @@ echo -e "${BOLD}╚════════════════════�
 print_ports
 print_docker
 
-# Summary: if everything is free, say so and skip the menu
+# Summary
 all_free=true
+all_app=true
 for port in 9090 4200 8000 9998 5432; do
-    if [[ "${PORT_STATUS[$port]:-free}" != "free" ]]; then
-        all_free=false
-        break
-    fi
+    status="${PORT_STATUS[$port]:-free}"
+    [[ "$status" != "free" ]] && all_free=false
+    [[ "$status" != "app"  ]] && all_app=false
 done
 
+echo ""
 if $all_free; then
-    echo ""
-    ok "${GREEN}All ports are free. No running Archive App processes found."
-    ok "The application can be started without problem.${RESET}"
+    ok "All clear — the application is ready to start."
     echo ""
     exit 0
+elif $all_app; then
+    ok "All Archive App services are running normally."
+    echo ""
 fi
 
 show_menu
