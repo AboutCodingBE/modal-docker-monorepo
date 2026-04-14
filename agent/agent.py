@@ -442,7 +442,7 @@ def start_docker_services():
     logger.info(f"Starting Docker services from {compose_path}...")
     try:
         subprocess.run(
-            ["docker", "compose", "-f", compose_path, "up", "-d", "--wait"],
+            ["docker", "compose", "-f", compose_path, "up", "-d","--pull", "always", "--wait"],
             check=True,
             capture_output=True,
             text=True,
