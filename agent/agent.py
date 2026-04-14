@@ -383,7 +383,7 @@ def _open_folder_dialog() -> str | None:
                     ],
                     capture_output=True,
                     text=True,
-                    env={**os.environ, "GDK_BACKEND": "x11"},
+                    env=os.environ.copy(),
                 )
             except FileNotFoundError:
                 raise FolderPickerError(
