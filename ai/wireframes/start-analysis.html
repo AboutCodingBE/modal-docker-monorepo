@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MODAL — Analyse Configureren</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Layout ── */
+  .app-layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f2f5;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 160px;
+    min-width: 160px;
+    background: #1a2744;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    color: #fff;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px 24px;
+  }
+
+  .logo-badge {
+    width: 32px;
+    height: 32px;
+    background: #3b6ef5;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .logo-text {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 8px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.65);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .nav-item:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+  .nav-item.active { background: #3b6ef5; color: #fff; }
+
+  .sidebar-version {
+    margin-top: auto;
+    padding: 16px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Main content ── */
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 28px 32px;
+  }
+
+  .content-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .content-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px;
+  }
+
+  .content-header p {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #3b6ef5;
+    color: #fff;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-primary svg { width: 14px; height: 14px; }
+  .btn-primary:hover { background: #2d5ce0; }
+
+  .btn-ghost {
+    font-family: inherit;
+    background: transparent;
+    color: #6b7280;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+
+  .btn-ghost:hover { color: #111827; }
+
+  /* ── Cards grid ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  /* ── Archive card ── */
+  .archive-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 18px 18px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.15s;
+  }
+
+  .archive-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .card-icon {
+    width: 40px;
+    height: 40px;
+    background: #f9fafb;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .archive-card:hover .card-icon { background: #eff6ff; color: #3b6ef5; }
+  .card-icon svg { width: 20px; height: 20px; }
+
+  .status-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #374151;
+  }
+
+  .card-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    word-break: break-word;
+  }
+
+  .card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6b7280;
+  }
+
+  .meta-item svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid #f3f4f6;
+    padding: 12px 0;
+    margin-top: auto;
+  }
+
+  .btn-analyse {
+    flex: 1;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #111827;
+    color: #fff;
+    border: none;
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-analyse svg { width: 12px; height: 12px; }
+  .btn-analyse:hover { background: #1f2937; }
+
+  .btn-delete {
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 8px;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+
+  .btn-delete svg { width: 14px; height: 14px; }
+  .btn-delete:hover { color: #b91c1c; border-color: #fecaca; background: #fef2f2; }
+
+  /* ── Modal overlay ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 580px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    font-family: inherit;
+  }
+
+  .modal-header {
+    padding: 28px 28px 8px;
+  }
+
+  .modal-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 6px;
+  }
+
+  .modal-header p {
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  .modal-header strong {
+    color: #111827;
+  }
+
+  .modal-body {
+    padding: 20px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 28px 24px;
+    border-top: 1px solid #f3f4f6;
+  }
+
+  /* ── Tool row ── */
+  .tool-row {
+    display: flex;
+    align-items: center;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px 16px;
+    gap: 12px;
+    position: relative;
+    transition: border-color 0.15s;
+  }
+
+  .tool-row:hover { border-color: #bfdbfe; }
+
+  .tool-checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: #3b6ef5;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .tool-icon {
+    width: 38px;
+    height: 38px;
+    background: #f9fafb;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 16px;
+  }
+
+  .tool-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .tool-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .tool-desc {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 2px;
+  }
+
+  .tool-model-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .model-badge-wrap {
+    text-align: right;
+  }
+
+  .model-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #9ca3af;
+    margin-bottom: 2px;
+  }
+
+  .model-badge {
+    font-size: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: #f1f5f9;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 3px 8px;
+    color: #374151;
+    white-space: nowrap;
+  }
+
+  .btn-config {
+    width: 34px;
+    height: 34px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #9ca3af;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .btn-config:hover { background: #f1f5f9; color: #374151; }
+
+  .btn-config.active {
+    background: #3b6ef5;
+    border-color: #3b6ef5;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(59, 110, 245, 0.3);
+  }
+
+  .btn-config svg { width: 16px; height: 16px; }
+
+  /* ── Model selector popover ── */
+  .model-popover {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    width: 240px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 10;
+    overflow: hidden;
+  }
+
+  .model-popover.popover-up {
+    top: auto;
+    bottom: calc(100% + 6px);
+  }
+
+  .model-popover.active { display: block; }
+
+  .popover-header {
+    padding: 12px 14px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7280;
+  }
+
+  .popover-list {
+    list-style: none;
+    padding: 0 6px 6px;
+  }
+
+  .popover-list li {
+    padding: 8px 10px;
+    font-size: 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #374151;
+    transition: background 0.1s;
+  }
+
+  .popover-list li:hover { background: #f9fafb; }
+
+  .popover-list li.selected {
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-badge">M</div>
+      <span class="logo-text">MODAL</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+        Archieven
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        Zoeken
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        Configuratie
+      </a>
+    </nav>
+    <div class="sidebar-version">MODAL V1.2.0</div>
+  </aside>
+
+  <!-- ── Main content ── -->
+  <div class="main-content">
+    <div class="content-header">
+      <div>
+        <h1>Archive Browser</h1>
+        <p>Beheer en verken uw digitale collecties</p>
+      </div>
+      <button class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+        Nieuw Archief
+      </button>
+    </div>
+    <div class="cards-grid" id="cardsGrid"></div>
+  </div>
+
+</div>
+
+<!-- ── Modal: Analyse Configureren ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalBackdrop(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Analyse Configureren</h2>
+      <p>Selecteer tools en specifieke modellen voor <strong id="modalArchiveName"></strong>.</p>
+    </div>
+    <div class="modal-body" id="toolRows"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal()">Annuleren</button>
+      <button class="btn-primary" onclick="closeModal()" style="padding: 12px 28px; font-size: 14px; border-radius: 8px; font-weight: 700;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+        Start Analyse
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const svgIcons = {
+  database: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>',
+  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>'
+};
+
+const archives = [
+  { name: 'ocr-test', date: '2026-04-18', files: 2 },
+  { name: 'Specifieke-test', date: '2026-04-18', files: 3 },
+  { name: 'VEA260_01', date: '2026-04-18', files: 3104 },
+  { name: 'about coding slide posts', date: '2026-04-18', files: 30 },
+  { name: 'Romi', date: '2026-04-07', files: 20 },
+  { name: 'Zoom', date: '2026-04-06', files: 49 },
+  { name: 'about coding', date: '2026-04-05', files: 2236 },
+  { name: 'facturen', date: '2026-04-05', files: 14 },
+];
+
+const tools = [
+  { id: 'stt', name: 'Speech-to-Text (STT)', desc: 'Audio/video transcriptie.', icon: '🎙', model: 'DeepSeek-STT', models: ['DeepSeek-STT', 'Whisper-v3', 'Local Whisper'] },
+  { id: 'ocr', name: 'OCR', desc: "Tekst uit beelden/PDF's.", icon: '📄', model: 'Tesseract 5', models: ['Tesseract 5', 'EasyOCR', 'PaddleOCR'] },
+  { id: 'ner', name: 'NER (Entiteiten)', desc: 'Herken namen en plaatsen.', icon: '🏷', model: 'GPT-4o mini', models: ['GPT-4o mini', 'DeepSeek-V3', 'Local Llama 3', 'Tesseract 5'] },
+  { id: 'summary', name: 'Summary', desc: 'AI Samenvattingen.', icon: '📝', model: 'GPT-4o mini', models: ['GPT-4o mini', 'DeepSeek-V3', 'Local Llama 3'] },
+];
+
+let activePopover = null;
+
+function renderCards() {
+  document.getElementById('cardsGrid').innerHTML = archives.map(a => `
+    <div class="archive-card">
+      <div class="card-top">
+        <div class="card-icon">${svgIcons.database}</div>
+        <span class="status-badge">INGESTED</span>
+      </div>
+      <div class="card-name">${a.name}</div>
+      <div class="card-meta">
+        <div class="meta-item">${svgIcons.clock} <span>${a.date}</span></div>
+        <div class="meta-item">${svgIcons.file} <span>${a.files} bestanden</span></div>
+      </div>
+      <div class="card-footer">
+        <button class="btn-analyse" onclick="openModal('${a.name}')">${svgIcons.play} Analyse Starten</button>
+        <button class="btn-delete" title="Archief verwijderen">${svgIcons.trash}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTools() {
+  document.getElementById('toolRows').innerHTML = tools.map(t => `
+    <div class="tool-row" id="row-${t.id}">
+      <input type="checkbox" class="tool-checkbox" checked>
+      <div class="tool-icon">${t.icon}</div>
+      <div class="tool-info">
+        <div class="tool-name">${t.name}</div>
+        <div class="tool-desc">${t.desc}</div>
+      </div>
+      <div class="tool-model-area">
+        <div class="model-badge-wrap">
+          <div class="model-label">Model</div>
+          <span class="model-badge" id="badge-${t.id}">${t.model}</span>
+        </div>
+        <button class="btn-config" id="btn-${t.id}" onclick="toggleModelPopover('${t.id}')">${svgIcons.settings}</button>
+      </div>
+      <div class="model-popover" id="popover-${t.id}">
+        <div class="popover-header">Selecteer model voor ${t.id.toUpperCase()}</div>
+        <ul class="popover-list">
+          ${t.models.map(m => `
+            <li class="${m === t.model ? 'selected' : ''}" onclick="selectModel('${t.id}', '${m}', this)">${m}</li>
+          `).join('')}
+        </ul>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openModal(archiveName) {
+  document.getElementById('modalArchiveName').textContent = archiveName;
+  renderTools();
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  activePopover = null;
+}
+
+function closeModalBackdrop(e) {
+  if (e.target === e.currentTarget) closeModal();
+}
+
+function toggleModelPopover(toolId) {
+  if (activePopover && activePopover !== toolId) {
+    document.getElementById('popover-' + activePopover).classList.remove('active');
+    document.getElementById('btn-' + activePopover).classList.remove('active');
+  }
+
+  const popover = document.getElementById('popover-' + toolId);
+  const btn = document.getElementById('btn-' + toolId);
+  const row = document.getElementById('row-' + toolId);
+  const isOpen = popover.classList.contains('active');
+
+  if (!isOpen) {
+    const modal = row.closest('.modal');
+    const rowRect = row.getBoundingClientRect();
+    const modalRect = modal.getBoundingClientRect();
+    const spaceBelow = modalRect.bottom - rowRect.bottom;
+
+    popover.classList.remove('popover-up');
+    if (spaceBelow < 220) {
+      popover.classList.add('popover-up');
+    }
+  }
+
+  popover.classList.toggle('active');
+  btn.classList.toggle('active');
+  activePopover = isOpen ? null : toolId;
+}
+
+function selectModel(toolId, model, el) {
+  document.getElementById('badge-' + toolId).textContent = model;
+  const list = el.parentElement;
+  list.querySelectorAll('li').forEach(li => li.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('popover-' + toolId).classList.remove('active');
+  document.getElementById('btn-' + toolId).classList.remove('active');
+  activePopover = null;
+}
+
+document.addEventListener('click', (e) => {
+  if (activePopover && !e.target.closest('.tool-model-area') && !e.target.closest('.model-popover')) {
+    document.getElementById('popover-' + activePopover).classList.remove('active');
+    document.getElementById('btn-' + activePopover).classList.remove('active');
+    activePopover = null;
+  }
+});
+
+renderCards();
+</script>
+</body>
+</html>
