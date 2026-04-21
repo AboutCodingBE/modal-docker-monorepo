@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://archiveuser:archivepass@db:5432/modaldb"
     tika_url: str = "http://tika:9998"
     agent_url: str = "http://host.docker.internal:9090"
+    ollama_url: str = "http://ollama:11434"
 
 
 settings = Settings()

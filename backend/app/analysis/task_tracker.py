@@ -31,6 +31,13 @@ async def start_task(session: AsyncSession, task_id: uuid.UUID) -> None:
         await session.flush()
 
 
+async def update_total_files(session: AsyncSession, task_id: uuid.UUID, total_files: int) -> None:
+    task = await _get(session, task_id)
+    if task:
+        task.total_files = total_files
+        await session.flush()
+
+
 async def update_progress(
     session: AsyncSession,
     task_id: uuid.UUID,

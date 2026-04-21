@@ -60,11 +60,12 @@ def upgrade() -> None:
     # --- summary ---
     op.create_table(
         "summary",
+        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column(
             "analysis_id",
             UUID(as_uuid=True),
             sa.ForeignKey("archive_analysis.id", ondelete="CASCADE"),
-            primary_key=True,
+            nullable=False,
         ),
         sa.Column(
             "archive_id",
@@ -81,16 +82,18 @@ def upgrade() -> None:
         sa.Column(
             "file_id",
             UUID(as_uuid=True),
-            sa.ForeignKey("files.id", ondelete="CASCADE"),
+            sa.ForeignKey("files.id", ondelete="SET NULL"),
             nullable=True,
         ),
         sa.Column("result", sa.Text(), nullable=True),
     )
+    op.create_index("ix_summary_analysis_id", "summary", ["analysis_id"])
     op.create_index("ix_summary_archive_id", "summary", ["archive_id"])
     op.create_index("ix_summary_file_id", "summary", ["file_id"])
 
 
 def downgrade() -> None:
+    op.drop_index("ix_summary_analysis_id", table_name="summary")
     op.drop_index("ix_summary_file_id", table_name="summary")
     op.drop_index("ix_summary_archive_id", table_name="summary")
     op.drop_table("summary")
