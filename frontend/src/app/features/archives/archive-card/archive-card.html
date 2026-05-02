@@ -28,7 +28,11 @@
     </div>
   </div>
 
-  @if (showProgressBar()) {
+  @if (showPipeline()) {
+    <div class="card-pipeline">
+      <app-analysis-pipeline [event]="archive().analysisEvent!" stepName="Samenvatting" />
+    </div>
+  } @else if (showProgressBar()) {
     <div class="card-progress">
       <app-progress-bar [percentage]="progress()" />
     </div>
@@ -45,12 +49,22 @@
         </svg>
         <span>Resultaten</span>
       </button>
+    } @else if (showPipeline()) {
+      <span class="analysis-running-hint">Analyse bezig...</span>
     } @else if (archive().status === 'in_progress') {
       <button class="btn-card-analyse" disabled>
         <span>Bezig met analyse...</span>
       </button>
+    } @else if (archive().status === 'failed') {
+      <button class="btn-card-analyse" (click)="$event.stopPropagation(); startAnalysisClicked.emit(archive().id)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
+        <span>Opnieuw proberen</span>
+      </button>
     } @else {
-      <button class="btn-card-analyse" (click)="$event.stopPropagation()">
+      <button class="btn-card-analyse" (click)="$event.stopPropagation(); startAnalysisClicked.emit(archive().id)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="6 3 20 12 6 21 6 3"/>
         </svg>

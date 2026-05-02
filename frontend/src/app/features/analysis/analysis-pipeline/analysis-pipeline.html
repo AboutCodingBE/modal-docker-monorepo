@@ -1,0 +1,22 @@
+<div class="pipeline">
+  <div class="pipeline-header">
+    <span class="step-dot" [class.step-dot--done]="isCompleted()" [class.step-dot--fail]="isFailed()"></span>
+    <span class="step-name">{{ stepName() }}</span>
+    <span class="step-pct">{{ isCompleted() ? 'Voltooid' : (percentage() + '%') }}</span>
+  </div>
+
+  <div class="pipeline-bar-track">
+    <div
+      class="pipeline-bar-fill"
+      [class.pipeline-bar-fill--done]="isCompleted()"
+      [style.width.%]="percentage()"
+    ></div>
+  </div>
+
+  <div class="pipeline-meta">
+    <span>{{ processed() }} / {{ total() }} bestanden</span>
+    @if (currentFile()) {
+      <span class="current-file" [title]="event().current_file ?? ''">{{ currentFile() }}</span>
+    }
+  </div>
+</div>

@@ -1,10 +1,21 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint
+from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
+import enum
+
+class AnalysisType(str, enum.Enum):
+    STT = "STT"
+    NER = "NER"
+    SUMMARY = "SUMMARY"
+
+class ArchiveAnalysisStatus(str, enum.Enum):
+    STARTED = "STARTED"
+    FAILED = "FAILED"
+    COMPLETED = "COMPLETED"
 
 
 class Base(DeclarativeBase):
@@ -131,10 +142,10 @@ class ArchiveAnalysis(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
-    type: Mapped[str] = mapped_column(String(50), nullable=False)
+    type: Mapped[AnalysisType] = mapped_column(Enum(AnalysisType, name="analysis_type"), nullable=False)
     date: Mapped[date] = mapped_column(Date, nullable=False, server_default=func.current_date())
     model: Mapped[str] = mapped_column(String(255), nullable=False)
-    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    status: Mapped[ArchiveAnalysisStatus] = mapped_column(Enum(ArchiveAnalysisStatus, name="archive_analysis_status"), nullable=False)
 
     summaries: Mapped[list["Summary"]] = relationship("Summary", back_populates="archive_analysis", cascade="all, delete-orphan")
 

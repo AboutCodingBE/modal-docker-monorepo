@@ -6,10 +6,11 @@ import { ArchiveService } from '../../../services/archive.service';
 import { TaskProgressService } from '../../../services/task-progress.service';
 import { ArchiveCard } from '../archive-card/archive-card';
 import { NewArchiveModal } from '../new-archive-modal/new-archive-modal';
+import { AnalysisModal } from '../../analysis/analysis-modal/analysis-modal';
 
 @Component({
   selector: 'app-archive-browser',
-  imports: [ArchiveCard, NewArchiveModal],
+  imports: [ArchiveCard, NewArchiveModal, AnalysisModal],
   templateUrl: './archive-browser.html',
   styleUrl: './archive-browser.css',
 })
@@ -18,6 +19,12 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
   loading = signal(true);
   loadError = signal(false);
   modalOpen = signal(false);
+
+  // Analysis modal state
+  analysisModalArchive = signal<Archive | null>(null);
+
+  // Track which task IDs belong to AI analysis (vs Tika ingestion)
+  private analysisTaskIds = new Set<string>();
 
   private updatesSub?: Subscription;
 
@@ -67,19 +74,61 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
     }
   }
 
+  // ── Analysis modal ─────────────────────────────────────────────────────────
+
+  openAnalysisModal(archiveId: string): void {
+    const archive = this.archives().find(a => a.id === archiveId);
+    if (archive) this.analysisModalArchive.set(archive);
+  }
+
+  closeAnalysisModal(): void {
+    this.analysisModalArchive.set(null);
+  }
+
+  onAnalysisStarted(event: { archiveId: string; taskIds: string[] }): void {
+    // Register task IDs as AI analysis tasks
+    for (const taskId of event.taskIds) {
+      this.analysisTaskIds.add(taskId);
+      this.taskProgress.track(event.archiveId, taskId);
+    }
+
+    // Mark archive as in_progress immediately
+    this.archives.update(list =>
+      list.map(a =>
+        a.id === event.archiveId ? { ...a, status: 'in_progress' as const } : a
+      )
+    );
+  }
+
+  // ── SSE updates ────────────────────────────────────────────────────────────
+
   private _subscribeToUpdates(): void {
     this.updatesSub = this.taskProgress.updates$.subscribe((update) => {
+      const isAiAnalysis = this.analysisTaskIds.has(update.event.task_id);
+      const { status, percentage } = update.event;
+      const isCompleted = status === 'completed';
+      const isFailed = status === 'failed';
+
       this.archives.update((list) =>
         list.map((a) => {
           if (a.id !== update.archiveId) return a;
-          const { status, percentage } = update.event;
-          const isCompleted = status === 'completed';
-          const isFailed = status === 'failed';
-          return {
-            ...a,
-            progress: isCompleted ? 100 : percentage,
-            status: isCompleted ? 'ingested' : isFailed ? 'failed' : 'in_progress',
-          };
+
+          if (isAiAnalysis) {
+            // AI analysis: completed → 'analysed', active → keep pipeline event
+            const completedStatus = isCompleted ? 'analysed' as const : isFailed ? 'failed' as const : 'in_progress' as const;
+            return {
+              ...a,
+              status: completedStatus,
+              analysisEvent: isCompleted || isFailed ? null : update.event,
+            };
+          } else {
+            // Tika ingestion: completed → 'ingested', active → progress bar
+            return {
+              ...a,
+              progress: isCompleted ? 100 : percentage,
+              status: isCompleted ? 'ingested' as const : isFailed ? 'failed' as const : 'in_progress' as const,
+            };
+          }
         })
       );
     });

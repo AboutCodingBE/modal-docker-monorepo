@@ -46,4 +46,14 @@ export class ArchiveService {
     });
   }
 
+  startAnalysis(
+    archiveId: string,
+    analysis: { type: string; model: string }[],
+  ): Observable<{ task_ids: string[] }> {
+    return this.http.post<{ task_ids: string[] }>('/api/analysis/start', {
+      archiveId,
+      analysis,
+    });
+  }
+
 }

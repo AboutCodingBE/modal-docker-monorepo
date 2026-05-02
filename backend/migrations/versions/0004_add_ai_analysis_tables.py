@@ -22,8 +22,8 @@ archive_analysis_status_enum = sa.Enum("STARTED", "FAILED", "COMPLETED", name="a
 
 def upgrade() -> None:
     # --- Enums ---
-    analysis_type_enum.create(op.get_bind(), checkfirst=True)
-    archive_analysis_status_enum.create(op.get_bind(), checkfirst=True)
+    # analysis_type_enum.create(op.get_bind(), checkfirst=True)
+    # archive_analysis_status_enum.create(op.get_bind(), checkfirst=True)
 
     # --- analysis_configuration ---
     op.create_table(

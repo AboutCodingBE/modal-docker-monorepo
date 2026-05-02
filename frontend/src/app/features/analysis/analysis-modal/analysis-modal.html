@@ -1,0 +1,84 @@
+<div class="modal-overlay" (click)="onBackdrop($event)">
+  <div class="modal" (click)="closePopovers()">
+
+    <div class="modal-header">
+      <div>
+        <h2>Analyse Configureren</h2>
+        <p>Selecteer tools voor <strong>{{ archive().name }}</strong>.</p>
+      </div>
+      <button class="btn-close" (click)="close()" [disabled]="submitting()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6 6 18"/><path d="M6 6 18 18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      @for (t of types; track t.type) {
+        <div class="tool-row" [class.tool-row--checked]="isChecked(t.type)">
+          <input
+            type="checkbox"
+            class="tool-checkbox"
+            [checked]="isChecked(t.type)"
+            (change)="toggle(t.type)"
+          />
+          <div class="tool-icon">{{ t.icon }}</div>
+          <div class="tool-info">
+            <div class="tool-name">{{ t.label }}</div>
+            <div class="tool-desc">{{ t.description }}</div>
+          </div>
+          <div class="tool-model-area" (click)="$event.stopPropagation()">
+            <div class="model-badge-wrap">
+              <div class="model-label">Model</div>
+              <span class="model-badge">{{ getModel(t.type) }}</span>
+            </div>
+            @if (modelOptions[t.type].length > 1) {
+              <button
+                class="btn-config"
+                [class.btn-config--active]="openPopover() === t.type"
+                (click)="togglePopover(t.type, $event)"
+                title="Kies model"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+              @if (openPopover() === t.type) {
+                <div class="model-popover">
+                  <div class="popover-header">Kies model</div>
+                  <ul class="popover-list">
+                    @for (m of modelOptions[t.type]; track m) {
+                      <li
+                        [class.popover-item--selected]="getModel(t.type) === m"
+                        (click)="pickModel(t.type, m)"
+                      >{{ m }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      }
+
+      @if (error()) {
+        <p class="submit-error">{{ error() }}</p>
+      }
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="close()" [disabled]="submitting()">Annuleren</button>
+      <button class="btn-primary" (click)="submit()" [disabled]="!canStart()">
+        @if (submitting()) {
+          Bezig met starten...
+        } @else {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="6 3 20 12 6 21 6 3"/>
+          </svg>
+          Start Analyse
+        }
+      </button>
+    </div>
+
+  </div>
+</div>
