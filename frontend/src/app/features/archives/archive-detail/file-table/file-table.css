@@ -1,0 +1,143 @@
+.section-divider {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 16px 0;
+}
+
+.files-section-header {
+  margin-bottom: 10px;
+}
+
+.files-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.files-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.search-input {
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  color: #374151;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-input:focus {
+  border-color: #6b7280;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.type-select {
+  font-family: inherit;
+  font-size: 13px;
+  color: #374151;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 7px 10px;
+  outline: none;
+  cursor: pointer;
+  min-width: 130px;
+}
+
+.files-table-wrapper {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.files-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.files-table thead th {
+  position: sticky;
+  top: 0;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.file-row {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.file-row:hover {
+  background: #f9fafb;
+}
+
+.file-row.selected {
+  background: #eff6ff;
+}
+
+.file-row.selected td {
+  color: #1d4ed8;
+}
+
+.files-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+  vertical-align: middle;
+}
+
+.file-row:last-child td {
+  border-bottom: none;
+}
+
+.file-name {
+  font-weight: 600;
+  color: #111827;
+  word-break: break-all;
+}
+
+.file-row.selected .file-name {
+  color: #1d4ed8;
+}
+
+.file-type {
+  font-family: monospace;
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.file-size {
+  white-space: nowrap;
+  color: #6b7280;
+}
+
+.files-loading,
+.files-empty {
+  font-size: 13px;
+  color: #9ca3af;
+  font-style: italic;
+  padding: 8px 0;
+}

@@ -1,0 +1,20 @@
+<div class="summary-section">
+  <div class="summary-title">Samenvatting</div>
+  <div class="summary-block">
+    @if (loading()) {
+      <div class="summary-loading">Samenvatting laden...</div>
+    } @else {
+      <div class="summary-header">
+        <span class="summary-label">{{ label() }}</span>
+        @if (latestSummary) {
+          <span class="model-badge">{{ latestSummary.model }}</span>
+        }
+      </div>
+      @if (latestSummary) {
+        <div class="summary-text">{{ latestSummary.result }}</div>
+      } @else {
+        <div class="summary-empty">Geen samenvatting beschikbaar.</div>
+      }
+    }
+  </div>
+</div>

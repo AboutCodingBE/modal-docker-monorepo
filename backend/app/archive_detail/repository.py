@@ -152,6 +152,7 @@ class ArchiveDetailRepository:
         elif folder is None:
             return {
                 "path": f"/{prefix}",
+                "folder_id": None,
                 "direct_file_count": 0,
                 "subfolders": [],
                 "mime_types": [],
@@ -204,6 +205,7 @@ class ArchiveDetailRepository:
 
         return {
             "path": display_path,
+            "folder_id": str(folder.id) if folder else None,
             "direct_file_count": len(direct_files),
             "subfolders": subfolder_list,
             "mime_types": mime_types,

@@ -19,9 +19,38 @@ export interface ArchiveStats {
 
 export interface FolderData {
   path: string;
+  folder_id: string | null;
   direct_file_count: number;
   subfolders: { name: string; path: string }[];
   mime_types: MimeTypeCount[];
+}
+
+export interface FolderFile {
+  id: string;
+  name: string;
+  relative_path: string;
+  extension: string | null;
+  size_bytes: number | null;
+  mime_type: string | null;
+}
+
+export interface FolderFilesData {
+  folder_id: string;
+  folder_name: string;
+  files: FolderFile[];
+}
+
+export interface AnalysisSummaryEntry {
+  analysis_id: string;
+  model: string;
+  date: string;
+  result: string;
+}
+
+export interface FileAnalysis {
+  file_id: string;
+  type: 'file' | 'folder';
+  summaries: AnalysisSummaryEntry[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -44,6 +73,14 @@ export class ArchiveService {
     return this.http.get<FolderData>(`/api/archives/${archiveId}/folder`, {
       params: { path },
     });
+  }
+
+  getFolderFiles(archiveId: string, folderId: string): Observable<FolderFilesData> {
+    return this.http.get<FolderFilesData>(`/api/archives/${archiveId}/folder/${folderId}/files`);
+  }
+
+  getFileAnalysis(archiveId: string, fileId: string): Observable<FileAnalysis> {
+    return this.http.get<FileAnalysis>(`/api/archives/${archiveId}/analysis/${fileId}`);
   }
 
   startAnalysis(

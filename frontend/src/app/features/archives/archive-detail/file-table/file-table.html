@@ -1,0 +1,58 @@
+@if (files().length > 0 || loading()) {
+  <hr class="section-divider" />
+
+  <div class="files-section">
+    <div class="files-section-header">
+      <span class="files-section-label">
+        BESTANDEN IN DEZE MAP ({{ filteredFiles().length }} VAN {{ files().length }})
+      </span>
+    </div>
+
+    <div class="files-toolbar">
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Zoek op bestandsnaam..."
+        [value]="searchTerm()"
+        (input)="onSearch($event)"
+      />
+      <select class="type-select" [value]="typeFilter()" (change)="onTypeFilter($event)">
+        <option value="">Alle types</option>
+        @for (type of uniqueTypes(); track type) {
+          <option [value]="type">{{ type }}</option>
+        }
+      </select>
+    </div>
+
+    @if (loading()) {
+      <div class="files-loading">Bestanden laden...</div>
+    } @else if (filteredFiles().length === 0) {
+      <div class="files-empty">Geen bestanden gevonden.</div>
+    } @else {
+      <div class="files-table-wrapper">
+        <table class="files-table">
+          <thead>
+            <tr>
+              <th>Bestandsnaam</th>
+              <th>Type</th>
+              <th>Grootte</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (file of filteredFiles(); track file.id) {
+              <tr
+                class="file-row"
+                [class.selected]="selectedFileId() === file.id"
+                (click)="selectFile(file)"
+              >
+                <td class="file-name">{{ file.name }}</td>
+                <td class="file-type">{{ file.mime_type ?? '—' }}</td>
+                <td class="file-size">{{ formatSize(file.size_bytes) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+}

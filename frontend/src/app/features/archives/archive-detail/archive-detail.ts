@@ -1,11 +1,14 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { ArchiveService, ArchiveStats, FolderData } from '../../../services/archive.service';
+import { ArchiveService, ArchiveStats, FolderData, FolderFile } from '../../../services/archive.service';
+import { FileTable } from './file-table/file-table';
+import { FolderDetail } from './folder-detail/folder-detail';
+import { FileDetail } from './file-detail/file-detail';
 
 @Component({
   selector: 'app-archive-detail',
-  imports: [CommonModule],
+  imports: [CommonModule, FileTable, FolderDetail, FileDetail],
   templateUrl: './archive-detail.html',
   styleUrl: './archive-detail.css',
 })
@@ -20,6 +23,9 @@ export class ArchiveDetail implements OnInit {
   currentPath = signal('/');
   loadingStats = signal(true);
   loadingFolder = signal(true);
+  selectedFile = signal<FolderFile | null>(null);
+
+  currentFolderId = computed(() => this.folderData()?.folder_id ?? null);
 
   breadcrumbs = computed(() => {
     const path = this.currentPath();
@@ -43,6 +49,7 @@ export class ArchiveDetail implements OnInit {
 
   navigateTo(path: string): void {
     this.currentPath.set(path);
+    this.selectedFile.set(null);
     this._loadFolder(this.archiveId(), path);
   }
 

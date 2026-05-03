@@ -1,0 +1,41 @@
+<div class="panel-title">Inhoud huidige map</div>
+
+@if (loading()) {
+  <div class="loading-msg">Laden...</div>
+} @else {
+  <div class="scope-indicator">
+    Resultaten voor: <span class="scope-path">{{ folderData().path }}</span>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Bestanden in deze map</div>
+      <div class="stat-value">{{ folderData().direct_file_count.toLocaleString('nl-BE') }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Bestandstypen</div>
+      <div class="stat-value">{{ folderData().mime_types.length }}</div>
+    </div>
+  </div>
+
+  @if (folderData().mime_types.length > 0) {
+    <div class="filetype-detail-grid">
+      @for (mt of folderData().mime_types; track mt.mime_type) {
+        <div class="filetype-detail-card">
+          <div class="filetype-detail-name">{{ mt.mime_type }}</div>
+          <div class="filetype-detail-count">{{ mt.count }}</div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="no-files-msg">Geen Tika-resultaten beschikbaar voor deze map</div>
+  }
+
+  <hr class="section-divider" />
+
+  <app-analysis-summary
+    [archiveId]="archiveId()"
+    [fileId]="folderId()"
+    label="AI-GEGENEREERDE SAMENVATTING VAN DEZE MAP"
+  />
+}
