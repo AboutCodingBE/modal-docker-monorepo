@@ -75,6 +75,10 @@ export class ArchiveService {
     });
   }
 
+  getRootFiles(archiveId: string): Observable<FolderFilesData> {
+    return this.http.get<FolderFilesData>(`/api/archives/${archiveId}/folder/root/files`);
+  }
+
   getFolderFiles(archiveId: string, folderId: string): Observable<FolderFilesData> {
     return this.http.get<FolderFilesData>(`/api/archives/${archiveId}/folder/${folderId}/files`);
   }

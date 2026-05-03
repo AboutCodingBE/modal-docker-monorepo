@@ -31,11 +31,12 @@
     <div class="no-files-msg">Geen Tika-resultaten beschikbaar voor deze map</div>
   }
 
-  <hr class="section-divider" />
-
-  <app-analysis-summary
-    [archiveId]="archiveId()"
-    [fileId]="folderId()"
-    label="AI-GEGENEREERDE SAMENVATTING VAN DEZE MAP"
-  />
+  @if (folderId()) {
+    <hr class="section-divider" />
+    <app-analysis-summary
+      [archiveId]="archiveId()"
+      [fileId]="folderId()!"
+      label="AI-GEGENEREERDE SAMENVATTING VAN DEZE MAP"
+    />
+  }
 }

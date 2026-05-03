@@ -85,6 +85,37 @@ class ArchiveDetailRepository:
             ],
         }
 
+    async def get_root_files(self, archive_id: uuid.UUID) -> dict:
+        """Returns all direct non-directory children of the archive root (parent_id IS NULL)."""
+        files_result = await self._session.execute(
+            select(File, TikaAnalysis.mime_type)
+            .outerjoin(TikaAnalysis, TikaAnalysis.file_id == File.id)
+            .where(
+                and_(
+                    File.archive_id == archive_id,
+                    File.parent_id.is_(None),
+                    File.is_directory == False,
+                )
+            )
+            .order_by(File.name)
+        )
+
+        return {
+            "folder_id": None,
+            "folder_name": "/",
+            "files": [
+                {
+                    "id": str(f.id),
+                    "name": f.name,
+                    "relative_path": f.relative_path,
+                    "extension": f.extension,
+                    "size_bytes": f.size_bytes,
+                    "mime_type": mime_type,
+                }
+                for f, mime_type in files_result.all()
+            ],
+        }
+
     async def get_folder_files(self, archive_id: uuid.UUID, folder_id: uuid.UUID) -> dict | None:
         """Returns all direct non-directory children of a folder, left-joined with Tika data."""
         # Verify the folder exists and belongs to this archive

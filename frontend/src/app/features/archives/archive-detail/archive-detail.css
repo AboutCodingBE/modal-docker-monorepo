@@ -74,22 +74,6 @@
   margin-bottom: 14px;
 }
 
-/* ── Panes row (Pane 2 + Pane 3 side by side) ── */
-.panes-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  align-items: start;
-}
-
-.pane-browser {
-  min-width: 0;
-}
-
-.pane-detail {
-  min-width: 0;
-}
-
 /* ── Archive summary (Pane 1) ── */
 .archive-summary-stats {
   display: flex;

@@ -47,82 +47,72 @@
     }
   </div>
 
-  <!-- Pane 2 + Pane 3: side by side -->
-  <div class="panes-row">
+  <!-- Pane 2: Folder browser + file table -->
+  <div class="panel">
+    <div class="panel-title">Archief browser</div>
 
-    <!-- Pane 2: Folder browser + file table -->
-    <div class="panel pane-browser">
-      <div class="panel-title">Archief browser</div>
-
-      <div class="breadcrumb">
-        @for (crumb of breadcrumbs(); track crumb.path; let last = $last) {
-          @if (!$first) {
-            <span class="breadcrumb-sep">›</span>
-          }
-          @if (last) {
-            <span class="breadcrumb-segment current">{{ crumb.label }}</span>
-          } @else {
-            <button class="breadcrumb-segment" (click)="navigateTo(crumb.path)">{{ crumb.label }}</button>
-          }
+    <div class="breadcrumb">
+      @for (crumb of breadcrumbs(); track crumb.path; let last = $last) {
+        @if (!$first) {
+          <span class="breadcrumb-sep">›</span>
         }
+        @if (last) {
+          <span class="breadcrumb-segment current">{{ crumb.label }}</span>
+        } @else {
+          <button class="breadcrumb-segment" (click)="navigateTo(crumb.path)">{{ crumb.label }}</button>
+        }
+      }
+    </div>
+
+    @if (loadingFolder()) {
+      <div class="loading-msg">Map laden...</div>
+    } @else if (folderData(); as fd) {
+      <div class="files-summary">
+        📄 {{ fd.direct_file_count }} bestand{{ fd.direct_file_count !== 1 ? 'en' : '' }} direct in deze map
       </div>
 
-      @if (loadingFolder()) {
-        <div class="loading-msg">Map laden...</div>
-      } @else if (folderData(); as fd) {
-        <div class="files-summary">
-          📄 {{ fd.direct_file_count }} bestand{{ fd.direct_file_count !== 1 ? 'en' : '' }} direct in deze map
+      @if (fd.subfolders.length > 0) {
+        <div class="subfolders-label">{{ fd.subfolders.length }} submappen</div>
+        <div class="folder-grid">
+          @for (folder of fd.subfolders; track folder.path) {
+            <button class="folder-card" (click)="navigateTo(folder.path)">
+              <span class="folder-card-icon">📁</span>
+              {{ folder.name }}
+            </button>
+          }
         </div>
-
-        @if (fd.subfolders.length > 0) {
-          <div class="subfolders-label">{{ fd.subfolders.length }} submappen</div>
-          <div class="folder-grid">
-            @for (folder of fd.subfolders; track folder.path) {
-              <button class="folder-card" (click)="navigateTo(folder.path)">
-                <span class="folder-card-icon">📁</span>
-                {{ folder.name }}
-              </button>
-            }
-          </div>
-        } @else {
-          <div class="no-subfolders">Geen submappen</div>
-        }
-
-        <app-file-table
-          [archiveId]="archiveId()"
-          [folderId]="fd.folder_id"
-          (fileSelected)="selectedFile.set($event)"
-        />
-      }
-    </div>
-
-    <!-- Pane 3: Context-dependent detail panel -->
-    <div class="panel pane-detail">
-      @if (selectedFile(); as file) {
-        <app-file-detail
-          [archiveId]="archiveId()"
-          [file]="file"
-          [currentFolderPath]="currentPath()"
-          (back)="selectedFile.set(null)"
-        />
-      } @else if (folderData(); as fd) {
-        @if (fd.folder_id) {
-          <app-folder-detail
-            [archiveId]="archiveId()"
-            [folderId]="fd.folder_id"
-            [folderData]="fd"
-            [loading]="loadingFolder()"
-          />
-        } @else {
-          <div class="panel-title">Inhoud huidige map</div>
-          <div class="loading-msg">Geen mapgegevens beschikbaar.</div>
-        }
       } @else {
-        <div class="panel-title">Inhoud huidige map</div>
-        <div class="loading-msg">Laden...</div>
+        <div class="no-subfolders">Geen submappen</div>
       }
-    </div>
 
+      <app-file-table
+        [archiveId]="archiveId()"
+        [folderId]="fd.folder_id ?? 'root'"
+        (fileSelected)="selectedFile.set($event)"
+      />
+    }
+  </div>
+
+  <!-- Pane 3: Context-dependent detail panel -->
+  <div class="panel">
+    @if (selectedFile(); as file) {
+      <app-file-detail
+        [archiveId]="archiveId()"
+        [file]="file"
+        [currentFolderPath]="currentPath()"
+        (back)="selectedFile.set(null)"
+      />
+    } @else if (folderData(); as fd) {
+      <app-folder-detail
+        [archiveId]="archiveId()"
+        [folderId]="fd.folder_id"
+        [folderData]="fd"
+        [loading]="loadingFolder()"
+      />
+    } @else {
+      <div class="panel-title">Inhoud huidige map</div>
+      <div class="loading-msg">Laden...</div>
+    }
   </div>
 
 </div>

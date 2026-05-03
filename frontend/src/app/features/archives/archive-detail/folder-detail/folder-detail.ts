@@ -12,7 +12,7 @@ import { AnalysisSummary } from '../analysis-summary/analysis-summary';
 })
 export class FolderDetail {
   archiveId = input.required<string>();
-  folderId = input.required<string>();
+  folderId = input<string | null>(null);
   folderData = input.required<FolderData>();
   loading = input<boolean>(false);
 }

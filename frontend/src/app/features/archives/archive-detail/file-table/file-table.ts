@@ -11,6 +11,7 @@ import { ArchiveService, FolderFile } from '../../../../services/archive.service
 })
 export class FileTable {
   archiveId = input.required<string>();
+  /** Pass a UUID string for a subfolder, 'root' for the archive root, or null to hide the table. */
   folderId = input<string | null>(null);
 
   fileSelected = output<FolderFile | null>();
@@ -49,7 +50,9 @@ export class FileTable {
         this.searchTerm.set('');
         this.typeFilter.set('');
         this.selectedFileId.set(null);
-        if (archiveId && folderId) {
+        if (archiveId && folderId === 'root') {
+          this._loadRootFiles(archiveId);
+        } else if (archiveId && folderId) {
           this._loadFiles(archiveId, folderId);
         } else {
           this.files.set([]);
@@ -57,6 +60,17 @@ export class FileTable {
       },
       { allowSignalWrites: true },
     );
+  }
+
+  private _loadRootFiles(archiveId: string): void {
+    this.loading.set(true);
+    this.archiveService.getRootFiles(archiveId).subscribe({
+      next: (data) => {
+        this.files.set(data.files);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false),
+    });
   }
 
   private _loadFiles(archiveId: string, folderId: string): void {
