@@ -53,6 +53,51 @@ class ArchiveDetailRepository:
             ],
         }
 
+    async def get_folder_files(self, archive_id: uuid.UUID, folder_id: uuid.UUID) -> dict | None:
+        """Returns all direct non-directory children of a folder, left-joined with Tika data."""
+        # Verify the folder exists and belongs to this archive
+        folder_result = await self._session.execute(
+            select(File).where(
+                and_(
+                    File.id == folder_id,
+                    File.archive_id == archive_id,
+                    File.is_directory == True,
+                )
+            )
+        )
+        folder = folder_result.scalar_one_or_none()
+        if folder is None:
+            return None
+
+        files_result = await self._session.execute(
+            select(File, TikaAnalysis.mime_type)
+            .outerjoin(TikaAnalysis, TikaAnalysis.file_id == File.id)
+            .where(
+                and_(
+                    File.archive_id == archive_id,
+                    File.parent_id == folder_id,
+                    File.is_directory == False,
+                )
+            )
+            .order_by(File.name)
+        )
+
+        return {
+            "folder_id": str(folder.id),
+            "folder_name": folder.name,
+            "files": [
+                {
+                    "id": str(f.id),
+                    "name": f.name,
+                    "relative_path": f.relative_path,
+                    "extension": f.extension,
+                    "size_bytes": f.size_bytes,
+                    "mime_type": mime_type,
+                }
+                for f, mime_type in files_result.all()
+            ],
+        }
+
     async def get_folder(self, archive_id: uuid.UUID, path: str) -> dict:
         # Normalise: strip leading slash → empty string means root
         prefix = path.strip().lstrip("/")
