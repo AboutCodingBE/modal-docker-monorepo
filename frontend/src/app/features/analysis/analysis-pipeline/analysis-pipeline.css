@@ -1,0 +1,91 @@
+.pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: #f8faff;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+}
+
+.pipeline-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Animated pulse dot */
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3b6ef5;
+  flex-shrink: 0;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.step-dot--done {
+  background: #16a34a;
+  animation: none;
+}
+
+.step-dot--fail {
+  background: #dc2626;
+  animation: none;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.75); }
+}
+
+.step-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.step-pct {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Progress bar */
+.pipeline-bar-track {
+  height: 4px;
+  background: #dbeafe;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.pipeline-bar-fill {
+  height: 100%;
+  background: #3b6ef5;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.pipeline-bar-fill--done { background: #16a34a; }
+
+/* Meta row */
+.pipeline-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.current-file {
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  color: #9ca3af;
+  font-style: italic;
+}

@@ -29,7 +29,7 @@ services:
       retries: 5
 
   tika:
-    image: apache/tika:latest
+    image: apache/tika:latest-full
     ports:
       - "9998:9998"
 
@@ -49,5 +49,31 @@ services:
       timeout: 3s
       retries: 5
 
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  ollama-init:
+    image: curlimages/curl:latest
+    depends_on:
+      ollama:
+        condition: service_started
+    restart: "no"
+    entrypoint: >
+      sh -c "
+        echo 'Waiting for Ollama to be ready...' &&
+        until curl -sf http://ollama:11434/api/tags > /dev/null 2>&1; do
+          sleep 2;
+        done &&
+        echo 'Pulling default model...' &&
+        curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"gemma3:1b\"}' &&
+        echo 'Default model ready.'
+      "
+
+
 volumes:
   pgdata:
+  ollama_data:

@@ -1,10 +1,21 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, BigInteger, ForeignKey, Integer, String, Text, DateTime, CheckConstraint
+from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
+import enum
+
+class AnalysisType(str, enum.Enum):
+    STT = "STT"
+    NER = "NER"
+    SUMMARY = "SUMMARY"
+
+class ArchiveAnalysisStatus(str, enum.Enum):
+    STARTED = "STARTED"
+    FAILED = "FAILED"
+    COMPLETED = "COMPLETED"
 
 
 class Base(DeclarativeBase):
@@ -116,3 +127,37 @@ class TikaAnalysis(Base):
     analyzed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     file: Mapped["File"] = relationship("File", back_populates="tika_analysis")
+
+
+class AnalysisConfiguration(Base):
+    __tablename__ = "analysis_configuration"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    type: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    model: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ArchiveAnalysis(Base):
+    __tablename__ = "archive_analysis"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
+    type: Mapped[AnalysisType] = mapped_column(Enum(AnalysisType, name="analysis_type"), nullable=False)
+    date: Mapped[date] = mapped_column(Date, nullable=False, server_default=func.current_date())
+    model: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[ArchiveAnalysisStatus] = mapped_column(Enum(ArchiveAnalysisStatus, name="archive_analysis_status"), nullable=False)
+
+    summaries: Mapped[list["Summary"]] = relationship("Summary", back_populates="archive_analysis", cascade="all, delete-orphan")
+
+
+class Summary(Base):
+    __tablename__ = "summary"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archive_analysis.id", ondelete="CASCADE"), nullable=False)
+    archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
+    parent_folder_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="SET NULL"), nullable=True)
+    file_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="SET NULL"), nullable=True)
+    result: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    archive_analysis: Mapped["ArchiveAnalysis"] = relationship("ArchiveAnalysis", back_populates="summaries")
