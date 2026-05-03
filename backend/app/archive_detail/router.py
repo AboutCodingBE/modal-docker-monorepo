@@ -17,6 +17,21 @@ async def archive_stats(archive_id: uuid.UUID, db: AsyncSession = Depends(get_db
     return await repo.get_stats(archive_id)
 
 
+@router.get("/{archive_id}/analysis/{file_id}")
+async def archive_file_analysis(
+    archive_id: uuid.UUID,
+    file_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    repo = ArchiveDetailRepository(db)
+    if await repo.get_archive(archive_id) is None:
+        raise HTTPException(status_code=404, detail="Archive not found")
+    result = await repo.get_file_analysis(archive_id, file_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="File not found")
+    return result
+
+
 @router.get("/{archive_id}/folder/{folder_id}/files")
 async def archive_folder_files(
     archive_id: uuid.UUID,

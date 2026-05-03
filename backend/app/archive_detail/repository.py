@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.models import Archive, File, TikaAnalysis
+from app.shared.models import Archive, ArchiveAnalysis, File, Summary, TikaAnalysis
 
 
 class ArchiveDetailRepository:
@@ -50,6 +50,38 @@ class ArchiveDetailRepository:
             "mime_types": [
                 {"mime_type": r.mime_type, "count": r.count}
                 for r in mime_result.all()
+            ],
+        }
+
+    async def get_file_analysis(self, archive_id: uuid.UUID, file_id: uuid.UUID) -> dict | None:
+        """Returns all analysis results for a file or folder."""
+        file_result = await self._session.execute(
+            select(File).where(
+                and_(File.id == file_id, File.archive_id == archive_id)
+            )
+        )
+        file = file_result.scalar_one_or_none()
+        if file is None:
+            return None
+
+        summaries_result = await self._session.execute(
+            select(Summary, ArchiveAnalysis)
+            .join(ArchiveAnalysis, ArchiveAnalysis.id == Summary.analysis_id)
+            .where(Summary.file_id == file_id)
+            .order_by(ArchiveAnalysis.date.desc())
+        )
+
+        return {
+            "file_id": str(file.id),
+            "type": "folder" if file.is_directory else "file",
+            "summaries": [
+                {
+                    "analysis_id": str(summary.id),
+                    "model": analysis.model,
+                    "date": analysis.date.isoformat(),
+                    "result": summary.result,
+                }
+                for summary, analysis in summaries_result.all()
             ],
         }
 
