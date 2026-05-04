@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.models import Archive, File, TikaAnalysis
+from app.shared.models import Archive, ArchiveAnalysis, File, Summary, TikaAnalysis
 
 
 class ArchiveDetailRepository:
@@ -53,6 +53,114 @@ class ArchiveDetailRepository:
             ],
         }
 
+    async def get_file_analysis(self, archive_id: uuid.UUID, file_id: uuid.UUID) -> dict | None:
+        """Returns all analysis results for a file or folder."""
+        file_result = await self._session.execute(
+            select(File).where(
+                and_(File.id == file_id, File.archive_id == archive_id)
+            )
+        )
+        file = file_result.scalar_one_or_none()
+        if file is None:
+            return None
+
+        summaries_result = await self._session.execute(
+            select(Summary, ArchiveAnalysis)
+            .join(ArchiveAnalysis, ArchiveAnalysis.id == Summary.analysis_id)
+            .where(Summary.file_id == file_id)
+            .order_by(ArchiveAnalysis.date.desc())
+        )
+
+        return {
+            "file_id": str(file.id),
+            "type": "folder" if file.is_directory else "file",
+            "summaries": [
+                {
+                    "analysis_id": str(summary.id),
+                    "model": analysis.model,
+                    "date": analysis.date.isoformat(),
+                    "result": summary.result,
+                }
+                for summary, analysis in summaries_result.all()
+            ],
+        }
+
+    async def get_root_files(self, archive_id: uuid.UUID) -> dict:
+        """Returns all direct non-directory children of the archive root (parent_id IS NULL)."""
+        files_result = await self._session.execute(
+            select(File, TikaAnalysis.mime_type)
+            .outerjoin(TikaAnalysis, TikaAnalysis.file_id == File.id)
+            .where(
+                and_(
+                    File.archive_id == archive_id,
+                    File.parent_id.is_(None),
+                    File.is_directory == False,
+                )
+            )
+            .order_by(File.name)
+        )
+
+        return {
+            "folder_id": None,
+            "folder_name": "/",
+            "files": [
+                {
+                    "id": str(f.id),
+                    "name": f.name,
+                    "relative_path": f.relative_path,
+                    "extension": f.extension,
+                    "size_bytes": f.size_bytes,
+                    "mime_type": mime_type,
+                }
+                for f, mime_type in files_result.all()
+            ],
+        }
+
+    async def get_folder_files(self, archive_id: uuid.UUID, folder_id: uuid.UUID) -> dict | None:
+        """Returns all direct non-directory children of a folder, left-joined with Tika data."""
+        # Verify the folder exists and belongs to this archive
+        folder_result = await self._session.execute(
+            select(File).where(
+                and_(
+                    File.id == folder_id,
+                    File.archive_id == archive_id,
+                    File.is_directory == True,
+                )
+            )
+        )
+        folder = folder_result.scalar_one_or_none()
+        if folder is None:
+            return None
+
+        files_result = await self._session.execute(
+            select(File, TikaAnalysis.mime_type)
+            .outerjoin(TikaAnalysis, TikaAnalysis.file_id == File.id)
+            .where(
+                and_(
+                    File.archive_id == archive_id,
+                    File.parent_id == folder_id,
+                    File.is_directory == False,
+                )
+            )
+            .order_by(File.name)
+        )
+
+        return {
+            "folder_id": str(folder.id),
+            "folder_name": folder.name,
+            "files": [
+                {
+                    "id": str(f.id),
+                    "name": f.name,
+                    "relative_path": f.relative_path,
+                    "extension": f.extension,
+                    "size_bytes": f.size_bytes,
+                    "mime_type": mime_type,
+                }
+                for f, mime_type in files_result.all()
+            ],
+        }
+
     async def get_folder(self, archive_id: uuid.UUID, path: str) -> dict:
         # Normalise: strip leading slash → empty string means root
         prefix = path.strip().lstrip("/")
@@ -75,6 +183,7 @@ class ArchiveDetailRepository:
         elif folder is None:
             return {
                 "path": f"/{prefix}",
+                "folder_id": None,
                 "direct_file_count": 0,
                 "subfolders": [],
                 "mime_types": [],
@@ -127,6 +236,7 @@ class ArchiveDetailRepository:
 
         return {
             "path": display_path,
+            "folder_id": str(folder.id) if folder else None,
             "direct_file_count": len(direct_files),
             "subfolders": subfolder_list,
             "mime_types": mime_types,

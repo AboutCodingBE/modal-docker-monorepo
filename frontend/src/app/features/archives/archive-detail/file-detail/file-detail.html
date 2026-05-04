@@ -1,0 +1,29 @@
+<div class="detail-header">
+  <div class="panel-title">Bestandsdetails</div>
+  <button class="btn-back-file" (click)="back.emit()">← Terug naar map</button>
+</div>
+
+<div class="file-name-box">{{ file().name }}</div>
+
+<div class="meta-cards">
+  <div class="meta-card">
+    <div class="meta-label">Type</div>
+    <div class="meta-value mono">{{ file().mime_type ?? '—' }}</div>
+  </div>
+  <div class="meta-card">
+    <div class="meta-label">Grootte</div>
+    <div class="meta-value">{{ formatSize(file().size_bytes) }}</div>
+  </div>
+  <div class="meta-card">
+    <div class="meta-label">Map</div>
+    <div class="meta-value">{{ currentFolderPath() }}</div>
+  </div>
+</div>
+
+<hr class="section-divider" />
+
+<app-analysis-summary
+  [archiveId]="archiveId()"
+  [fileId]="file().id"
+  label="AI-GEGENEREERDE SAMENVATTING VAN DIT BESTAND"
+/>

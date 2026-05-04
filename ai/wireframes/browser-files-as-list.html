@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MODAL — Archief Detail + Bestanden</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Layout ── */
+  .app-layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f2f5;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 160px;
+    min-width: 160px;
+    background: #1a2744;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    color: #fff;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px 24px;
+  }
+
+  .logo-badge {
+    width: 32px;
+    height: 32px;
+    background: #3b6ef5;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .logo-text {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 8px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.65);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .nav-item:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+  .nav-item.active { background: #3b6ef5; color: #fff; }
+
+  .sidebar-version {
+    margin-top: auto;
+    padding: 16px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Main content ── */
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 28px 32px;
+  }
+
+  /* ── Top bar ── */
+  .top-bar {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .btn-back {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 14px;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #374151;
+    white-space: nowrap;
+    transition: background 0.15s;
+    margin-top: 2px;
+  }
+
+  .btn-back:hover { background: #f9fafb; }
+
+  .archive-info h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px;
+  }
+
+  .archive-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  .archive-meta strong { color: #374151; font-weight: 600; }
+
+  /* ── Panels ── */
+  .panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 14px;
+  }
+
+  /* ── Pane 1: Archive summary ── */
+  .summary-stats {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+  }
+
+  .summary-item {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .summary-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6b7280;
+  }
+
+  .summary-value {
+    font-size: 17px;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .filetypes-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 10px;
+  }
+
+  .filetype-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .filetype-tag {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 10px;
+    background: #f1f5f9;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    color: #374151;
+  }
+
+  .filetype-tag strong { font-weight: 700; color: #111827; }
+
+  /* ── Pane 2: Archive browser ── */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .breadcrumb-segment {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .breadcrumb-segment:hover { background: #f1f5f9; color: #111827; }
+
+  .breadcrumb-segment.current {
+    font-weight: 600;
+    color: #111827;
+    background: #f1f5f9;
+    cursor: default;
+  }
+
+  .breadcrumb-sep { color: #9ca3af; font-size: 12px; }
+
+  .files-summary-inline {
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
+
+  .subfolders-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 10px;
+  }
+
+  .folder-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .folder-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #f8faff;
+    border: 1px solid #3b6ef5;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #374151;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .folder-card:hover {
+    background: #eff6ff;
+    border-color: #93bbfd;
+    box-shadow: 0 2px 8px rgba(59, 110, 245, 0.1);
+  }
+
+  .no-subfolders {
+    font-size: 13px;
+    color: #9ca3af;
+    font-style: italic;
+  }
+
+  /* ── File table section ── */
+  .files-section-divider {
+    border: none;
+    border-top: 1px solid #f3f4f6;
+    margin: 16px 0;
+  }
+
+  .files-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 10px;
+  }
+
+  .files-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .search-input {
+    font-family: inherit;
+    flex: 1;
+    max-width: 280px;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #111827;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .search-input::placeholder { color: #9ca3af; }
+
+  .search-input:focus {
+    border-color: #3b6ef5;
+    box-shadow: 0 0 0 3px rgba(59, 110, 245, 0.12);
+  }
+
+  .filter-select {
+    font-family: inherit;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #374151;
+    background: #fff;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .filter-select:focus { border-color: #3b6ef5; }
+
+  .files-scroll-container {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+  }
+
+  .file-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .file-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .file-table thead th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6b7280;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+  }
+
+  .file-table tbody tr {
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .file-table tbody tr:last-child { border-bottom: none; }
+  .file-table tbody tr:hover { background: #f9fafb; }
+
+  .file-table td {
+    padding: 9px 14px;
+    font-size: 13px;
+  }
+
+  .col-name { font-weight: 600; color: #111827; }
+
+  .col-type {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    color: #6b7280;
+  }
+
+  .col-size { color: #6b7280; font-size: 12px; white-space: nowrap; }
+
+  .file-table tbody tr.selected { background: #eff6ff; }
+  .file-table tbody tr.selected td { color: #1d4ed8; }
+  .file-table tbody tr.selected .col-name { font-weight: 700; }
+
+  /* ── Pane 3: Folder details ── */
+  .scope-indicator {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 16px;
+  }
+
+  .scope-indicator .path {
+    font-weight: 600;
+    color: #374151;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .stat-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 16px 18px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .detail-filetype-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+  }
+
+  .detail-filetype-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 14px;
+    text-align: center;
+    transition: background 0.15s;
+  }
+
+  .detail-filetype-card:hover { background: #f1f5f9; }
+
+  .detail-filetype-name { font-size: 12px; font-weight: 500; color: #6b7280; margin-bottom: 4px; }
+  .detail-filetype-count { font-size: 20px; font-weight: 700; color: #111827; }
+
+  /* ── Summary ── */
+  .summary-divider {
+    border: none;
+    border-top: 1px solid #f3f4f6;
+    margin: 22px 0;
+  }
+
+  .summary-block {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 18px 20px;
+  }
+
+  .summary-block-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 10px;
+  }
+
+  .summary-model {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: #e5e7eb;
+    border: 1px solid #d1d5db;
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 10px;
+    color: #374151;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .summary-text { font-size: 13px; line-height: 1.65; color: #374151; }
+  .summary-empty { font-size: 13px; color: #9ca3af; font-style: italic; }
+
+  /* ── File detail view ── */
+  .btn-back-to-folder {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #6b7280;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .btn-back-to-folder:hover { background: #f9fafb; color: #374151; }
+
+  .file-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 16px 18px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+  }
+
+  .file-detail-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: #111827;
+    word-break: break-word;
+  }
+
+  .file-detail-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+
+  .file-detail-meta-item {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 12px 16px;
+  }
+
+  .file-detail-meta-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 4px;
+  }
+
+  .file-detail-meta-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    word-break: break-word;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-badge">M</div>
+      <span class="logo-text">MODAL</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+        Archieven
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        Zoeken
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        Configuratie
+      </a>
+    </nav>
+    <div class="sidebar-version">MODAL V1.2.0</div>
+  </aside>
+
+  <!-- ── Main content ── -->
+  <div class="main-content">
+
+    <!-- Top bar -->
+    <div class="top-bar">
+      <button class="btn-back">← Overzicht</button>
+      <div class="archive-info">
+        <h1>Marketing files</h1>
+        <div class="archive-meta">
+          <span>/Users/dragonfly/Documents/about coding/marketing</span>
+          <span>Aangemaakt: <strong>2026-04-24</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANE 1: Archive-level summary -->
+    <div class="panel">
+      <div class="summary-stats">
+        <div class="summary-item">
+          <span class="summary-label">Totaal bestanden:</span>
+          <span class="summary-value" id="archiveTotal">—</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Bestandstypen:</span>
+          <span class="summary-value" id="archiveTypes">—</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Mappen:</span>
+          <span class="summary-value" id="archiveFolders">—</span>
+        </div>
+      </div>
+      <div class="filetypes-label">Bestandstypen in dit archief</div>
+      <div class="filetype-tags" id="archiveFiletypeTags"></div>
+    </div>
+
+    <!-- PANE 2: Archive browser -->
+    <div class="panel">
+      <div class="panel-title">Archief browser</div>
+      <div class="breadcrumb" id="breadcrumb"></div>
+      <div class="files-summary-inline" id="filesSummary"></div>
+      <div id="subfoldersLabel" class="subfolders-label"></div>
+      <div class="folder-grid" id="folderGrid"></div>
+
+      <hr class="files-section-divider">
+      <div class="files-section-title" id="filesTableLabel">Bestanden in deze map</div>
+      <div class="files-toolbar">
+        <input class="search-input" type="text" placeholder="Zoek op bestandsnaam..." id="fileSearch" oninput="filterFiles()">
+        <select class="filter-select" id="typeFilter" onchange="filterFiles()">
+          <option value="">Alle types</option>
+        </select>
+      </div>
+      <div class="files-scroll-container">
+        <table class="file-table">
+          <thead>
+            <tr>
+              <th>Bestandsnaam</th>
+              <th>Type</th>
+              <th>Grootte</th>
+            </tr>
+          </thead>
+          <tbody id="fileTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PANE 3: Context-dependent detail panel -->
+    <div class="panel">
+      <div id="folderDetailView">
+        <div class="panel-title">Inhoud huidige map</div>
+        <div class="scope-indicator">
+          Resultaten voor: <span class="path" id="scopePath">/</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Bestanden in deze map</div>
+            <div class="stat-value" id="statTotal">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Bestandstypen</div>
+            <div class="stat-value" id="statTypes">—</div>
+          </div>
+        </div>
+        <div class="panel-title">Bestandstypen</div>
+        <div class="detail-filetype-grid" id="filetypeGrid"></div>
+        <hr class="summary-divider">
+        <div class="panel-title">Samenvatting</div>
+        <div class="summary-block">
+          <div class="summary-block-title">AI-gegenereerde samenvatting van deze map · <span class="summary-model">GPT-4o mini</span></div>
+          <div id="folderSummary" class="summary-text"></div>
+        </div>
+      </div>
+
+      <div id="fileDetailView" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div class="panel-title" style="margin-bottom:0;">Bestandsdetails</div>
+          <button class="btn-back-to-folder" onclick="deselectFile()">← Terug naar map</button>
+        </div>
+        <div class="file-detail-header">
+          <div class="file-detail-name" id="fileDetailName">—</div>
+        </div>
+        <div class="file-detail-meta-grid">
+          <div class="file-detail-meta-item">
+            <div class="file-detail-meta-label">Type</div>
+            <div class="file-detail-meta-value" id="fileDetailType">—</div>
+          </div>
+          <div class="file-detail-meta-item">
+            <div class="file-detail-meta-label">Grootte</div>
+            <div class="file-detail-meta-value" id="fileDetailSize">—</div>
+          </div>
+          <div class="file-detail-meta-item">
+            <div class="file-detail-meta-label">Map</div>
+            <div class="file-detail-meta-value" id="fileDetailPath">—</div>
+          </div>
+        </div>
+        <hr class="summary-divider">
+        <div class="panel-title">Samenvatting</div>
+        <div class="summary-block">
+          <div class="summary-block-title">AI-gegenereerde samenvatting van dit bestand · <span class="summary-model">GPT-4o mini</span></div>
+          <div id="fileSummary" class="summary-text"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const archiveData = {
+  name: 'Marketing files',
+  created: '2026-04-24',
+  tree: {
+    '/': {
+      files: [
+        ...Array(78).fill(null).map((_, i) => ({ name: `post_${String(i+1).padStart(3,'0')}.jpg`, type: 'image/jpeg', size: `${Math.floor(Math.random()*800+200)} KB` })),
+        ...Array(69).fill(null).map((_, i) => ({ name: `graphic_${String(i+1).padStart(3,'0')}.png`, type: 'image/png', size: `${Math.floor(Math.random()*1500+300)} KB` })),
+        ...Array(8).fill(null).map((_, i) => ({ name: `document_${i+1}.pdf`, type: 'application/pdf', size: `${Math.floor(Math.random()*2000+100)} KB` })),
+        { name: 'notes.txt', type: 'text/plain', size: '4 KB' },
+        { name: 'ideas.txt', type: 'text/plain', size: '12 KB' },
+        { name: 'banner.webp', type: 'image/webp', size: '340 KB' },
+        { name: 'error_page.html', type: 'text/html', size: '8 KB' },
+        { name: 'data_export.bin', type: 'application/octet-stream', size: '1.2 MB' },
+        { name: 'animation.gif', type: 'image/gif', size: '2.4 MB' },
+      ],
+      subfolders: ['SOLID-POST', 'branding', 'on_target_files', 'reactions', 'repos']
+    },
+    '/SOLID-POST': {
+      files: [
+        ...Array(12).fill(null).map((_, i) => ({ name: `solid_post_${i+1}.png`, type: 'image/png', size: `${Math.floor(Math.random()*900+200)} KB` })),
+        ...Array(5).fill(null).map((_, i) => ({ name: `solid_draft_${i+1}.jpg`, type: 'image/jpeg', size: `${Math.floor(Math.random()*600+100)} KB` })),
+      ],
+      subfolders: []
+    },
+    '/branding': {
+      files: [
+        ...Array(8).fill(null).map((_, i) => ({ name: `logo_v${i+1}.png`, type: 'image/png', size: `${Math.floor(Math.random()*500+50)} KB` })),
+        ...Array(3).fill(null).map((_, i) => ({ name: `brand_guide_${i+1}.pdf`, type: 'application/pdf', size: `${Math.floor(Math.random()*3000+500)} KB` })),
+        { name: 'colors.txt', type: 'text/plain', size: '1 KB' },
+      ],
+      subfolders: []
+    },
+    '/on_target_files': {
+      files: [
+        ...Array(20).fill(null).map((_, i) => ({ name: `target_${String(i+1).padStart(2,'0')}.webp`, type: 'image/webp', size: `${Math.floor(Math.random()*700+150)} KB` })),
+        ...Array(15).fill(null).map((_, i) => ({ name: `campaign_${i+1}.jpg`, type: 'image/jpeg', size: `${Math.floor(Math.random()*800+200)} KB` })),
+      ],
+      subfolders: []
+    },
+    '/reactions': {
+      files: [
+        ...Array(10).fill(null).map((_, i) => ({ name: `reaction_${i+1}.png`, type: 'image/png', size: `${Math.floor(Math.random()*400+100)} KB` })),
+        ...Array(15).fill(null).map((_, i) => ({ name: `meme_${i+1}.webp`, type: 'image/webp', size: `${Math.floor(Math.random()*600+100)} KB` })),
+      ],
+      subfolders: []
+    },
+    '/repos': {
+      files: [
+        { name: 'README.md', type: 'text/plain', size: '3 KB' },
+        { name: 'config.html', type: 'text/html', size: '5 KB' },
+        { name: 'index.html', type: 'text/html', size: '12 KB' },
+        { name: 'styles.html', type: 'text/html', size: '8 KB' },
+      ],
+      subfolders: []
+    }
+  }
+};
+
+let currentPath = '/';
+
+const folderSummaries = {
+  '/': 'Deze map bevat een uitgebreide collectie marketingmateriaal, voornamelijk bestaande uit afbeeldingen (JPEG en PNG) voor social media posts en grafisch ontwerp. Daarnaast zijn er PDF-documenten met campagneplanningen en merkrichtlijnen. De inhoud bestrijkt visuele content voor meerdere marketingkanalen, waaronder social media, branding en doelgerichte campagnes.',
+  '/SOLID-POST': 'De SOLID-POST map bevat social media posts ontworpen volgens het SOLID-framework. Het materiaal bestaat uit afgewerkte PNG-ontwerpen en concepten in JPEG-formaat, gericht op educatieve content over softwareontwikkeling en design patterns.',
+  '/branding': 'Merkidentiteit materiaal waaronder meerdere versies van het logo in PNG-formaat, merkrichtlijnen als PDF-documenten en een kleurenpalet referentie. Dit vormt de visuele basis voor alle marketinguitingen.',
+  '/on_target_files': 'Doelgerichte campagnebestanden in WebP en JPEG-formaat, specifiek ontworpen voor gerichte advertentiecampagnes. De bestanden zijn geoptimaliseerd voor verschillende advertentieplatformen en doelgroepen.',
+  '/reactions': 'Verzameling reactie-afbeeldingen en memes in PNG en WebP-formaat, gebruikt voor social media interactie en community engagement. Het materiaal is informeel van aard en gericht op het vergroten van betrokkenheid.',
+  '/repos': 'Technische bestanden waaronder HTML-pagina\'s en documentatie. Deze map bevat voornamelijk configuratie- en presentatiebestanden voor web-gerelateerde marketingprojecten.'
+};
+
+function getAllFiles(path) {
+  const node = archiveData.tree[path];
+  if (!node) return [];
+  let files = [...node.files];
+  for (const sub of node.subfolders) {
+    const subPath = path === '/' ? '/' + sub : path + '/' + sub;
+    files = files.concat(getAllFiles(subPath));
+  }
+  return files;
+}
+
+function renderArchiveSummary() {
+  const allFiles = getAllFiles('/');
+  document.getElementById('archiveTotal').textContent = allFiles.length;
+  const typeCounts = {};
+  allFiles.forEach(f => { typeCounts[f.type] = (typeCounts[f.type] || 0) + 1; });
+  document.getElementById('archiveTypes').textContent = Object.keys(typeCounts).length;
+  document.getElementById('archiveFolders').textContent = Object.keys(archiveData.tree).length - 1;
+  const sorted = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+  document.getElementById('archiveFiletypeTags').innerHTML = sorted.map(([t, c]) =>
+    `<span class="filetype-tag">${t} <strong>${c}</strong></span>`
+  ).join('');
+}
+
+function renderBreadcrumb() {
+  const el = document.getElementById('breadcrumb');
+  const parts = currentPath === '/' ? ['/'] : ['/', ...currentPath.split('/').filter(Boolean)];
+  let html = '';
+  parts.forEach((part, i) => {
+    const isLast = i === parts.length - 1;
+    const pathUpTo = i === 0 ? '/' : '/' + parts.slice(1, i + 1).join('/');
+    if (i > 0) html += '<span class="breadcrumb-sep">›</span>';
+    const label = part === '/' ? '📁 /' : part;
+    if (isLast) {
+      html += `<span class="breadcrumb-segment current">${label}</span>`;
+    } else {
+      html += `<button class="breadcrumb-segment" onclick="navigateTo('${pathUpTo}')">${label}</button>`;
+    }
+  });
+  el.innerHTML = html;
+}
+
+function renderFolders() {
+  const node = archiveData.tree[currentPath];
+  if (!node) return;
+  document.getElementById('filesSummary').innerHTML = `📄 ${node.files.length} bestanden direct in deze map`;
+  const label = document.getElementById('subfoldersLabel');
+  const grid = document.getElementById('folderGrid');
+  if (node.subfolders.length === 0) {
+    label.textContent = '';
+    grid.innerHTML = '<div class="no-subfolders">Geen submappen</div>';
+  } else {
+    label.textContent = `${node.subfolders.length} submappen`;
+    grid.innerHTML = node.subfolders.map(name => {
+      const subPath = currentPath === '/' ? '/' + name : currentPath + '/' + name;
+      return `<div class="folder-card" onclick="navigateTo('${subPath}')">📁 ${name}</div>`;
+    }).join('');
+  }
+}
+
+let selectedFile = null;
+
+function renderFileTable() {
+  const node = archiveData.tree[currentPath];
+  if (!node) return;
+  const files = node.files;
+  const searchVal = document.getElementById('fileSearch').value.toLowerCase();
+  const typeVal = document.getElementById('typeFilter').value;
+  const types = [...new Set(files.map(f => f.type))].sort();
+  const typeFilter = document.getElementById('typeFilter');
+  const currentFilterVal = typeFilter.value;
+  typeFilter.innerHTML = '<option value="">Alle types</option>' +
+    types.map(t => `<option value="${t}" ${t === currentFilterVal ? 'selected' : ''}>${t}</option>`).join('');
+  const filtered = files.filter(f => {
+    const matchName = !searchVal || f.name.toLowerCase().includes(searchVal);
+    const matchType = !typeVal || f.type === typeVal;
+    return matchName && matchType;
+  });
+  document.getElementById('filesTableLabel').textContent =
+    `Bestanden in deze map (${filtered.length} van ${files.length})`;
+  document.getElementById('fileTableBody').innerHTML = filtered.length > 0
+    ? filtered.map((f, i) => `
+      <tr class="${selectedFile && selectedFile.name === f.name ? 'selected' : ''}" onclick="selectFile(${i}, '${f.name.replace(/'/g, "\\'")}')">
+        <td class="col-name">${f.name}</td>
+        <td class="col-type">${f.type}</td>
+        <td class="col-size">${f.size}</td>
+      </tr>
+    `).join('')
+    : `<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:20px;font-size:13px;">Geen bestanden gevonden</td></tr>`;
+}
+
+function filterFiles() { renderFileTable(); }
+
+function generateFileSummary(file) {
+  const summaries = {
+    'image/jpeg': `Dit JPEG-bestand (${file.size}) is een afbeelding uit de marketingcollectie. Op basis van de bestandsnaam en locatie wordt dit bestand waarschijnlijk gebruikt voor social media content. Het bestand is geanalyseerd met OCR maar bevatte geen leesbare tekst.`,
+    'image/png': `Een PNG-afbeelding (${file.size}) met transparantie-ondersteuning, waarschijnlijk gebruikt voor grafisch ontwerp of social media posts. Het bestand is van hoge kwaliteit en geschikt voor digitale publicatie.`,
+    'application/pdf': `Dit PDF-document (${file.size}) bevat gestructureerde tekst en mogelijke afbeeldingen. De OCR-analyse heeft de volledige tekst geëxtraheerd. Het document lijkt gerelateerd aan marketingplanning of campagnedocumentatie.`,
+    'text/plain': `Een tekstbestand (${file.size}) met platte tekst. De inhoud is direct leesbaar en bevat notities of configuratiegegevens gerelateerd aan het marketingproject.`,
+    'image/webp': `Een WebP-afbeelding (${file.size}), geoptimaliseerd voor webgebruik met een goede balans tussen kwaliteit en bestandsgrootte. Waarschijnlijk gebruikt voor online campagnes of website content.`,
+    'text/html': `Een HTML-bestand (${file.size}) met webpagina-opmaak. Dit bestand bevat waarschijnlijk een landingspagina, e-mailtemplate of webcomponent voor marketingdoeleinden.`,
+    'application/octet-stream': `Een binair bestand (${file.size}) waarvan het exacte formaat niet automatisch kon worden bepaald. Mogelijk een geëxporteerd databestand of een bestand met een onbekende extensie.`,
+    'image/gif': `Een GIF-bestand (${file.size}), waarschijnlijk een geanimeerde afbeelding voor social media of webgebruik. GIF-bestanden worden vaak ingezet voor korte animaties of reactie-afbeeldingen.`,
+  };
+  return summaries[file.type] || `Bestandsdetails voor ${file.name} (${file.size}). Type: ${file.type}. Geen specifieke samenvatting beschikbaar voor dit bestandstype.`;
+}
+
+function selectFile(index, fileName) {
+  const node = archiveData.tree[currentPath];
+  const file = node.files.find(f => f.name === fileName);
+  if (!file) return;
+  selectedFile = file;
+  renderFileTable();
+  document.getElementById('folderDetailView').style.display = 'none';
+  document.getElementById('fileDetailView').style.display = 'block';
+  document.getElementById('fileDetailName').textContent = file.name;
+  document.getElementById('fileDetailType').textContent = file.type;
+  document.getElementById('fileDetailSize').textContent = file.size;
+  document.getElementById('fileDetailPath').textContent = currentPath;
+  document.getElementById('fileSummary').textContent = generateFileSummary(file);
+}
+
+function deselectFile() {
+  selectedFile = null;
+  renderFileTable();
+  document.getElementById('fileDetailView').style.display = 'none';
+  document.getElementById('folderDetailView').style.display = 'block';
+}
+
+function renderDashboard() {
+  const node = archiveData.tree[currentPath];
+  if (!node) return;
+  selectedFile = null;
+  document.getElementById('fileDetailView').style.display = 'none';
+  document.getElementById('folderDetailView').style.display = 'block';
+  document.getElementById('scopePath').textContent = currentPath;
+  document.getElementById('statTotal').textContent = node.files.length;
+  const typeCounts = {};
+  node.files.forEach(f => { typeCounts[f.type] = (typeCounts[f.type] || 0) + 1; });
+  document.getElementById('statTypes').textContent = Object.keys(typeCounts).length;
+  const sorted = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+  document.getElementById('filetypeGrid').innerHTML = sorted.length > 0
+    ? sorted.map(([t, c]) => `
+      <div class="detail-filetype-card">
+        <div class="detail-filetype-name">${t}</div>
+        <div class="detail-filetype-count">${c}</div>
+      </div>
+    `).join('')
+    : '<div style="font-size:13px;color:#9ca3af;font-style:italic;">Geen bestanden direct in deze map</div>';
+  const summaryEl = document.getElementById('folderSummary');
+  const summary = folderSummaries[currentPath];
+  if (summary) {
+    summaryEl.className = 'summary-text';
+    summaryEl.textContent = summary;
+  } else {
+    summaryEl.className = 'summary-empty';
+    summaryEl.textContent = 'Geen samenvatting beschikbaar voor deze map.';
+  }
+}
+
+function navigateTo(path) {
+  currentPath = path;
+  document.getElementById('fileSearch').value = '';
+  document.getElementById('typeFilter').value = '';
+  renderBreadcrumb();
+  renderFolders();
+  renderFileTable();
+  renderDashboard();
+}
+
+renderArchiveSummary();
+navigateTo('/');
+</script>
+</body>
+</html>

@@ -16,7 +16,7 @@
     </div>
   </div>
 
-  <!-- Archive-wide summary -->
+  <!-- Pane 1: Archive-wide summary -->
   <div class="panel">
     @if (loadingStats()) {
       <div class="loading-msg">Statistieken laden...</div>
@@ -47,7 +47,7 @@
     }
   </div>
 
-  <!-- Folder browser -->
+  <!-- Pane 2: Folder browser + file table -->
   <div class="panel">
     <div class="panel-title">Archief browser</div>
 
@@ -84,44 +84,34 @@
       } @else {
         <div class="no-subfolders">Geen submappen</div>
       }
+
+      <app-file-table
+        [archiveId]="archiveId()"
+        [folderId]="fd.folder_id ?? 'root'"
+        (fileSelected)="selectedFile.set($event)"
+      />
     }
   </div>
 
-  <!-- Current folder stats -->
+  <!-- Pane 3: Context-dependent detail panel -->
   <div class="panel">
-    <div class="panel-title">Inhoud huidige map</div>
-
-    @if (loadingFolder()) {
-      <div class="loading-msg">Laden...</div>
+    @if (selectedFile(); as file) {
+      <app-file-detail
+        [archiveId]="archiveId()"
+        [file]="file"
+        [currentFolderPath]="currentPath()"
+        (back)="selectedFile.set(null)"
+      />
     } @else if (folderData(); as fd) {
-      <div class="scope-indicator">
-        Resultaten voor: <span class="scope-path">{{ fd.path }}</span>
-      </div>
-
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-label">Bestanden in deze map</div>
-          <div class="stat-value">{{ fd.direct_file_count.toLocaleString('nl-BE') }}</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Bestandstypen</div>
-          <div class="stat-value">{{ fd.mime_types.length }}</div>
-        </div>
-      </div>
-
-      <div class="panel-title">Bestandstypen</div>
-      @if (fd.mime_types.length > 0) {
-        <div class="filetype-detail-grid">
-          @for (mt of fd.mime_types; track mt.mime_type) {
-            <div class="filetype-detail-card">
-              <div class="filetype-detail-name">{{ mt.mime_type }}</div>
-              <div class="filetype-detail-count">{{ mt.count }}</div>
-            </div>
-          }
-        </div>
-      } @else {
-        <div class="no-files-msg">Geen Tika-resultaten beschikbaar voor deze map</div>
-      }
+      <app-folder-detail
+        [archiveId]="archiveId()"
+        [folderId]="fd.folder_id"
+        [folderData]="fd"
+        [loading]="loadingFolder()"
+      />
+    } @else {
+      <div class="panel-title">Inhoud huidige map</div>
+      <div class="loading-msg">Laden...</div>
     }
   </div>
 
