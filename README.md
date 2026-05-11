@@ -106,7 +106,7 @@ venv/bin/uvicorn app.main:app --reload   #if you are working with a virtual envi
 
 #Remark home laptop Sam Win
 ```bash
-cd agent
+cd backend
 py -m venv .venv
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 .\.venv\Scripts\Activate.ps1
@@ -123,6 +123,15 @@ When you develop for the first time on this project or you have new migration fi
  cd backend                                                                                                                                                                                                
 DATABASE_URL=postgresql://archiveuser:archivepass@localhost:5432/modaldb venv/bin/alembic upgrade head 
 ```
+
+#Remark home laptop Sam Win. Run before running uvicorn.
+```bash
+cd backend
+$env:DATABASE_URL="postgresql+psycopg://archiveuser:archivepass@localhost:5432/modaldb"
+alembic upgrade head
+```
+
+
 #### The .env file
 
 The backend needs to support two environments for DATABASE_URL:
@@ -147,6 +156,7 @@ when your FastAPI app starts, pydantic-settings looks for values in this order (
 
 ### Frontend
 
+Requires Node.js to be installed, https://nodejs.org/en/download
 ```bash
 cd frontend
 npm install
