@@ -85,6 +85,16 @@ pip install -r requirements.txt
 python agent.py --dev
 ```
 
+#Remark home laptop Sam Win
+```bash
+cd agent
+py -m venv .venv
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python agent.py --dev
+```
+
 ### Backend
 
 ```bash
@@ -92,6 +102,16 @@ cd backend
 python3 -m venv venv    # In case there is no virtual environmnet yet
 pip install -r requirements.txt
 venv/bin/uvicorn app.main:app --reload   #if you are working with a virtual environment called venv
+```
+
+#Remark home laptop Sam Win
+```bash
+cd agent
+py -m venv .venv
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
 #### Using Alembic
