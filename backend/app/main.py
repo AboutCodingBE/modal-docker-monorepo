@@ -9,6 +9,11 @@ from app.analysis.router import router as analysis_router
 from app.analysis.start_router import router as analysis_start_router
 from app.archive_detail.router import router as archive_detail_router
 
+import asyncio
+import sys
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 app = FastAPI(title="Archive Analysis API")
 
 app.add_middleware(
@@ -24,7 +29,6 @@ app.include_router(create_archive_router)
 app.include_router(analysis_router)
 app.include_router(analysis_start_router)
 app.include_router(archive_detail_router)
-
 
 @app.get("/api/health")
 async def health():
