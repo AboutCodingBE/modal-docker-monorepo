@@ -85,7 +85,7 @@ pip install -r requirements.txt
 python agent.py --dev
 ```
 
-#Remark home laptop Sam Win
+_Remark: To get started on a windows 11 machine_
 ```bash
 cd agent
 py -m venv .venv
@@ -104,7 +104,7 @@ pip install -r requirements.txt
 venv/bin/uvicorn app.main:app --reload   #if you are working with a virtual environment called venv
 ```
 
-#Remark home laptop Sam Win
+_Remark: To get started on a windows 11 machine
 ```bash
 cd backend
 py -m venv .venv
@@ -124,7 +124,7 @@ When you develop for the first time on this project or you have new migration fi
 DATABASE_URL=postgresql://archiveuser:archivepass@localhost:5432/modaldb venv/bin/alembic upgrade head 
 ```
 
-#Remark home laptop Sam Win. Run before running uvicorn.
+_Remark: To get started on a windows 11 machine. Run before running uvicorn_
 ```bash
 cd backend
 $env:DATABASE_URL="postgresql+psycopg://archiveuser:archivepass@localhost:5432/modaldb"
