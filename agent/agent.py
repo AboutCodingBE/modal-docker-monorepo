@@ -440,16 +440,31 @@ def start_docker_services():
     global _startup_status
     compose_path = get_compose_path()
     logger.info(f"Starting Docker services from {compose_path}...")
+    logger.info("Pulling latest images, this may take a moment...")
     try:
-        subprocess.run(
-            ["docker", "compose", "-f", compose_path, "up", "-d","--pull", "always", "--wait"],
-            check=True,
-            capture_output=True,
+        process = subprocess.Popen(
+            ["docker", "compose", "-f", compose_path, "up", "-d", "--pull", "always", "--wait"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
         )
+
+        for line in process.stdout:
+            line = line.strip()
+            if line and any(keyword in line.lower() for keyword in [
+                "pulling", "pulled", "created", "started",
+                "healthy", "error", "failed", "warning",
+                "waiting", "running", "downloading", "downloaded",
+            ]):
+                logger.info(f"Docker: {line}")
+
+        process.wait()
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, "docker compose")
+
         logger.info("Docker services started successfully.")
     except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to start Docker services:\n{e.stderr}")
+        logger.error(f"Failed to start Docker services (exit code {e.returncode})")
         _startup_status = {
             "status": "failed",
             "error": "Failed to start services. Check the logs at ~/.archive-app/agent.log",

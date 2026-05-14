@@ -50,7 +50,7 @@ services:
       retries: 5
 
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.23.0
     ports:
       - "11434:11434"
     volumes:
@@ -69,8 +69,13 @@ services:
           sleep 2;
         done &&
         echo 'Pulling default model...' &&
-        curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"gemma3:1b\"}' &&
-        echo 'Default model ready.'
+        RESULT=$(curl -s -X POST http://ollama:11434/api/pull -d '{\"name\": \"gemma3:1b\"}') &&
+        if echo \"$RESULT\" | grep -q error; then
+          echo \"ERROR: Model pull failed: $RESULT\" &&
+          exit 1;
+        else
+          echo 'Default model ready.';
+        fi
       "
 
 
