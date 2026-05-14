@@ -44,7 +44,7 @@ When you develop for the first time on this project or you have new migration fi
 
 ```bash
  cd backend                                                                                                                                                                                                
-DATABASE_URL=postgresql://archiveuser:archivepass@localhost:5432/modaldb venv/bin/alembic upgrade head 
+DATABASE_URL=postgresql://archiveuser:archivepass@localhost:5442/modaldb venv/bin/alembic upgrade head
 ```
 
 Starting up the backend service
@@ -61,7 +61,7 @@ venv/bin/uvicorn app.main:app --reload   #if you are working with a virtual envi
 The backend needs to support two environments for DATABASE_URL:
 
 - In Docker: postgresql+asyncpg://archiveuser:archivepass@db:5432/modaldb
-- Local dev: postgresql+asyncpg://archiveuser:archivepass@localhost:5432/modaldb
+- Local dev: postgresql+asyncpg://archiveuser:archivepass@localhost:5442/modaldb
 
 I created a .env file in the backend directory with the local dev
 DATABASE_URL. Updated app/config.py to load from .env using

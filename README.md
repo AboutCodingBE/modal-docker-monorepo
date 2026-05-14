@@ -63,7 +63,7 @@ python agent.py
 This will:
 1. Start all Docker services (frontend, backend, Tika, PostgreSQL)
 2. Start the filesystem bridge API on `localhost:9090`
-3. Open the browser to `http://localhost:4200`
+3. Open the browser to `http://localhost:4210`
 
 Press `Ctrl+C` to stop everything.
 
@@ -121,13 +121,13 @@ When you develop for the first time on this project or you have new migration fi
 
 ```bash
  cd backend                                                                                                                                                                                                
-DATABASE_URL=postgresql://archiveuser:archivepass@localhost:5432/modaldb venv/bin/alembic upgrade head 
+DATABASE_URL=postgresql://archiveuser:archivepass@localhost:5442/modaldb venv/bin/alembic upgrade head
 ```
 
 _Remark: To get started on a windows 11 machine. Run before running uvicorn_
 ```bash
 cd backend
-$env:DATABASE_URL="postgresql+psycopg://archiveuser:archivepass@localhost:5432/modaldb"
+$env:DATABASE_URL="postgresql+psycopg://archiveuser:archivepass@localhost:5442/modaldb"
 alembic upgrade head
 ```
 
@@ -137,7 +137,7 @@ alembic upgrade head
 The backend needs to support two environments for DATABASE_URL:
 
 - In Docker: postgresql+asyncpg://archiveuser:archivepass@db:5432/modaldb
-- Local dev: postgresql+asyncpg://archiveuser:archivepass@localhost:5432/modaldb
+- Local dev: postgresql+asyncpg://archiveuser:archivepass@localhost:5442/modaldb
 
 I created a .env file in the backend directory with the local dev
 DATABASE_URL. Updated app/config.py to load from .env using

@@ -30,7 +30,7 @@ from flask_cors import CORS
 # ---------------------------------------------------------------------------
 DEFAULT_CONFIG = {
     "agent_port": 9090,
-    "frontend_url": "http://localhost:4200",
+    "frontend_url": "http://localhost:4210",
     "compose_file": "../docker-compose.yml",
     "log_file": "~/.archive-app/agent.log",
 }
@@ -80,7 +80,7 @@ _startup_status: dict = {"status": "starting", "error": None}
 # Flask app — filesystem bridge
 # ---------------------------------------------------------------------------
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:4200", "http://localhost:9090"])
+CORS(app, origins=[CONFIG["frontend_url"], "http://localhost:9090"])
 
 
 @app.get("/health")
@@ -97,7 +97,7 @@ def startup_status():
 def health_backend():
     """Proxy health check to the frontend/backend (avoids CORS on the loading page)."""
     try:
-        with urllib.request.urlopen("http://localhost:4200/api/health", timeout=2) as resp:
+        with urllib.request.urlopen(CONFIG["frontend_url"] + "/api/health", timeout=2) as resp:
             if resp.status == 200:
                 return jsonify({"status": "ok"})
     except Exception:
@@ -198,7 +198,7 @@ def loading_page():
     <div class="error-box" id="error-box"></div>
   </div>
   <script>
-    const FRONTEND = 'http://localhost:4200';
+    const FRONTEND = 'http://localhost:4210';
     const AGENT    = '';
     const messages = [
       'Starting database...',
