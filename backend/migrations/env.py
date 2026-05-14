@@ -1,4 +1,6 @@
 import asyncio
+import sys
+
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -8,6 +10,9 @@ from alembic import context
 
 from app.config import settings
 from app.shared.models import Base  # noqa: F401 — registers all models on Base.metadata
+
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # ---------------------------------------------------------------------------
 # Alembic config object

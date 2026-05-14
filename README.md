@@ -85,6 +85,16 @@ pip install -r requirements.txt
 python agent.py --dev
 ```
 
+_Remark: To get started on a windows 11 machine_
+```bash
+cd agent
+py -m venv .venv
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python agent.py --dev
+```
+
 ### Backend
 
 ```bash
@@ -92,6 +102,16 @@ cd backend
 python3 -m venv venv    # In case there is no virtual environmnet yet
 pip install -r requirements.txt
 venv/bin/uvicorn app.main:app --reload   #if you are working with a virtual environment called venv
+```
+
+_Remark: To get started on a windows 11 machine
+```bash
+cd backend
+py -m venv .venv
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
 #### Using Alembic
@@ -103,6 +123,15 @@ When you develop for the first time on this project or you have new migration fi
  cd backend                                                                                                                                                                                                
 DATABASE_URL=postgresql://archiveuser:archivepass@localhost:5432/modaldb venv/bin/alembic upgrade head 
 ```
+
+_Remark: To get started on a windows 11 machine. Run before running uvicorn_
+```bash
+cd backend
+$env:DATABASE_URL="postgresql+psycopg://archiveuser:archivepass@localhost:5432/modaldb"
+alembic upgrade head
+```
+
+
 #### The .env file
 
 The backend needs to support two environments for DATABASE_URL:
@@ -127,6 +156,7 @@ when your FastAPI app starts, pydantic-settings looks for values in this order (
 
 ### Frontend
 
+Requires Node.js to be installed, https://nodejs.org/en/download
 ```bash
 cd frontend
 npm install
