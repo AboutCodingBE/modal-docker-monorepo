@@ -79,7 +79,7 @@ The local agent doubles as the **application launcher**. It is the single entry 
 3. Runs `docker compose up -d` to start all services.
 4. Waits for services to be healthy.
 5. Starts its own file-browsing REST API on `localhost:9090`.
-6. Opens the browser to `http://localhost:4200` (Angular app).
+6. Opens the browser to `http://localhost:4210` (Angular app).
 7. On shutdown (Ctrl+C or system tray), runs `docker compose down`.
 
 The user experience: **start one thing, everything works. Stop it, everything cleans up.**

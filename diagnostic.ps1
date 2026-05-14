@@ -19,18 +19,18 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 # Expected Docker image substrings per port
 $DockerImagePatterns = @{
-    4200 = "archive-app-frontend"
-    8000 = "archive-app-backend"
-    9998 = "apache/tika"
-    5432 = "postgres"
+    4210 = "archive-app-frontend"
+    8010 = "archive-app-backend"
+    7777 = "apache/tika"
+    5442 = "postgres"
 }
 
 $PortLabels = @{
     9090 = "Agent"
-    4200 = "Frontend"
-    8000 = "Backend"
-    9998 = "Tika"
-    5432 = "Postgres"
+    4210 = "Frontend"
+    8010 = "Backend"
+    7777 = "Tika"
+    5442 = "Postgres"
 }
 
 # State populated by check functions, consumed by menu actions
@@ -132,7 +132,7 @@ function Check-DockerPort($port) {
 function Show-Ports {
     Write-Header "Port Status"
     Check-AgentPort
-    foreach ($port in 4200, 8000, 9998, 5432) {
+    foreach ($port in 4210, 8010, 7777, 5442) {
         Check-DockerPort $port
     }
 }

@@ -26,18 +26,18 @@ err()    { echo -e "  ${RED}✘${RESET}  $1"; }
 # ---------------------------------------------------------------------------
 declare -A PORT_LABELS=(
     [9090]="Agent"
-    [4200]="Frontend"
-    [8000]="Backend"
-    [9998]="Tika"
-    [5432]="Postgres"
+    [4210]="Frontend"
+    [8010]="Backend"
+    [7777]="Tika"
+    [5442]="Postgres"
 )
 
 # Expected Docker image substring for each port (port 9090 is a native process)
 declare -A DOCKER_IMAGE_PATTERNS=(
-    [4200]="archive-app-frontend"
-    [8000]="archive-app-backend"
-    [9998]="apache/tika"
-    [5432]="postgres"
+    [4210]="archive-app-frontend"
+    [8010]="archive-app-backend"
+    [7777]="apache/tika"
+    [5442]="postgres"
 )
 
 # State populated by check functions, consumed by menu actions
@@ -139,7 +139,7 @@ check_docker_port() {
 print_ports() {
     header "Port Status"
     check_agent_port
-    for port in 4200 8000 9998 5432; do
+    for port in 4210 8010 7777 5442; do
         check_docker_port "$port"
     done
 }
@@ -268,7 +268,7 @@ print_docker
 # Summary
 all_free=true
 all_app=true
-for port in 9090 4200 8000 9998 5432; do
+for port in 9090 4210 8010 7777 5442; do
     status="${PORT_STATUS[$port]:-free}"
     [[ "$status" != "free" ]] && all_free=false
     [[ "$status" != "app"  ]] && all_app=false
