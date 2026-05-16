@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import uuid
 from datetime import datetime, timezone
 
@@ -11,6 +12,9 @@ from app.perform_tika_analysis.tika_extractor import TIKA_text_extract
 from app.perform_tika_analysis.tika_repository import TikaRepository
 from app.perform_tika_analysis.text_functions import normalize_newlines, get_word_count, path_filter
 from app.analysis import task_tracker
+from app.shared.logging_config import log_context
+
+_logger = logging.getLogger("app.tika")
 
 
 class PerformTikaAnalysis:
@@ -57,7 +61,7 @@ class PerformTikaAnalysis:
                 file_id = file["id"]
 
                 if not path_filter(file_path):
-                    print(f"{file_name} is ignored.")
+                    _logger.warning(f"{log_context(archive_id, file_name)}File ignored by path filter.")
                     continue
 
                 await task_tracker.update_progress(self._session, task_id, processed, failed_count, file_path)
@@ -73,14 +77,14 @@ class PerformTikaAnalysis:
                         resp.raise_for_status()
                         file_content = resp.content
                 except Exception as e:
-                    print(f"Kon bestand niet ophalen van agent voor {file_name}: {e}")
+                    _logger.error(f"{log_context(archive_id, file_name)}Failed to fetch file from agent: {e}")
                     failed_count += 1
                     continue
 
                 tika = await asyncio.to_thread(TIKA_text_extract, file_content)
 
                 if not isinstance(tika, (tuple, list)) or len(tika) < 6:
-                    print(f"{file_name}: invalid Tika output, skipping.")
+                    _logger.warning(f"{log_context(archive_id, file_name)}Invalid Tika output, skipping.")
                     failed_count += 1
                     continue
 
@@ -111,18 +115,18 @@ class PerformTikaAnalysis:
                         creation_date,
                     )
                     processed += 1
-                    print(f"{file_name} written to {file_id}")
+                    _logger.info(f"{log_context(archive_id, file_name)}Extraction saved.")
                 except Exception as e:
-                    print(f"Fout bij opslaan van {file_name}: {e}")
+                    _logger.error(f"{log_context(archive_id, file_name)}Failed to persist Tika result: {e}")
                     failed_count += 1
                     continue
 
             await task_tracker.update_progress(self._session, task_id, processed, failed_count, None)
             await task_tracker.complete_task(self._session, task_id)
             await self._session.commit()
-            print(f"Done. Processed: {processed}, failed: {failed_count}")
+            _logger.info(f"{log_context(archive_id)}Tika analysis complete. Processed: {processed}, failed: {failed_count}")
 
         except Exception as e:
-            print(f"Tika analysis failed: {e}")
+            _logger.error(f"{log_context(archive_id)}Tika analysis failed unexpectedly: {e}")
             await task_tracker.fail_task(self._session, task_id)
             await self._session.commit()

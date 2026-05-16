@@ -1,7 +1,10 @@
 import asyncio
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends
+
+_logger = logging.getLogger("app")
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -61,7 +64,7 @@ async def _run_sequential(
                 runner = CreateSummariesForArchive(session)
                 await runner.execute(archive_id, archive_analysis_id, task_id, model)
             except Exception as e:
-                print(f"Background summarization failed for task {task_id}: {e}")
+                _logger.error(f"Background summarization failed for task {task_id}: {e}")
                 try:
                     await task_tracker.fail_task(session, task_id)
                     repo = ArchiveAnalysisRepository(session)

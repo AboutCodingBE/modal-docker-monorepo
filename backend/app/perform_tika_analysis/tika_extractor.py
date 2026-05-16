@@ -1,6 +1,9 @@
+import logging
 import os
 
 from app.config import settings
+
+_logger = logging.getLogger("app.tika")
 
 # Tell the tika Python client to use our remote server, not spin up a local JVM.
 os.environ['TIKA_CLIENT_ONLY'] = 'True'
@@ -35,7 +38,7 @@ def TIKA_text_extract(file_content: bytes):
 
         return file_mimetype, text, tika_parser, text_language, creation_date, creator
     except Exception as e:
-        print(f"An error occurred: {e}")
+        _logger.error(f"Tika extraction error: {e}")
         return "None"
 
 
@@ -70,5 +73,5 @@ def tika_extract_correspondents(file_content: bytes):
 
         return sender_email, sender_name, recipient_email, recipient_name, cc_name
     except Exception as e:
-        print(f"An error occurred: {e}")
+        _logger.error(f"Tika extraction error: {e}")
         return "None"

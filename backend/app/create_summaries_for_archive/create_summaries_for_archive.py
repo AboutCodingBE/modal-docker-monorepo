@@ -1,8 +1,12 @@
+import logging
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analysis import task_tracker
+from app.shared.logging_config import log_context
+
+_logger = logging.getLogger("app.summary")
 from app.create_summaries_for_archive.archive_analysis_repository import ArchiveAnalysisRepository
 from app.create_summaries_for_archive.file_repository import FileRepository
 from app.create_summaries_for_archive.ollama_client import OllamaUnavailableError, generate
@@ -78,15 +82,15 @@ class CreateSummariesForArchive:
                     processed += 1
                     consecutive_failures = 0
                 except OllamaUnavailableError:
-                    print("Ollama service unavailable — stopping summarization")
+                    _logger.error(f"{log_context(archive_id)}Ollama service unavailable — stopping summarization")
                     await self._fail(task_id, archive_analysis_id)
                     return
                 except Exception as e:
-                    print(f"Failed to summarize file {file['name']}: {e}")
+                    _logger.error(f"{log_context(archive_id, file['name'])}Failed to summarize file: {e}")
                     failed_count += 1
                     consecutive_failures += 1
                     if consecutive_failures >= _MAX_CONSECUTIVE_FAILURES:
-                        print("Repeated failures — processing stopped")
+                        _logger.error(f"{log_context(archive_id)}Repeated failures — processing stopped")
                         await self._fail(task_id, archive_analysis_id)
                         return
 
@@ -117,15 +121,15 @@ class CreateSummariesForArchive:
                     processed += 1
                     consecutive_failures = 0
                 except OllamaUnavailableError:
-                    print("Ollama service unavailable — stopping summarization")
+                    _logger.error(f"{log_context(archive_id)}Ollama service unavailable — stopping summarization")
                     await self._fail(task_id, archive_analysis_id)
                     return
                 except Exception as e:
-                    print(f"Failed to summarize folder {folder['name']}: {e}")
+                    _logger.error(f"{log_context(archive_id, folder['name'])}Failed to summarize folder: {e}")
                     failed_count += 1
                     consecutive_failures += 1
                     if consecutive_failures >= _MAX_CONSECUTIVE_FAILURES:
-                        print("Repeated failures — processing stopped")
+                        _logger.error(f"{log_context(archive_id)}Repeated failures — processing stopped")
                         await self._fail(task_id, archive_analysis_id)
                         return
 
@@ -136,10 +140,10 @@ class CreateSummariesForArchive:
             await task_tracker.complete_task(self._session, task_id)
             await self._analysis_repo.update_status(archive_analysis_id, "COMPLETED")
             await self._session.commit()
-            print(f"Summarization complete. Processed: {processed}, failed: {failed_count}")
+            _logger.info(f"{log_context(archive_id)}Summarization complete. Processed: {processed}, failed: {failed_count}")
 
         except Exception as e:
-            print(f"Summarization task failed unexpectedly: {e}")
+            _logger.error(f"{log_context(archive_id)}Summarization task failed unexpectedly: {e}")
             await self._fail(task_id, archive_analysis_id)
 
     async def _fail(self, task_id: uuid.UUID, archive_analysis_id: uuid.UUID) -> None:
