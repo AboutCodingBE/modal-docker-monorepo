@@ -54,7 +54,7 @@ class CreateSummariesForArchive:
                 await task_tracker.start_task(session, task_id)
                 file_repo = FileRepository(session)
                 files = await file_repo.get_files_with_tika_content(archive_id)
-                folders = await file_repo.get_subfolders(archive_id)
+                folders = await file_repo.get_all_folders(archive_id)
                 await task_tracker.update_total_files(session, task_id, len(files) + len(folders))
                 await session.commit()
 
