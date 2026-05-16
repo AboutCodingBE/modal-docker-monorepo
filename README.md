@@ -101,7 +101,7 @@ python agent.py --dev
 cd backend
 python3 -m venv venv    # In case there is no virtual environmnet yet
 pip install -r requirements.txt
-venv/bin/uvicorn app.main:app --reload   #if you are working with a virtual environment called venv
+venv/bin/uvicorn app.main:app --reload --port 8010   #if you are working with a virtual environment called venv
 ```
 
 _Remark: To get started on a windows 11 machine
@@ -111,7 +111,7 @@ py -m venv .venv
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8010
 ```
 
 #### Using Alembic
