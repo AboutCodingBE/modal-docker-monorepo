@@ -86,7 +86,7 @@ Use a helper function to format the archive/file context
 so it's consistent everywhere:
 
 def log_context(archive_id: uuid.UUID, file_name: str = None) -> str:
-ctx = f"[archive:{str(archive_id)[:8]}]"
+ctx = f"[archive:{archive_id}]"
 if file_name:
 ctx += f" [file:{file_name}]"
 return ctx

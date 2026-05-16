@@ -21,7 +21,7 @@ def log_context(archive_id: uuid.UUID = None, file_name: str = None) -> str:
     """
     ctx = ""
     if archive_id is not None:
-        ctx += f"[archive:{str(archive_id)[:8]}] "
+        ctx += f"[archive:{archive_id}] "
     if file_name:
         ctx += f"[file:{file_name}] "
     return ctx
