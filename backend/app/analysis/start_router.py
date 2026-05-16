@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends
@@ -9,6 +10,8 @@ from app.analysis import task_tracker
 from app.create_summaries_for_archive.archive_analysis_repository import ArchiveAnalysisRepository
 from app.create_summaries_for_archive.create_summaries_for_archive import CreateSummariesForArchive
 from app.shared.database import _session_factory, get_db
+
+_logger = logging.getLogger("app")
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
@@ -56,16 +59,15 @@ async def _run_sequential(
     jobs: list[tuple[uuid.UUID, uuid.UUID, uuid.UUID, str]],
 ) -> None:
     for archive_id, archive_analysis_id, task_id, model in jobs:
-        async with _session_factory() as session:
+        try:
+            runner = CreateSummariesForArchive(_session_factory)
+            await runner.execute(archive_id, archive_analysis_id, task_id, model)
+        except Exception as e:
+            _logger.error(f"Background summarization failed for task {task_id}: {e}")
             try:
-                runner = CreateSummariesForArchive(session)
-                await runner.execute(archive_id, archive_analysis_id, task_id, model)
-            except Exception as e:
-                print(f"Background summarization failed for task {task_id}: {e}")
-                try:
+                async with _session_factory() as session:
                     await task_tracker.fail_task(session, task_id)
-                    repo = ArchiveAnalysisRepository(session)
-                    await repo.update_status(archive_analysis_id, "FAILED")
+                    await ArchiveAnalysisRepository(session).update_status(archive_analysis_id, "FAILED")
                     await session.commit()
-                except Exception:
-                    pass
+            except Exception:
+                pass

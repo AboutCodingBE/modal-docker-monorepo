@@ -1,8 +1,14 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 
 from app.config import settings
+from app.shared.logging_config import setup_logging
+
+setup_logging()
+_logger = logging.getLogger("app")
 from app.get_archive_overview.router import router as archives_router
 from app.create_new_archive.router import router as create_archive_router
 from app.analysis.router import router as analysis_router
