@@ -4,7 +4,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "4210:80"
+      - "4200:80"
     depends_on:
       backend:
         condition: service_healthy
@@ -14,7 +14,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8010:8000"
+      - "8000:8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -27,7 +27,8 @@ services:
       db:
         condition: service_healthy
       tika:
-        condition: service_healthy
+        # condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 10s
@@ -35,14 +36,14 @@ services:
       retries: 5
 
   tika:
-    image: apache/tika:latest-full
+    image: apache/tika:latest
     ports:
-      - "7777:9998"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9998/tika"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - "9998:9998"
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:9998/tika"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
 
   db:
     image: postgres:16-alpine
@@ -51,7 +52,7 @@ services:
       - POSTGRES_PASSWORD=archivepass
       - POSTGRES_DB=modaldb
     ports:
-      - "5442:5432"
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -60,36 +61,5 @@ services:
       timeout: 3s
       retries: 5
 
-  ollama:
-    image: ollama/ollama:0.23.0
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-
-  ollama-init:
-    image: curlimages/curl:latest
-    depends_on:
-      ollama:
-        condition: service_started
-    restart: "no"
-    entrypoint: >
-      sh -c "
-        echo 'Waiting for Ollama to be ready...' &&
-        until curl -sf http://ollama:11434/api/tags > /dev/null 2>&1; do
-          sleep 2;
-        done &&
-        echo 'Pulling default model...' &&
-        RESULT=$(curl -s -X POST http://ollama:11434/api/pull -d '{\"name\": \"gemma3:1b\"}') &&
-        if echo \"$RESULT\" | grep -q error; then
-          echo \"ERROR: Model pull failed: $RESULT\" &&
-          exit 1;
-        else
-          echo 'Default model ready.';
-        fi
-      "
-
-
 volumes:
   pgdata:
-  ollama_data:

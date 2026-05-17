@@ -14,6 +14,7 @@ from app.create_new_archive.router import router as create_archive_router
 from app.analysis.router import router as analysis_router
 from app.analysis.start_router import router as analysis_start_router
 from app.archive_detail.router import router as archive_detail_router
+from app.create_ner_for_archive.router import router as ner_router
 
 import asyncio
 import sys
@@ -35,6 +36,7 @@ app.include_router(create_archive_router)
 app.include_router(analysis_router)
 app.include_router(analysis_start_router)
 app.include_router(archive_detail_router)
+app.include_router(ner_router)
 
 @app.get("/api/health")
 async def health():
