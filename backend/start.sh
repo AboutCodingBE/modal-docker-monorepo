@@ -8,4 +8,4 @@ echo "Starting API server..."
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 
-#WARNING: Albemic was facing issues in this file because git pull converts /n into /r/n 
+#WARNING: Albemic was facing issues in this file because git pull converts /n into /r/n, in IDE change CRLF<>LF 
