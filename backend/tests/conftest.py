@@ -16,6 +16,7 @@ if not DATABASE_URL:
 
 # scope="session" means this engine is created once for the entire test run,
 # not once per test. Creating a DB engine is expensive, so we reuse it.
+# fixture == preparatory work before the actual testing
 @pytest.fixture(scope="session")
 def db_engine():
     engine = create_engine(DATABASE_URL)

@@ -2,6 +2,7 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -161,3 +162,22 @@ class Summary(Base):
     result: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     archive_analysis: Mapped["ArchiveAnalysis"] = relationship("ArchiveAnalysis", back_populates="summaries")
+
+
+class Ner(Base):
+    __tablename__ = "ner"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
+    analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archive_analysis.id", ondelete="CASCADE"), nullable=False)
+    parent_folder_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
+
+    persons: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
+    person_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    locations: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
+    location_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    organisations: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
+    organisations_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    misc: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
+    misc_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
