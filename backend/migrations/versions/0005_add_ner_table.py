@@ -1,4 +1,4 @@
-﻿"""add ner table
+"""add ner table
 
 Revision ID: 0005
 Revises: 0004
