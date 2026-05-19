@@ -111,6 +111,7 @@ py -m venv .venv
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+$env:DATABASE_URL="postgresql+asyncpg://archiveuser:archivepass@127.0.0.1:5432/modaldb"
 uvicorn app.main:app --reload --port 8010
 ```
 
