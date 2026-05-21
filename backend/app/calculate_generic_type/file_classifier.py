@@ -1,3 +1,4 @@
+import os
 
 #Extracted the functional part of https://github.com/hvanstappen/MODAL_textdatabase/blob/master/mime_to_genericType.py
 class FileClassifier:
