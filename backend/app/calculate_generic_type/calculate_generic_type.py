@@ -1,25 +1,21 @@
-import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
 
-import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
 from app.calculate_generic_type.file_repository import FileRepository
 from app.calculate_generic_type.generic_type_repository import GenericTypeRepository
 from app.calculate_generic_type.file_classifier import FileClassifier
 from app.analysis import task_tracker
 from app.shared.logging_config import log_context
-from backend.app.perform_tika_analysis.text_functions import path_filter
 
 _logger = logging.getLogger("app.generictype")
 fileclassifier = FileClassifier()
 
 
-class PerformTikaAnalysis:
-    """Flow controller for running Tika analysis on all files in an archive."""
+class CalculateGenericType:
+    """Flow controller for running Generic type calculation on all files in an archive."""
 
     def __init__(self, session: AsyncSession):
         self._session = session
