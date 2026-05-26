@@ -21,13 +21,10 @@ def TIKA_text_extract(file_content: bytes):
     """
     try:
         import os
-        _logger.debug(f"More logging added")
-        _logger.debug(f"TIKA_SERVER_ENDPOINT env: {os.environ.get('TIKA_SERVER_ENDPOINT')}")
-        _logger.debug(f"serverEndpoint param: {settings.tika_url}/")
 
         parsed = parser.from_buffer(
             file_content,
-            serverEndpoint=f"{settings.tika_url}/",
+            serverEndpoint=settings.tika_url,
             requestOptions={'timeout': 300},
         )
 
