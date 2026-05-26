@@ -20,6 +20,15 @@ def TIKA_text_extract(file_content: bytes):
     or the string "None" if extraction fails.
     """
     try:
+        import httpx
+        _logger.debug(f"Calling Tika directly...")
+        r = httpx.put(
+            f"{settings.tika_url}/tika",
+            content=file_content,
+            headers={"Accept": "application/json"},
+            timeout=300,
+        )
+        _logger.debug(f"Tika raw response: status={r.status_code}, body={r.text[:500]!r}")
         parsed = parser.from_buffer(
             file_content,
             serverEndpoint=f"{settings.tika_url}/",
