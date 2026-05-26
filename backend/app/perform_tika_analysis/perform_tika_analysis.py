@@ -85,7 +85,7 @@ class PerformTikaAnalysis:
                     failed_count += 1
                     continue
 
-                _logger.info("Starting with text extract").
+                _logger.info("Starting with text extract")
                 tika = await asyncio.to_thread(TIKA_text_extract, file_content)
 
                 if not isinstance(tika, (tuple, list)) or len(tika) < 6:
