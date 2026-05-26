@@ -85,7 +85,7 @@ class PerformTikaAnalysis:
                     continue
 
                 # DEBUG: temporary logging for production diagnosis
-                _logger.debug(f"{log_context(archive_id, file_name)}Calling TIKA_text_extract, content length: {len(file_content)} bytes")
+                _logger.debug(f"file_content type={type(file_content).__name__}, len={len(file_content)}, first20={file_content[:20]!r}")
                 tika = await asyncio.to_thread(TIKA_text_extract, file_content)
                 _logger.debug(f"{log_context(archive_id, file_name)}TIKA_text_extract returned type={type(tika).__name__}, value={tika!r}")
 
