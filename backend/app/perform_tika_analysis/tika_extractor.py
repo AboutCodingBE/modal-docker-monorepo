@@ -20,6 +20,10 @@ def TIKA_text_extract(file_content: bytes):
     or the string "None" if extraction fails.
     """
     try:
+        import os
+        _logger.debug(f"TIKA_SERVER_ENDPOINT env: {os.environ.get('TIKA_SERVER_ENDPOINT')}")
+        _logger.debug(f"serverEndpoint param: {settings.tika_url}/")
+
         parsed = parser.from_buffer(
             file_content,
             serverEndpoint=f"{settings.tika_url}/",
