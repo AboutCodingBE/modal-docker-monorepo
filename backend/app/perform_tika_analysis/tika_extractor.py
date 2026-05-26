@@ -20,15 +20,6 @@ def TIKA_text_extract(file_content: bytes):
     or the string "None" if extraction fails.
     """
     try:
-        import httpx
-        _logger.debug(f"Calling Tika directly...")
-        r = httpx.put(
-            f"{settings.tika_url}/tika",
-            content=file_content,
-            headers={"Accept": "application/json"},
-            timeout=300,
-        )
-        _logger.debug(f"Tika raw response: status={r.status_code}, body={r.text[:500]!r}")
         parsed = parser.from_buffer(
             file_content,
             serverEndpoint=f"{settings.tika_url}/",
@@ -47,9 +38,7 @@ def TIKA_text_extract(file_content: bytes):
 
         return file_mimetype, text, tika_parser, text_language, creation_date, creator
     except Exception as e:
-        _logger.error(f"Tika extraction error: {type(e).__name__}: {e}")
-        import traceback
-        _logger.error(traceback.format_exc())
+        _logger.error(f"Tika extraction error: {e}")
         return "None"
 
 

@@ -54,9 +54,6 @@ class PerformTikaAnalysis:
         processed = 0
         failed_count = 0
 
-        # DEBUG: temporary logging for production diagnosis
-        _logger.debug(f"{log_context(archive_id)}Files to process: {len(files)}")
-
         try:
             for file in files:
                 file_path = file["path"]
@@ -84,10 +81,7 @@ class PerformTikaAnalysis:
                     failed_count += 1
                     continue
 
-                # DEBUG: temporary logging for production diagnosis
-                _logger.debug(f"file_content type={type(file_content).__name__}, len={len(file_content)}, first20={file_content[:20]!r}")
                 tika = await asyncio.to_thread(TIKA_text_extract, file_content)
-                _logger.debug(f"{log_context(archive_id, file_name)}TIKA_text_extract returned type={type(tika).__name__}, value={tika!r}")
 
                 if not isinstance(tika, (tuple, list)) or len(tika) < 6:
                     _logger.warning(f"{log_context(archive_id, file_name)}Invalid Tika output, skipping.")
