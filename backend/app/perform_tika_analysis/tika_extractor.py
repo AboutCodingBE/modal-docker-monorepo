@@ -38,7 +38,9 @@ def TIKA_text_extract(file_content: bytes):
 
         return file_mimetype, text, tika_parser, text_language, creation_date, creator
     except Exception as e:
-        _logger.error(f"Tika extraction error: {e}")
+        _logger.error(f"Tika extraction error: {type(e).__name__}: {e}")
+        import traceback
+        _logger.error(traceback.format_exc())
         return "None"
 
 
