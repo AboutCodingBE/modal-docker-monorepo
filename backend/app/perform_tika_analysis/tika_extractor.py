@@ -33,6 +33,8 @@ def TIKA_text_extract(file_content: bytes):
 
         text = parsed.get('content', '')
         metadata = parsed.get('metadata', {})
+        _logger.debug(f"Tika parsed result: status={parsed.get('status')}, content_length={len(text)}, metadata_keys={list(parsed.get('metadata', {}).keys())}")
+
 
         text_language = language.from_buffer(text)
         file_mimetype = detector.from_buffer(file_content)
