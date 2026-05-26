@@ -47,6 +47,8 @@ class PerformTikaAnalysis:
             return None
 
     async def execute(self, archive_id: uuid.UUID, task_id: uuid.UUID) -> None:
+        _logger.debug(f"TIKA_URL setting: '{settings.tika_url}'")
+
         await task_tracker.start_task(self._session, task_id)
         await self._session.commit()
 
