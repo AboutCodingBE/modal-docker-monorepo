@@ -47,8 +47,6 @@ class PerformTikaAnalysis:
             return None
 
     async def execute(self, archive_id: uuid.UUID, task_id: uuid.UUID) -> None:
-        _logger.debug(f"TIKA_URL setting: '{settings.tika_url}'")
-
         await task_tracker.start_task(self._session, task_id)
         await self._session.commit()
 
@@ -85,7 +83,6 @@ class PerformTikaAnalysis:
                     failed_count += 1
                     continue
 
-                _logger.info("Starting with text extract")
                 tika = await asyncio.to_thread(TIKA_text_extract, file_content)
 
                 if not isinstance(tika, (tuple, list)) or len(tika) < 6:
