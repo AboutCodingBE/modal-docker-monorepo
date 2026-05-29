@@ -46,81 +46,36 @@ jobs:
           name: archive-app-linux.zip
           path: archive-app-linux.zip
 
-  build-macos-arm64:
+  build-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          pip install -r agent/requirements.txt
-          pip install pyinstaller
 
       - name: Build arm64 binary
         run: |
-          cd agent
-          pyinstaller --onefile --name archive-agent-arm64 --add-data "config.json:." agent.py
-
-      - name: Upload arm64 binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-arm64-binary
-          path: agent/dist/archive-agent-arm64
-
-  build-macos-x86_64:
-    runs-on: macos-13
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
+          python3 -m venv venv-arm64
+          source venv-arm64/bin/activate
           pip install -r agent/requirements.txt
           pip install pyinstaller
-
-      - name: Build x86_64 binary
-        run: |
           cd agent
-          pyinstaller --onefile --name archive-agent-x86_64 --add-data "config.json:." agent.py
+          pyinstaller --onefile --name archive-agent-arm64 --add-data "config.json:." agent.py
+          deactivate
 
-      - name: Upload x86_64 binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-x86_64-binary
-          path: agent/dist/archive-agent-x86_64
-
-  package-macos:
-    needs: [build-macos-arm64, build-macos-x86_64]
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download arm64 binary
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-arm64-binary
-          path: binaries/
-
-      - name: Download x86_64 binary
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-x86_64-binary
-          path: binaries/
+      - name: Build x86_64 binary via Rosetta
+        run: |
+          arch -x86_64 /usr/bin/python3 -m venv venv-x86_64
+          source venv-x86_64/bin/activate
+          arch -x86_64 python3 -m pip install -r agent/requirements.txt
+          arch -x86_64 python3 -m pip install pyinstaller
+          cd agent
+          arch -x86_64 python3 -m PyInstaller --onefile --name archive-agent-x86_64 --add-data "config.json:." agent.py
+          deactivate
 
       - name: Create universal binary
         run: |
           lipo -create \
-            binaries/archive-agent-arm64 \
-            binaries/archive-agent-x86_64 \
+            agent/dist/archive-agent-arm64 \
+            agent/dist/archive-agent-x86_64 \
             -output archive-agent
           chmod +x archive-agent
           echo "Universal binary architectures:"
@@ -181,7 +136,7 @@ jobs:
           path: archive-app-windows.zip
 
   release:
-    needs: [build-linux, package-macos, build-windows]
+    needs: [build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
