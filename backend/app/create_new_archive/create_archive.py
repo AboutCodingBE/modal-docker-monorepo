@@ -1,7 +1,10 @@
 import asyncio
+import logging
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
+
+_logger = logging.getLogger("app")
 
 from app.create_new_archive.archive_repository import ArchiveRepository
 from app.create_new_archive.file_repository import FileRepository
@@ -64,7 +67,7 @@ async def _run_tika(archive_id: uuid.UUID, task_id: uuid.UUID) -> None:
             analyzer = PerformTikaAnalysis(session)
             await analyzer.execute(archive_id, task_id)
         except Exception as e:
-            print(f"Background Tika task failed: {e}")
+            _logger.error(f"Background Tika task failed for archive {archive_id}: {e}")
             try:
                 await task_tracker.fail_task(session, task_id)
                 await session.commit()

@@ -33,16 +33,15 @@ class FileRepository:
             for f, t in result.all()
         ]
 
-    async def get_subfolders(self, archive_id: uuid.UUID) -> list[dict]:
-        """Returns all directories excluding the archive root (parent_id IS NOT NULL)."""
+    async def get_all_folders(self, archive_id: uuid.UUID) -> list[dict]:
+        """Returns all directories including root, sorted deepest-first."""
         result = await self._session.execute(
             select(File).where(
                 File.archive_id == archive_id,
                 File.is_directory == True,  # noqa: E712
-                File.parent_id.isnot(None),
             )
         )
-        return [
+        folders = [
             {
                 "id": f.id,
                 "name": f.name,
@@ -51,3 +50,5 @@ class FileRepository:
             }
             for f in result.scalars().all()
         ]
+        folders.sort(key=lambda f: f["relative_path"].count("/"), reverse=True)
+        return folders

@@ -13,6 +13,8 @@ services:
       - "8010:8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - ~/.archive-app/logs:/app/logs
     environment:
       - DATABASE_URL=postgresql+asyncpg://archiveuser:archivepass@db:5432/modaldb
       - TIKA_URL=http://tika:9998

@@ -165,6 +165,10 @@ class ArchiveDetailRepository:
         # Normalise: strip leading slash → empty string means root
         prefix = path.strip().lstrip("/")
 
+        # Map empty prefix to root's relative_path
+        if prefix == "":
+            prefix = "."
+
         # Find the folder record (root = relative_path == "")
         folder_result = await self._session.execute(
             select(File).where(
@@ -177,19 +181,16 @@ class ArchiveDetailRepository:
         )
         folder = folder_result.scalar_one_or_none()
 
-        # Root level: parent_id IS NULL; subfolders: parent_id == folder.id
-        if prefix == "":
-            parent_filter = File.parent_id.is_(None)
-        elif folder is None:
+        if folder is None:
             return {
-                "path": f"/{prefix}",
+                "path": f"/{path.strip().lstrip('/')}",
                 "folder_id": None,
                 "direct_file_count": 0,
                 "subfolders": [],
                 "mime_types": [],
             }
-        else:
-            parent_filter = File.parent_id == folder.id
+
+        parent_filter = File.parent_id == folder.id
 
         children_result = await self._session.execute(
             select(File).where(

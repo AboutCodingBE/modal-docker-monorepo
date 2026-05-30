@@ -26,7 +26,23 @@ class FolderAnalysis:
             data = resp.json()
 
         discovered_at = datetime.now(timezone.utc)
-        entries = []
+        normalized_path = folder_path.rstrip("/")
+        entries = [
+            {
+                "archive_id": archive_id,
+                "_parent_path": None,
+                "name": os.path.basename(normalized_path),
+                "full_path": normalized_path,
+                "relative_path": ".",
+                "is_directory": True,
+                "extension": None,
+                "size_bytes": None,
+                "sha256_hash": None,
+                "created_at": None,
+                "modified_at": None,
+                "discovered_at": discovered_at,
+            }
+        ]
 
         for f in data["files"]:
             is_directory = f.get("is_directory", False)
