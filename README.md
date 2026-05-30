@@ -84,7 +84,7 @@ TIKA_URL=http://localhost:7777
 OLLAMA_URL=http://localhost:11434
 ```
 
-First start all docker containers except backend and frontend.
+First start all docker containers except backend and frontend from the main directory.
 ```bash
 docker compose up -d db tika ollama ollama-init
 ```
