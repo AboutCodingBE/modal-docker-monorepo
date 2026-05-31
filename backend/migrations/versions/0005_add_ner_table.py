@@ -64,8 +64,15 @@ def upgrade() -> None:
     op.create_index("ix_ner_analysis_id", "ner", ["analysis_id"])
     op.create_index("ix_ner_file_id", "ner", ["file_id"])
 
+    # Seed: NER → nl_core_news_lg
+    op.execute(
+        "INSERT INTO analysis_configuration (id, type, model) "
+        "VALUES (gen_random_uuid(), 'NER', 'nl_core_news_lg')"
+    )
 
-def downgrade() -> None: 
+
+def downgrade() -> None:
+    op.execute("DELETE FROM analysis_configuration WHERE type = 'NER'")
     op.drop_index("ix_ner_file_id", table_name="ner")
     op.drop_index("ix_ner_analysis_id", table_name="ner")
     op.drop_index("ix_ner_archive_id", table_name="ner")
