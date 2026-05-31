@@ -37,7 +37,12 @@ def upgrade() -> None:
             sa.ForeignKey("archive_analysis.id", ondelete="CASCADE"), #FK to archive_analysis table
             nullable=False,
         ),
-        sa.Column("parent_folder_id", UUID(as_uuid=True), nullable=False),
+        sa.Column(
+            "parent_folder_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("files.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
         sa.Column(
             "file_id",
             UUID(as_uuid=True),
@@ -46,9 +51,9 @@ def upgrade() -> None:
         ), 
         #NER output: persons, locations, organisations and MISC
         sa.Column("persons", sa.ARRAY(sa.Text()), nullable=True),
-        sa.Column("person_count", sa.Integer(), nullable=True),
+        sa.Column("persons_count", sa.Integer(), nullable=True),
         sa.Column("locations", sa.ARRAY(sa.Text()), nullable=True),
-        sa.Column("location_count", sa.Integer(), nullable=True),
+        sa.Column("locations_count", sa.Integer(), nullable=True),
         sa.Column("organisations", sa.ARRAY(sa.Text()), nullable=True),
         sa.Column("organisations_count", sa.Integer(), nullable=True),
         sa.Column("misc", sa.ARRAY(sa.Text()), nullable=True),
