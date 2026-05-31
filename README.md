@@ -101,6 +101,7 @@ python agent.py --dev
 cd backend
 python3.12 -m venv venv    # In case there is no virtual environmnet yet
 pip install -r requirements.txt
+python -m spacy download nl_core_news_lg
 venv/bin/uvicorn app.main:app --reload --port 8010   #if you are working with a virtual environment called venv
 ```
 

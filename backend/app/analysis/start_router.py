@@ -4,6 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analysis import task_tracker
@@ -11,6 +12,7 @@ from app.create_summaries_for_archive.archive_analysis_repository import Archive
 from app.create_summaries_for_archive.create_summaries_for_archive import CreateSummariesForArchive
 from app.create_ner_for_archive.create_ner_for_archive import CreateNerForArchive
 from app.shared.database import _session_factory, get_db
+from app.shared.models import AnalysisConfiguration
 
 _logger = logging.getLogger("app")
 
@@ -27,6 +29,13 @@ class AnalysisItem(BaseModel):
 class StartAnalysisRequest(BaseModel):
     archiveId: uuid.UUID
     analysis: list[AnalysisItem]
+
+
+@router.get("/configuration")
+async def get_configuration(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(AnalysisConfiguration))
+    configs = result.scalars().all()
+    return [{"type": c.type, "model": c.model} for c in configs]
 
 
 @router.post("/start")

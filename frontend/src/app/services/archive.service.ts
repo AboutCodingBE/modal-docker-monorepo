@@ -53,6 +53,11 @@ export interface FileAnalysis {
   summaries: AnalysisSummaryEntry[];
 }
 
+export interface AnalysisConfigEntry {
+  type: string;
+  model: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ArchiveService {
   constructor(private http: HttpClient) {}
@@ -85,6 +90,10 @@ export class ArchiveService {
 
   getFileAnalysis(archiveId: string, fileId: string): Observable<FileAnalysis> {
     return this.http.get<FileAnalysis>(`/api/archives/${archiveId}/analysis/${fileId}`);
+  }
+
+  getAnalysisConfiguration(): Observable<AnalysisConfigEntry[]> {
+    return this.http.get<AnalysisConfigEntry[]>('/api/analysis/configuration');
   }
 
   startAnalysis(
