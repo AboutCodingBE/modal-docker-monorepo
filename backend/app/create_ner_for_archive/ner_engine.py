@@ -47,12 +47,12 @@ def run_ner(text: str, model: str = "nl_core_news_lg") -> dict:
                 buckets[category].append(value)
 
     return {
-        "persons":            buckets["persons"],
-        "person_count":       len(buckets["persons"]),
-        "locations":          buckets["locations"],
-        "location_count":     len(buckets["locations"]),
-        "organisations":      buckets["organisations"],
+        "persons":             buckets["persons"],
+        "persons_count":       len(buckets["persons"]),
+        "locations":           buckets["locations"],
+        "locations_count":     len(buckets["locations"]),
+        "organisations":       buckets["organisations"],
         "organisations_count": len(buckets["organisations"]),
-        "misc":               buckets["misc"],
-        "misc_count":         len(buckets["misc"]),
+        "misc":                buckets["misc"],
+        "misc_count":          len(buckets["misc"]),
     }

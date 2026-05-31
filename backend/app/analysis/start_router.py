@@ -9,13 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.analysis import task_tracker
 from app.create_summaries_for_archive.archive_analysis_repository import ArchiveAnalysisRepository
 from app.create_summaries_for_archive.create_summaries_for_archive import CreateSummariesForArchive
+from app.create_ner_for_archive.create_ner_for_archive import CreateNerForArchive
 from app.shared.database import _session_factory, get_db
 
 _logger = logging.getLogger("app")
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
-_SUPPORTED_TYPES = {"summary"}
+_SUPPORTED_TYPES = {"summary", "ner"}
 
 
 class AnalysisItem(BaseModel):
@@ -42,7 +43,7 @@ async def start_analysis(
         archive_analysis = await analysis_repo.create(archive_id, item.type, item.model)
         task = await task_tracker.create_task(db, archive_id, total_files=0)
         await db.flush()
-        jobs.append((archive_id, archive_analysis.id, task.id, item.model))
+        jobs.append((archive_id, archive_analysis.id, task.id, item.type, item.model))
 
     # Commit all records before handing off to background
     await db.commit()
@@ -56,14 +57,17 @@ async def start_analysis(
 
 
 async def _run_sequential(
-    jobs: list[tuple[uuid.UUID, uuid.UUID, uuid.UUID, str]],
+    jobs: list[tuple[uuid.UUID, uuid.UUID, uuid.UUID, str, str]],
 ) -> None:
-    for archive_id, archive_analysis_id, task_id, model in jobs:
+    for archive_id, archive_analysis_id, task_id, analysis_type, model in jobs:
         try:
-            runner = CreateSummariesForArchive(_session_factory)
+            if analysis_type.lower() == "ner":
+                runner = CreateNerForArchive(_session_factory)
+            else:
+                runner = CreateSummariesForArchive(_session_factory)
             await runner.execute(archive_id, archive_analysis_id, task_id, model)
         except Exception as e:
-            _logger.error(f"Background summarization failed for task {task_id}: {e}")
+            _logger.error(f"Background analysis ({analysis_type}) failed for task {task_id}: {e}")
             try:
                 async with _session_factory() as session:
                     await task_tracker.fail_task(session, task_id)
