@@ -79,7 +79,7 @@ From the agent directory:
 
 ```bash
 cd agent
-python3 -m venv venv    # In case there is no virtual environment yet. 
+python3.12 -m venv venv    # In case there is no virtual environment yet. 
 source venv/bin/activate        # on Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python agent.py --dev
@@ -99,8 +99,9 @@ python agent.py --dev
 
 ```bash
 cd backend
-python3 -m venv venv    # In case there is no virtual environmnet yet
+python3.12 -m venv venv    # In case there is no virtual environmnet yet
 pip install -r requirements.txt
+python -m spacy download nl_core_news_lg
 venv/bin/uvicorn app.main:app --reload --port 8010   #if you are working with a virtual environment called venv
 ```
 
@@ -120,8 +121,8 @@ Make sure that the database container has started!
 When you develop for the first time on this project or you have new migration files, please execute the following: 
 
 ```bash
- cd backend                                                                                                                                                                                                
-DATABASE_URL=postgresql://archiveuser:archivepass@localhost:5442/modaldb venv/bin/alembic upgrade head
+cd backend                                                                                                                               
+DATABASE_URL=postgresql+psycopg://archiveuser:archivepass@localhost:5442/modaldb venv/bin/alembic upgrade head
 ```
 
 _Remark: To get started on a windows 11 machine. Run before running uvicorn_
