@@ -63,10 +63,12 @@ async def active_tasks(db: AsyncSession = Depends(get_db)):
             "task_id": str(task.id),
             "archive_id": str(task.archive_id),
             "status": task.status,
+            "task_type": task.task_type,
             "total_files": task.total_files,
             "processed": task.processed,
             "failed_count": task.failed_count,
             "percentage": percentage,
+            "created_at": task.created_at.isoformat() if task.created_at else None,
         }
 
     return [_shape(t) for t in tasks]

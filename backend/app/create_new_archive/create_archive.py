@@ -54,7 +54,7 @@ class CreateArchive:
 
         await archive_repo.update_statistics(archive, file_count, directory_count, total_size)
 
-        task = await task_tracker.create_task(self._session, archive.id, file_count)
+        task = await task_tracker.create_task(self._session, archive.id, file_count, task_type="tika")
 
         asyncio.create_task(_run_tika(archive.id, task.id))
 
