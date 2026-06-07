@@ -444,18 +444,15 @@ def main():
             time.sleep(1)
         return
 
-    logger.info("All prerequisite checks passed. Starting Docker services...")
+    logger.info("All prerequisite checks passed — services are running.")
 
     # 5. Register Docker cleanup on exit
     atexit.register(stop_docker_services)
 
-    # 6. Start Docker services (blocks until done or failed)
-    start_docker_services()
-
     signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
 
-    # 7. Keep the main thread alive so the daemon Flask thread keeps running
+    # 6. Keep the main thread alive so the daemon Flask thread keeps running
     logger.info(f"Agent API listening on http://localhost:{port}")
     while True:
         time.sleep(1)

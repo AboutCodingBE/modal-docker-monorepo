@@ -49,6 +49,20 @@
 
     .startup-subtitle { font-size: 12px; color: rgba(255,255,255,0.6); line-height: 1.4; }
 
+    /* ── First-time banner ── */
+    .firsttime-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #1e40af;
+      line-height: 1.6;
+    }
+
+    .firsttime-banner strong { font-weight: 700; }
+
     /* ── Phase list ── */
     .phase-list {
       background: #fff;
@@ -66,7 +80,7 @@
     }
     .phase-row:last-child { border-bottom: none; }
 
-    /* ── Status icons ── */
+    /* ── Status icons (phase level) ── */
     .status-icon {
       width: 22px; height: 22px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
@@ -104,6 +118,89 @@
     .phase-label { flex: 1; font-size: 13px; font-weight: 600; color: #111827; }
 
     .phase-detail { font-size: 11px; color: #6b7280; text-align: right; flex-shrink: 0; }
+
+    /* ── Chevron toggle ── */
+    .chevron-btn {
+      background: none; border: none; cursor: pointer;
+      padding: 2px 4px; margin-left: 4px; flex-shrink: 0;
+      color: #9ca3af; line-height: 1;
+      font-size: 10px;
+      transition: transform 0.2s;
+    }
+    .chevron-btn.open { transform: rotate(180deg); }
+
+    /* ── Sub-steps ── */
+    .sub-steps {
+      border-top: 1px solid #f3f4f6;
+      background: #fafafa;
+    }
+
+    .sub-step-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 18px 9px 44px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .sub-step-row:last-child { border-bottom: none; }
+
+    /* small status icons */
+    .status-icon-sm {
+      width: 16px; height: 16px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .dot-sm {
+      width: 7px; height: 7px;
+      border-radius: 50%; background: #d1d5db;
+    }
+
+    .spinner-sm {
+      width: 12px; height: 12px;
+      border: 1.5px solid #bfdbfe;
+      border-top-color: #3b6ef5;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    .check-sm {
+      width: 14px; height: 14px;
+      border-radius: 50%; background: #22c55e;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 9px; font-weight: 700;
+    }
+
+    .cross-sm {
+      width: 14px; height: 14px;
+      border-radius: 50%; background: #ef4444;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 9px; font-weight: 700;
+    }
+
+    .sub-step-label { flex: 1; font-size: 12px; color: #374151; }
+
+    .sub-step-detail { font-size: 11px; color: #9ca3af; text-align: right; flex-shrink: 0; }
+
+    /* ── Log box ── */
+    .log-section {
+      padding: 0 18px 14px 44px;
+      border-bottom: 1px solid #f3f4f6;
+      background: #fafafa;
+    }
+    .log-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .log-title { font-size: 11px; font-weight: 600; color: #6b7280; }
+
+    .log-box {
+      background: #1e293b;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 10px; color: #cbd5e1;
+      max-height: 200px; overflow-y: auto;
+      white-space: pre-wrap; word-break: break-all;
+      line-height: 1.5;
+    }
 
     /* ── Error block ── */
     .error-block {
@@ -172,9 +269,12 @@
 
     .ready-text { flex: 1; }
 
-    .ready-title { font-size: 14px; font-weight: 700; color: #166534; margin-bottom: 2px; }
+    .ready-title { font-size: 14px; font-weight: 700; color: #166534; margin-bottom: 4px; }
 
     .ready-subtitle { font-size: 12px; color: #15803d; }
+
+    .ready-link { font-size: 11px; color: #15803d; margin-top: 6px; }
+    .ready-link a { color: #15803d; }
   </style>
 </head>
 <body>
@@ -184,8 +284,13 @@
     <div class="startup-logo">M</div>
     <div class="startup-text">
       <div class="startup-title">MODAL</div>
-      <div class="startup-subtitle">Archief browser — vereisten controleren...</div>
+      <div class="startup-subtitle" id="header-subtitle">Archief browser — vereisten controleren...</div>
     </div>
+  </div>
+
+  <div class="firsttime-banner" id="firsttime-banner" style="display:none">
+    <strong>Eerste keer opstarten</strong> — De benodigde bestanden worden gedownload.
+    Dit kan enkele minuten duren afhankelijk van uw internetverbinding. Bij volgende starts gaat dit veel sneller.
   </div>
 
   <div class="phase-list" id="phase-list">
@@ -195,8 +300,11 @@
   <div class="ready-banner" id="ready-banner" style="display:none">
     <div class="ready-icon">✓</div>
     <div class="ready-text">
-      <div class="ready-title">Voorbereidingen voltooid</div>
-      <div class="ready-subtitle" id="ready-subtitle">Services worden opgestart...</div>
+      <div class="ready-title">Services zijn opgestart!</div>
+      <div class="ready-subtitle" id="ready-subtitle">U wordt over enkele seconden doorgestuurd...</div>
+      <div class="ready-link" id="ready-link" style="display:none">
+        <a href="" id="ready-manual-link">Klik hier als u niet automatisch wordt doorgestuurd</a>
+      </div>
     </div>
   </div>
 
@@ -205,24 +313,13 @@
   const AGENT = '';
   const FRONTEND = 'http://localhost:4210';
 
-  // ── Rendering ─────────────────────────────────────────────────────────────
+  // ── Copy helper ────────────────────────────────────────────────────────────
 
-  function iconHtml(status) {
-    if (status === 'pending') return '<div class="status-dot"></div>';
-    if (status === 'running') return '<div class="status-spinner"></div>';
-    if (status === 'success') return '<div class="status-check">✓</div>';
-    if (status === 'failed')  return '<div class="status-cross">✕</div>';
-    return '';
-  }
-
-  function escHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
-  function copyBtn(text) {
+  function copyBtn(text, dark) {
     const id = 'copy-' + Math.random().toString(36).slice(2);
+    const style = dark
+      ? 'background:#334155;border-color:#475569;color:#e2e8f0;'
+      : '';
     setTimeout(() => {
       const btn = document.getElementById(id);
       if (btn) btn.addEventListener('click', () => {
@@ -233,40 +330,120 @@
         });
       });
     }, 0);
-    return `<button class="btn-copy" id="${id}">Kopiëren</button>`;
+    return `<button class="btn-copy" id="${id}" style="${style || ''}">Kopiëren</button>`;
   }
+
+  // ── HTML escaping ──────────────────────────────────────────────────────────
+
+  function esc(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // ── Status icon HTML ───────────────────────────────────────────────────────
+
+  function iconHtml(status, small) {
+    const s = small ? '-sm' : '';
+    if (status === 'pending') return `<div class="dot${s}"></div>`;
+    if (status === 'running') return `<div class="spinner${s}"></div>`;
+    if (status === 'success') return `<div class="check${s}">✓</div>`;
+    if (status === 'failed')  return `<div class="cross${s}">✕</div>`;
+    return '';
+  }
+
+  // ── Chevron state ──────────────────────────────────────────────────────────
+
+  const expandedPhases = new Set();  // phase ids that are manually open
+
+  function toggleSubSteps(phaseId) {
+    if (expandedPhases.has(phaseId)) {
+      expandedPhases.delete(phaseId);
+    } else {
+      expandedPhases.add(phaseId);
+    }
+    renderPhases(lastState.phases);
+  }
+
+  // ── Sub-steps HTML ─────────────────────────────────────────────────────────
+
+  function subStepsHtml(phase) {
+    const steps = phase.sub_steps;
+    if (!steps || steps.length === 0) return '';
+
+    // Auto-expand running or failed phases; keep manually expanded ones open
+    const isActive = phase.status === 'running' || phase.status === 'failed';
+    const isOpen = isActive || expandedPhases.has(phase.id);
+
+    if (!isOpen) return '';
+
+    let html = '<div class="sub-steps">';
+
+    for (const step of steps) {
+      html +=
+        `<div class="sub-step-row">` +
+        `<div class="status-icon-sm">${iconHtml(step.status, true)}</div>` +
+        `<div class="sub-step-label">${esc(step.name)}</div>` +
+        (step.detail ? `<div class="sub-step-detail">${esc(step.detail)}</div>` : '') +
+        `</div>`;
+
+      if (step.logs && step.status === 'failed') {
+        html +=
+          `<div class="log-section">` +
+          `<div class="log-header">` +
+          `<span class="log-title">Container logs</span>` +
+          copyBtn(step.logs, true) +
+          `</div>` +
+          `<div class="log-box">${esc(step.logs)}</div>` +
+          `</div>`;
+      }
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  // ── Phase row chevron HTML ─────────────────────────────────────────────────
+
+  function chevronHtml(phase) {
+    if (!phase.sub_steps || phase.sub_steps.length === 0) return '';
+    // Only show chevron when phase is done (running/failed expand automatically)
+    if (phase.status !== 'success') return '';
+    const isOpen = expandedPhases.has(phase.id);
+    const cls = isOpen ? 'open' : '';
+    return `<button class="chevron-btn ${cls}" onclick="toggleSubSteps('${esc(phase.id)}')" title="Toon details">▼</button>`;
+  }
+
+  // ── Error block HTML ───────────────────────────────────────────────────────
 
   function errorBlockHtml(phase) {
     let html = '<div class="error-block">';
 
     if (phase.detail) {
-      html += `<div class="error-message">${escHtml(phase.detail)}</div>`;
+      html += `<div class="error-message">${esc(phase.detail)}</div>`;
     }
 
-    // Port conflicts
     if (phase.errors && phase.errors.length > 0) {
       html += '<div class="remediation">';
       for (const err of phase.errors) {
-        html += `<div style="margin-bottom:8px">${escHtml(err.message)}</div>`;
-        html += `<div class="code-block"><span>${escHtml(err.fix)}</span>${copyBtn(err.fix)}</div>`;
+        html += `<div style="margin-bottom:8px">${esc(err.message)}</div>`;
+        html += `<div class="code-block"><span>${esc(err.fix)}</span>${copyBtn(err.fix, false)}</div>`;
       }
       html += '</div>';
     }
 
-    // Install / docs link
     if (phase.link) {
       html += `<div class="remediation" style="margin-top:8px">
-        Meer informatie: <a href="${escHtml(phase.link)}" target="_blank" rel="noopener">${escHtml(phase.link)}</a>
+        Meer informatie: <a href="${esc(phase.link)}" target="_blank" rel="noopener">${esc(phase.link)}</a>
       </div>`;
     }
 
-    // Special inline fix for docker_running on Linux
     if (phase.id === 'docker_running' && phase.status === 'failed') {
       const ua = navigator.platform || '';
       if (!ua.toLowerCase().includes('win')) {
         const cmd = 'sudo systemctl start docker';
         html += `<div class="remediation" style="margin-top:8px">Of voer het volgende uit:
-          <div class="code-block"><span>${escHtml(cmd)}</span>${copyBtn(cmd)}</div>
+          <div class="code-block"><span>${esc(cmd)}</span>${copyBtn(cmd, false)}</div>
         </div>`;
       }
     }
@@ -276,30 +453,38 @@
     return html;
   }
 
+  // ── Main render ────────────────────────────────────────────────────────────
+
+  let lastState = { phases: [] };
+
   function renderPhases(phases) {
     const list = document.getElementById('phase-list');
     list.innerHTML = '';
 
     for (const phase of phases) {
-      // Phase row
       const row = document.createElement('div');
       row.className = 'phase-row';
       row.innerHTML =
-        `<div class="status-icon">${iconHtml(phase.status)}</div>` +
-        `<div class="phase-label">${escHtml(phase.label)}</div>` +
-        (phase.status === 'success' && phase.detail
-          ? `<div class="phase-detail">${escHtml(phase.detail)}</div>`
+        `<div class="status-icon">${iconHtml(phase.status, false)}</div>` +
+        `<div class="phase-label">${esc(phase.label)}</div>` +
+        ((phase.status === 'success' || phase.status === 'running') && phase.detail
+          ? `<div class="phase-detail">${esc(phase.detail)}</div>`
           : '') +
-        (phase.status === 'running' && phase.detail
-          ? `<div class="phase-detail">${escHtml(phase.detail)}</div>`
-          : '');
+        chevronHtml(phase);
       list.appendChild(row);
 
-      // Error block (failed phase)
+      // Sub-steps block
+      if (phase.sub_steps && phase.sub_steps.length > 0) {
+        const subEl = document.createElement('div');
+        subEl.innerHTML = subStepsHtml(phase);
+        if (subEl.firstElementChild) list.appendChild(subEl.firstElementChild);
+      }
+
+      // Error block (shown for all failed phases, with or without sub-steps)
       if (phase.status === 'failed') {
         const block = document.createElement('div');
         block.innerHTML = errorBlockHtml(phase);
-        list.appendChild(block.firstElementChild);
+        if (block.firstElementChild) list.appendChild(block.firstElementChild);
       }
     }
   }
@@ -312,44 +497,59 @@
     return phases.some(p => p.status === 'failed');
   }
 
-  // ── State handling ────────────────────────────────────────────────────────
+  // ── First-time banner ──────────────────────────────────────────────────────
 
-  let prerequisitesDone = false;
+  let firstTimeBannerShown = false;
+
+  function checkFirstTimeBanner(phases) {
+    if (firstTimeBannerShown) return;
+    const pullPhase = phases.find(p => p.id === 'pull_images');
+    if (!pullPhase || !pullPhase.sub_steps) return;
+    const downloaded = pullPhase.sub_steps.filter(s => s.detail === 'Gedownload' || s.detail === 'Downloaden...').length;
+    if (downloaded > 2) {
+      document.getElementById('firsttime-banner').style.display = 'block';
+      firstTimeBannerShown = true;
+    }
+  }
+
+  // ── Ready / redirect ───────────────────────────────────────────────────────
+
+  let allDone = false;
+
+  function onAllDone() {
+    if (allDone) return;
+    allDone = true;
+
+    document.getElementById('header-subtitle').textContent = 'Vereisten geslaagd — services actief';
+    document.getElementById('ready-banner').style.display = 'flex';
+
+    const link = document.getElementById('ready-manual-link');
+    link.href = FRONTEND;
+    document.getElementById('ready-link').style.display = 'block';
+
+    setTimeout(() => {
+      window.location.href = FRONTEND;
+    }, 2000);
+  }
+
+  // ── State handling ─────────────────────────────────────────────────────────
 
   function onState(state) {
     if (!state || !state.phases) return;
+    lastState = state;
     renderPhases(state.phases);
+    checkFirstTimeBanner(state.phases);
 
-    if (allPhasesSucceeded(state.phases) && !prerequisitesDone) {
-      prerequisitesDone = true;
-      document.getElementById('ready-banner').style.display = 'flex';
-      document.querySelector('.startup-subtitle').textContent = 'Vereisten geslaagd — services starten op...';
-      pollBackend();
+    if (allPhasesSucceeded(state.phases)) {
+      onAllDone();
     }
   }
 
-  // ── Backend health polling (redirect when app is ready) ───────────────────
-
-  function pollBackend() {
-    async function check() {
-      try {
-        const res = await fetch(AGENT + '/health/backend', { signal: AbortSignal.timeout(3000) });
-        if (res.ok) {
-          document.getElementById('ready-subtitle').textContent = 'Applicatie gereed! U wordt doorgestuurd...';
-          setTimeout(() => { window.location.href = FRONTEND; }, 800);
-          return;
-        }
-      } catch (_) {}
-      setTimeout(check, 3000);
-    }
-    check();
-  }
-
-  // ── SSE connection with polling fallback ──────────────────────────────────
+  // ── SSE connection with polling fallback ───────────────────────────────────
 
   function startPolling() {
     async function poll() {
-      if (prerequisitesDone) return;
+      if (allDone) return;
       try {
         const res = await fetch(AGENT + '/startup-status');
         const state = await res.json();
@@ -381,7 +581,7 @@
 
     sse.onerror = () => {
       sse.close();
-      if (!prerequisitesDone) startPolling();
+      if (!allDone) startPolling();
     };
   })();
 </script>

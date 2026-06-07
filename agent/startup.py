@@ -1,12 +1,14 @@
 """
 Startup prerequisite orchestrator for the Archive App agent.
 
-Runs 5 sequential checks before handing off to Docker Compose:
+Phases:
   1. docker_installed  — Docker binary present and working
   2. docker_version    — Docker Compose v2 available
   3. docker_running    — Docker daemon reachable
   4. cleanup           — Stop any leftover containers from a previous session
   5. port_check        — Required ports are free
+  6. pull_images       — Pull all Docker images (per-image progress via sub-steps)
+  7. start_services    — Start each service and wait for health (sub-steps with logs)
 """
 
 import asyncio
@@ -35,22 +37,31 @@ class PhaseResult:
     status: PhaseStatus
     detail: str | None = None
     errors: list[dict] | None = None
-    link:   str | None = None   # optional URL shown as a clickable remediation link
+    link:   str | None = None
+
+
+@dataclass
+class SubStep:
+    name:   str
+    status: PhaseStatus   = PhaseStatus.PENDING
+    detail: str | None    = None
+    logs:   str | None    = None
 
 
 @dataclass
 class PhaseState:
-    id:     str
-    label:  str
-    status: PhaseStatus       = PhaseStatus.PENDING
-    detail: str | None        = None
-    errors: list[dict] | None = None
-    link:   str | None        = None
+    id:        str
+    label:     str
+    status:    PhaseStatus          = PhaseStatus.PENDING
+    detail:    str | None           = None
+    errors:    list[dict] | None    = None
+    link:      str | None           = None
+    sub_steps: list[SubStep] | None = None
 
 
 @dataclass
 class StartupState:
-    current_phase: str | None      = None
+    current_phase: str | None       = None
     phases:        list[PhaseState] = field(default_factory=list)
 
 
@@ -59,7 +70,7 @@ class StartupState:
 # ---------------------------------------------------------------------------
 
 class StartupPhase:
-    async def execute(self) -> PhaseResult:
+    async def execute(self, phase_state: PhaseState = None, notify: callable = None) -> PhaseResult:
         raise NotImplementedError
 
 
@@ -68,7 +79,7 @@ class StartupPhase:
 # ---------------------------------------------------------------------------
 
 class DockerInstalledCheck(StartupPhase):
-    async def execute(self) -> PhaseResult:
+    async def execute(self, phase_state: PhaseState = None, notify: callable = None) -> PhaseResult:
         logger.info("Phase 1: checking Docker installation")
         try:
             proc = await asyncio.create_subprocess_exec(
@@ -110,7 +121,7 @@ class DockerInstalledCheck(StartupPhase):
 # ---------------------------------------------------------------------------
 
 class DockerVersionCheck(StartupPhase):
-    async def execute(self) -> PhaseResult:
+    async def execute(self, phase_state: PhaseState = None, notify: callable = None) -> PhaseResult:
         logger.info("Phase 2: checking Docker Compose v2")
         try:
             proc = await asyncio.create_subprocess_exec(
@@ -143,7 +154,7 @@ class DockerVersionCheck(StartupPhase):
 # ---------------------------------------------------------------------------
 
 class DockerRunningCheck(StartupPhase):
-    async def execute(self) -> PhaseResult:
+    async def execute(self, phase_state: PhaseState = None, notify: callable = None) -> PhaseResult:
         logger.info("Phase 3: checking Docker daemon")
         try:
             proc = await asyncio.create_subprocess_exec(
@@ -179,7 +190,7 @@ class CleanupPhase(StartupPhase):
     def __init__(self, compose_file: str):
         self.compose_file = compose_file
 
-    async def execute(self) -> PhaseResult:
+    async def execute(self, phase_state: PhaseState = None, notify: callable = None) -> PhaseResult:
         logger.info("Phase 4: checking for leftover containers")
         try:
             proc = await asyncio.create_subprocess_exec(
@@ -218,7 +229,6 @@ class CleanupPhase(StartupPhase):
             return PhaseResult(status=PhaseStatus.SUCCESS, detail=f"{count} containers gestopt")
 
         except Exception as e:
-            # Cleanup always succeeds — log and move on
             logger.warning(f"Phase 4: cleanup encountered an error (continuing): {e}")
             return PhaseResult(status=PhaseStatus.SUCCESS, detail="Vorige sessie opgeruimd")
 
@@ -231,7 +241,7 @@ class PortCheckPhase(StartupPhase):
     def __init__(self, ports: list[int]):
         self.ports = ports
 
-    async def execute(self) -> PhaseResult:
+    async def execute(self, phase_state: PhaseState = None, notify: callable = None) -> PhaseResult:
         logger.info(f"Phase 5: checking ports {self.ports}")
         conflicts = []
         for port in self.ports:
@@ -336,6 +346,273 @@ class PortCheckPhase(StartupPhase):
 
 
 # ---------------------------------------------------------------------------
+# Phase 6 — Pull Docker images
+# ---------------------------------------------------------------------------
+
+class PullImagesPhase(StartupPhase):
+    # Images in pull order: infrastructure first, app images last
+    IMAGES = [
+        ("postgres:16-alpine",                             "Database (PostgreSQL)"),
+        ("apache/tika:latest-full",                        "Tika (tekstextractie)"),
+        ("ollama/ollama:0.23.0",                           "Ollama (AI engine)"),
+        ("ghcr.io/aboutcodingbe/archive-app-backend:latest",  "Backend (API)"),
+        ("ghcr.io/aboutcodingbe/archive-app-frontend:latest", "Frontend (webinterface)"),
+    ]
+
+    def __init__(self, compose_file: str):
+        self.compose_file = compose_file
+
+    async def execute(self, phase_state: PhaseState = None, notify: callable = None) -> PhaseResult:
+        logger.info("Phase 6: pulling Docker images")
+
+        phase_state.sub_steps = [SubStep(name=display) for _, display in self.IMAGES]
+        notify()
+
+        completed = 0
+        needs_download = 0
+
+        for i, (image, display) in enumerate(self.IMAGES):
+            sub = phase_state.sub_steps[i]
+            sub.status = PhaseStatus.RUNNING
+            sub.detail = "Controleren..."
+            notify()
+
+            logger.info(f"Phase 6: pulling {image}")
+
+            try:
+                proc = await asyncio.create_subprocess_exec(
+                    "docker", "pull", image,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+
+                output_lines = []
+                async for line in proc.stdout:
+                    decoded = line.decode()
+                    output_lines.append(decoded)
+                    # Detect active download and update detail in real-time
+                    if sub.detail == "Controleren..." and any(
+                        k in decoded for k in ("Pulling from", "Pulling fs layer", "Downloading")
+                    ):
+                        sub.detail = "Downloaden..."
+                        notify()
+
+                stderr_data = await proc.stderr.read()
+                await proc.wait()
+
+                full_output = "".join(output_lines) + stderr_data.decode()
+
+                if proc.returncode != 0:
+                    error_msg = self._parse_error(full_output)
+                    sub.status = PhaseStatus.FAILED
+                    sub.detail = error_msg
+                    notify()
+                    logger.error(f"Phase 6: failed to pull {image}: {error_msg}")
+                    return PhaseResult(
+                        status=PhaseStatus.FAILED,
+                        detail=f"Fout bij downloaden van {display}. Start de applicatie opnieuw na het oplossen van het probleem.",
+                    )
+
+                if "up to date" in full_output.lower() or "image is up to date" in full_output.lower():
+                    sub.status = PhaseStatus.SUCCESS
+                    sub.detail = "Al beschikbaar"
+                else:
+                    sub.status = PhaseStatus.SUCCESS
+                    sub.detail = "Gedownload"
+                    needs_download += 1
+
+                completed += 1
+                phase_state.detail = f"{completed} van {len(self.IMAGES)} images gereed"
+                notify()
+                logger.info(f"Phase 6: {image} — {sub.detail}")
+
+            except Exception as e:
+                sub.status = PhaseStatus.FAILED
+                sub.detail = str(e)
+                notify()
+                logger.error(f"Phase 6: exception pulling {image}: {e}")
+                return PhaseResult(
+                    status=PhaseStatus.FAILED,
+                    detail=f"Fout bij downloaden van {display}. Start de applicatie opnieuw na het oplossen van het probleem.",
+                )
+
+        suffix = " (eerste keer opstarten — dit is eenmalig)" if needs_download > 2 else ""
+        logger.info(f"Phase 6: all images ready ({needs_download} downloaded)")
+        return PhaseResult(
+            status=PhaseStatus.SUCCESS,
+            detail=f"{completed} van {len(self.IMAGES)} images gereed{suffix}",
+        )
+
+    def _parse_error(self, output: str) -> str:
+        lower = output.lower()
+        if "not found" in lower or "does not exist" in lower:
+            return "Image niet gevonden. Neem contact op met de beheerder."
+        if "unauthorized" in lower or "denied" in lower or "forbidden" in lower:
+            return "Toegang geweigerd. Neem contact op met de beheerder."
+        if "network" in lower or "timeout" in lower or "unreachable" in lower:
+            return "Geen internetverbinding. Controleer uw netwerkverbinding en start de applicatie opnieuw."
+        return output.strip()[-200:]
+
+
+# ---------------------------------------------------------------------------
+# Phase 7 — Start services
+# ---------------------------------------------------------------------------
+
+@dataclass
+class ServiceDef:
+    compose_name:  str
+    display_name:  str
+    health_method: str        # "docker_health" or "http"
+    health_url:    str | None
+    timeout:       int
+    poll_interval: int
+    depends_on:    list[str]
+
+
+class StartServicesPhase(StartupPhase):
+    SERVICES = [
+        ServiceDef("db",       "Database (PostgreSQL)",  "docker_health", None,                            60,  3, []),
+        ServiceDef("tika",     "Tika (tekstextractie)",  "http",          "http://localhost:7777/version",  120, 5, []),
+        ServiceDef("ollama",   "Ollama (AI engine)",     "http",          "http://localhost:11434/api/tags", 60,  3, []),
+        ServiceDef("backend",  "Backend (API)",          "docker_health", None,                            120, 5, ["db", "tika"]),
+        ServiceDef("frontend", "Frontend (webinterface)", "http",         "http://localhost:4210",          60,  3, ["backend"]),
+    ]
+
+    def __init__(self, compose_file: str):
+        self.compose_file = compose_file
+
+    async def execute(self, phase_state: PhaseState = None, notify: callable = None) -> PhaseResult:
+        logger.info("Phase 7: starting services")
+
+        phase_state.sub_steps = [SubStep(name=svc.display_name) for svc in self.SERVICES]
+        notify()
+
+        for i, svc in enumerate(self.SERVICES):
+            sub = phase_state.sub_steps[i]
+
+            # Check that all dependencies succeeded
+            for dep_name in svc.depends_on:
+                dep_idx = next(j for j, s in enumerate(self.SERVICES) if s.compose_name == dep_name)
+                if phase_state.sub_steps[dep_idx].status == PhaseStatus.FAILED:
+                    sub.status = PhaseStatus.FAILED
+                    sub.detail = f"Overgeslagen: {self.SERVICES[dep_idx].display_name} is niet beschikbaar"
+                    notify()
+                    logger.error(f"Phase 7: skipping {svc.compose_name} — dependency failed")
+                    return PhaseResult(
+                        status=PhaseStatus.FAILED,
+                        detail=f"{svc.display_name} kon niet worden gestart vanwege een mislukte afhankelijkheid. Start de applicatie opnieuw na het oplossen van het probleem.",
+                    )
+
+            # Start the service
+            logger.info(f"Phase 7: starting {svc.compose_name}")
+            sub.status = PhaseStatus.RUNNING
+            sub.detail = "Opstarten..."
+            notify()
+
+            proc = await asyncio.create_subprocess_exec(
+                "docker", "compose", "-f", self.compose_file, "up", "-d", svc.compose_name,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            _, stderr = await proc.communicate()
+
+            if proc.returncode != 0:
+                err = stderr.decode().strip()[-300:]
+                sub.status = PhaseStatus.FAILED
+                sub.detail = f"Kon niet worden gestart"
+                sub.logs = err
+                notify()
+                logger.error(f"Phase 7: failed to start {svc.compose_name}: {err}")
+                return PhaseResult(
+                    status=PhaseStatus.FAILED,
+                    detail=f"{svc.display_name} kon niet worden gestart. Controleer de logs hieronder en start de applicatie opnieuw.",
+                )
+
+            # Wait for health
+            sub.detail = "Wachten op gezondheidscontrole..."
+            notify()
+
+            healthy = await self._wait_for_health(svc)
+
+            if healthy:
+                sub.status = PhaseStatus.SUCCESS
+                sub.detail = "Gezond"
+                notify()
+                logger.info(f"Phase 7: {svc.compose_name} is healthy")
+            else:
+                sub.status = PhaseStatus.FAILED
+                sub.detail = f"Niet gezond na {svc.timeout} seconden"
+                sub.logs = await self._fetch_logs(svc.compose_name)
+                notify()
+                logger.error(f"Phase 7: {svc.compose_name} did not become healthy within {svc.timeout}s")
+                return PhaseResult(
+                    status=PhaseStatus.FAILED,
+                    detail=f"{svc.display_name} kon niet worden gestart. Controleer de logs hieronder en start de applicatie opnieuw.",
+                )
+
+        logger.info("Phase 7: all services are healthy")
+        return PhaseResult(status=PhaseStatus.SUCCESS, detail="Alle services zijn actief")
+
+    async def _wait_for_health(self, svc: ServiceDef) -> bool:
+        elapsed = 0
+        while elapsed < svc.timeout:
+            ok = False
+            if svc.health_method == "docker_health":
+                ok = await self._check_docker_health(svc.compose_name)
+            elif svc.health_method == "http":
+                ok = await self._check_http_health(svc.health_url)
+            if ok:
+                return True
+            await asyncio.sleep(svc.poll_interval)
+            elapsed += svc.poll_interval
+        return False
+
+    async def _check_docker_health(self, service_name: str) -> bool:
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "docker", "compose", "-f", self.compose_file, "ps", "-q", service_name,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await proc.communicate()
+            container_id = stdout.decode().strip()
+            if not container_id:
+                return False
+
+            proc2 = await asyncio.create_subprocess_exec(
+                "docker", "inspect", "--format", "{{.State.Health.Status}}", container_id,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout2, _ = await proc2.communicate()
+            return stdout2.decode().strip() == "healthy"
+        except Exception:
+            return False
+
+    async def _check_http_health(self, url: str) -> bool:
+        try:
+            import httpx
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url, timeout=5)
+                return resp.status_code == 200
+        except Exception:
+            return False
+
+    async def _fetch_logs(self, service_name: str) -> str:
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "docker", "compose", "-f", self.compose_file,
+                "logs", service_name, "--tail", "50",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await proc.communicate()
+            return (stdout.decode() + stderr.decode()).strip()[-2000:]
+        except Exception:
+            return ""
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
 
@@ -348,6 +625,8 @@ class StartupOrchestrator:
             PhaseState(id="docker_running",   label="Docker actief"),
             PhaseState(id="cleanup",          label="Vorige sessie opruimen"),
             PhaseState(id="port_check",       label="Poorten beschikbaar"),
+            PhaseState(id="pull_images",      label="Docker images downloaden"),
+            PhaseState(id="start_services",   label="Services opstarten"),
         ])
         self._phases: list[StartupPhase] = [
             DockerInstalledCheck(),
@@ -355,6 +634,8 @@ class StartupOrchestrator:
             DockerRunningCheck(),
             CleanupPhase(compose_file),
             PortCheckPhase(ports=[4210, 8010, 7777, 5442, 11434]),
+            PullImagesPhase(compose_file),
+            StartServicesPhase(compose_file),
         ]
         self._on_update = None
 
@@ -366,13 +647,14 @@ class StartupOrchestrator:
         for i, phase in enumerate(self._phases):
             phase_state = self.state.phases[i]
             self.state.current_phase = phase_state.id
-            phase_state.status = PhaseStatus.RUNNING
-            phase_state.detail = None
-            phase_state.errors = None
-            phase_state.link   = None
+            phase_state.status    = PhaseStatus.RUNNING
+            phase_state.detail    = None
+            phase_state.errors    = None
+            phase_state.link      = None
+            phase_state.sub_steps = None
             self._notify()
 
-            result = await phase.execute()
+            result = await phase.execute(phase_state, self._notify)
 
             phase_state.status = result.status
             phase_state.detail = result.detail
@@ -396,6 +678,15 @@ class StartupOrchestrator:
                     "detail": p.detail,
                     "errors": p.errors,
                     "link":   p.link,
+                    "sub_steps": [
+                        {
+                            "name":   s.name,
+                            "status": s.status.value,
+                            "detail": s.detail,
+                            "logs":   s.logs,
+                        }
+                        for s in p.sub_steps
+                    ] if p.sub_steps else None,
                 }
                 for p in self.state.phases
             ],
