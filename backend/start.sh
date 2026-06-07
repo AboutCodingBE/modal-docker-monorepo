@@ -5,7 +5,7 @@ echo "Running database migrations..."
 alembic upgrade head
 
 echo "Checking NLP model..."
-python -m spacy download nl_core_news_lg --skip-existing
+python -m spacy download nl_core_news_lg
 
 echo "Starting API server..."
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000

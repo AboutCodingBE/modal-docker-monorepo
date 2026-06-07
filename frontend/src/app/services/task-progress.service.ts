@@ -1,16 +1,18 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Subject, Subscription } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { SseProgressEvent } from '../shared/progress-bar/progress-bar';
 
 export interface ActiveTask {
   task_id: string;
   archive_id: string;
   status: string;
+  task_type: string;
   total_files: number;
   processed: number;
   failed_count: number;
   percentage: number;
+  created_at: string | null;
 }
 
 export interface ProgressUpdate {
@@ -27,25 +29,21 @@ export class TaskProgressService {
 
   constructor(private http: HttpClient) {}
 
-  loadAndTrack(): void {
-    this.http.get<ActiveTask[]>('/api/analysis/tasks/active').subscribe({
-      next: (tasks) => {
-        for (const task of tasks) {
-          // Emit snapshot immediately so the card shows current progress on load
-          this.updates.next({
-            archiveId: task.archive_id,
-            event: {
-              task_id: task.task_id,
-              status: task.status,
-              total_files: task.total_files,
-              processed: task.processed,
-              failed_count: task.failed_count,
-              current_file: null,
-              percentage: task.percentage,
-            },
-          });
-          this._subscribe(task.archive_id, task.task_id);
-        }
+  getActiveTasks(): Observable<ActiveTask[]> {
+    return this.http.get<ActiveTask[]>('/api/analysis/tasks/active');
+  }
+
+  emitSnapshot(task: ActiveTask): void {
+    this.updates.next({
+      archiveId: task.archive_id,
+      event: {
+        task_id: task.task_id,
+        status: task.status,
+        total_files: task.total_files,
+        processed: task.processed,
+        failed_count: task.failed_count,
+        current_file: null,
+        percentage: task.percentage,
       },
     });
   }
@@ -55,7 +53,6 @@ export class TaskProgressService {
   }
 
   private _subscribe(archiveId: string, taskId: string): void {
-    // Avoid duplicate connections
     if (this.sources.has(taskId)) return;
 
     const source = new EventSource(`/api/analysis/tasks/${taskId}/progress`);
