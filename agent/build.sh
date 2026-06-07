@@ -14,6 +14,8 @@ pyinstaller \
     --onefile \
     --name archive-agent \
     --add-data "config.json:." \
+    --add-data "templates:templates" \
+    --hidden-import startup \
     agent.py
 
 echo ""

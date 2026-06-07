@@ -8,6 +8,7 @@ This is the only native component. It serves two roles:
 The agent runs on the host machine (not in Docker).
 """
 
+import asyncio
 import json
 import logging
 import mimetypes
@@ -22,8 +23,10 @@ import urllib.request
 import webbrowser
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_file, Response
+from flask import Flask, jsonify, request, send_file, Response, stream_with_context
 from flask_cors import CORS
+
+from startup import StartupOrchestrator
 
 # ---------------------------------------------------------------------------
 # Configuration (can be overridden via config.json alongside this script)
@@ -72,9 +75,15 @@ logging.basicConfig(
 logger = logging.getLogger("agent")
 
 # ---------------------------------------------------------------------------
-# Startup status (written by main thread, read by /startup-status endpoint)
+# Startup state (written by orchestrator, read by /startup-status endpoints)
 # ---------------------------------------------------------------------------
-_startup_status: dict = {"status": "starting", "error": None}
+_startup_events: list[dict] = []        # accumulated state snapshots (append-only)
+_startup_done   = threading.Event()     # set when orchestrator finishes (pass or fail)
+_orchestrator: StartupOrchestrator | None = None
+
+
+def _on_startup_state_update(state: dict) -> None:
+    _startup_events.append(state)
 
 # ---------------------------------------------------------------------------
 # Flask app — filesystem bridge
@@ -90,7 +99,32 @@ def health():
 
 @app.get("/startup-status")
 def startup_status():
-    return jsonify(_startup_status)
+    if _orchestrator is not None:
+        return jsonify(_orchestrator.get_state_dict())
+    # Orchestrator not yet initialised — return empty pending state
+    return jsonify({"current_phase": None, "phases": []})
+
+
+@app.get("/startup-status/stream")
+def startup_status_stream():
+    """SSE stream: pushes a full state snapshot on every phase change."""
+    def generate():
+        idx = 0
+        while True:
+            if idx < len(_startup_events):
+                data = json.dumps(_startup_events[idx])
+                yield f"data: {data}\n\n"
+                idx += 1
+            elif _startup_done.is_set():
+                break
+            else:
+                time.sleep(0.1)
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/health/backend")
@@ -107,166 +141,7 @@ def health_backend():
 
 @app.get("/loading")
 def loading_page():
-    html = """<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Archive App — Starting</title>
-  <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: #0f1117;
-      color: #e2e8f0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-    .card {
-      background: #1a1d27;
-      border: 1px solid #2d3148;
-      border-radius: 16px;
-      padding: 48px 56px;
-      text-align: center;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
-    }
-    .logo {
-      font-size: 26px;
-      font-weight: 700;
-      color: #a78bfa;
-      letter-spacing: -0.5px;
-      margin-bottom: 6px;
-    }
-    .tagline {
-      font-size: 13px;
-      color: #4b5563;
-      margin-bottom: 40px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    .spinner-wrap { margin: 0 auto 32px; width: 52px; height: 52px; }
-    .spinner {
-      width: 52px;
-      height: 52px;
-      border: 3px solid #2d3148;
-      border-top-color: #a78bfa;
-      border-radius: 50%;
-      animation: spin 0.85s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .status {
-      font-size: 15px;
-      color: #94a3b8;
-      min-height: 24px;
-      transition: opacity 0.3s ease;
-    }
-    /* error state */
-    .error-icon {
-      font-size: 44px;
-      margin-bottom: 16px;
-      display: none;
-    }
-    .error-box {
-      font-size: 13px;
-      color: #fca5a5;
-      background: #1f1010;
-      border: 1px solid #7f1d1d;
-      border-radius: 8px;
-      padding: 14px 16px;
-      text-align: left;
-      line-height: 1.7;
-      display: none;
-      margin-top: 24px;
-    }
-    .is-error .spinner-wrap { display: none; }
-    .is-error .error-icon { display: block; }
-    .is-error .error-box { display: block; }
-    .is-error .status { display: none; }
-  </style>
-</head>
-<body>
-  <div class="card" id="card">
-    <div class="logo">MODAL</div>
-    <div class="tagline">Archief browser</div>
-    <div class="spinner-wrap"><div class="spinner"></div></div>
-    <div class="error-icon">&#9888;&#65039;</div>
-    <div class="status" id="status">MODAL app bezig met opstarten...</div>
-    <div class="error-box" id="error-box"></div>
-  </div>
-  <script>
-    const FRONTEND = 'http://localhost:4210';
-    const AGENT    = '';
-    const messages = [
-      'Starting database...',
-      'Starting analysis services...',
-      'Starting backend...',
-      'Almost ready...',
-    ];
-    let msgIdx = 0;
-    const statusEl  = document.getElementById('status');
-    const card      = document.getElementById('card');
-    const errorBox  = document.getElementById('error-box');
-    let stopped = false;
-
-    function stop() { stopped = true; }
-
-    function showError(msg) {
-      stop();
-      card.classList.add('is-error');
-      errorBox.textContent = msg;
-    }
-
-    // Cycle status messages
-    const msgTimer = setInterval(() => {
-      if (stopped) { clearInterval(msgTimer); return; }
-      msgIdx = (msgIdx + 1) % messages.length;
-      statusEl.style.opacity = '0';
-      setTimeout(() => {
-        statusEl.textContent = messages[msgIdx];
-        statusEl.style.opacity = '1';
-      }, 300);
-    }, 4000);
-
-    // Poll agent startup-status for failures
-    async function checkStartupStatus() {
-      if (stopped) return;
-      try {
-        const res = await fetch(AGENT + '/startup-status');
-        const data = await res.json();
-        if (data.status === 'failed') {
-          showError(data.error || 'Failed to start services. Check the logs at ~/.archive-app/agent.log');
-          return;
-        }
-      } catch (_) {}
-      setTimeout(checkStartupStatus, 3000);
-    }
-
-    // Poll backend health via agent proxy (same origin — no CORS)
-    async function checkHealth() {
-      if (stopped) return;
-      try {
-        const res = await fetch(AGENT + '/health/backend', {
-          signal: AbortSignal.timeout(3000),
-        });
-        if (res.ok) {
-          stop();
-          statusEl.textContent = 'Ready! Redirecting...';
-          setTimeout(() => { window.location.href = FRONTEND; }, 500);
-          return;
-        }
-      } catch (_) {}
-      setTimeout(checkHealth, 3000);
-    }
-
-    checkStartupStatus();
-    checkHealth();
-  </script>
-</body>
-</html>"""
+    html = (_base_dir() / "templates" / "startup.html").read_text(encoding="utf-8")
     return Response(html, mimetype="text/html")
 
 
@@ -533,6 +408,8 @@ def main():
         return
 
     # ── Production startup sequence ──────────────────────────────────────────
+    global _orchestrator
+
     # 1. Start Flask in a background thread so /loading is immediately available
     flask_thread = threading.Thread(
         target=lambda: app.run(host="0.0.0.0", port=port, debug=False),
@@ -543,21 +420,42 @@ def main():
     # 2. Wait until Flask is accepting connections
     _wait_for_flask(port)
 
-    # 3. Open the browser to the loading page straight away
+    # 3. Open the browser to the startup dashboard
     loading_url = f"http://localhost:{port}/loading"
     logger.info(f"Opening browser at {loading_url}")
     webbrowser.open(loading_url)
 
-    # 4. Register Docker cleanup on exit
+    # 4. Run prerequisite checks (blocks until all pass or one fails)
+    compose_path = get_compose_path()
+    _orchestrator = StartupOrchestrator(compose_path)
+    _orchestrator.set_update_callback(_on_startup_state_update)
+
+    logger.info("Running startup prerequisite checks...")
+    prerequisites_ok = asyncio.run(_orchestrator.run())
+    _startup_done.set()
+
+    if not prerequisites_ok:
+        # Dashboard shows the actionable error; keep the agent alive so the
+        # browser can still read /startup-status and /startup-status/stream.
+        logger.error("Prerequisite checks failed — fix the issue and relaunch the agent.")
+        signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+        signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+        while True:
+            time.sleep(1)
+        return
+
+    logger.info("All prerequisite checks passed. Starting Docker services...")
+
+    # 5. Register Docker cleanup on exit
     atexit.register(stop_docker_services)
 
-    # 5. Start Docker services (blocks until done or failed)
+    # 6. Start Docker services (blocks until done or failed)
     start_docker_services()
 
     signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
 
-    # 6. Keep the main thread alive so the daemon Flask thread keeps running
+    # 7. Keep the main thread alive so the daemon Flask thread keeps running
     logger.info(f"Agent API listening on http://localhost:{port}")
     while True:
         time.sleep(1)
