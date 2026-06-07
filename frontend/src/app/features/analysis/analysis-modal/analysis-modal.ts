@@ -33,7 +33,7 @@ export class AnalysisModal implements OnInit {
   archive = input.required<Archive>();
 
   closed = output<void>();
-  analysisStarted = output<{ archiveId: string; taskIds: string[] }>();
+  analysisStarted = output<{ archiveId: string; tasks: { taskId: string; type: string }[] }>();
 
   types = signal<AnalysisType[]>([]);
   modelOptions = signal<Record<string, string[]>>({});
@@ -124,7 +124,8 @@ export class AnalysisModal implements OnInit {
 
     this.archiveService.startAnalysis(this.archive().id, analysis).subscribe({
       next: resp => {
-        this.analysisStarted.emit({ archiveId: this.archive().id, taskIds: resp.task_ids });
+        const tasks = resp.task_ids.map((taskId, i) => ({ taskId, type: analysis[i].type }));
+        this.analysisStarted.emit({ archiveId: this.archive().id, tasks });
         this._reset();
         this.closed.emit();
       },

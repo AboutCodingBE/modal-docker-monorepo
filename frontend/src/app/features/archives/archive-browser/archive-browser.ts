@@ -29,6 +29,9 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
   // Per-archive queue of task IDs not yet subscribed to SSE
   private taskQueues = new Map<string, string[]>();
 
+  // Maps task ID to its analysis type (e.g. 'summary', 'ner')
+  private taskTypes = new Map<string, string>();
+
   private updatesSub?: Subscription;
 
   constructor(
@@ -88,16 +91,17 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
     this.analysisModalArchive.set(null);
   }
 
-  onAnalysisStarted(event: { archiveId: string; taskIds: string[] }): void {
+  onAnalysisStarted(event: { archiveId: string; tasks: { taskId: string; type: string }[] }): void {
     // Register all task IDs as AI analysis tasks
-    for (const taskId of event.taskIds) {
+    for (const { taskId, type } of event.tasks) {
       this.analysisTaskIds.add(taskId);
+      this.taskTypes.set(taskId, type);
     }
 
     // Open SSE only for the first task; queue the rest
-    if (event.taskIds.length > 0) {
-      this.taskProgress.track(event.archiveId, event.taskIds[0]);
-      this.taskQueues.set(event.archiveId, event.taskIds.slice(1));
+    if (event.tasks.length > 0) {
+      this.taskProgress.track(event.archiveId, event.tasks[0].taskId);
+      this.taskQueues.set(event.archiveId, event.tasks.slice(1).map(t => t.taskId));
     }
 
     // Mark archive as in_progress immediately
@@ -124,10 +128,14 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
           if (isAiAnalysis) {
             // AI analysis: completed → 'analysed', active → keep pipeline event
             const completedStatus = isCompleted ? 'analysed' as const : isFailed ? 'failed' as const : 'in_progress' as const;
+            const enrichedEvent = isCompleted || isFailed ? null : {
+              ...update.event,
+              type: this.taskTypes.get(update.event.task_id),
+            };
             return {
               ...a,
               status: completedStatus,
-              analysisEvent: isCompleted || isFailed ? null : update.event,
+              analysisEvent: enrichedEvent,
             };
           } else {
             // Tika ingestion: completed → 'ingested', active → progress bar
