@@ -478,15 +478,6 @@ Add the model name to configuration so it's not hardcoded:
 
 The `PullAIModelPhase` reads the model name from this config. If the field is missing, default to `gemma3:1b`.
 
-## Cheat Sheet Updates
-
-Update the project cheat sheet to reflect:
-- `ollama-init` service removed from docker-compose
-- Agent now handles AI model management
-- Startup dashboard replaces the basic loading page
-- 9-phase startup sequence documented
-- `config.json` now includes `ai_model` field
-
 # Testing Notes
 
 ## Phase 8: Pull AI model

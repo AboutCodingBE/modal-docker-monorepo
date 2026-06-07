@@ -622,7 +622,7 @@ This component depends on:
 
 # Wireframe
 
-For the visual design of the startup dashboard, refer to the wireframe at: `[PLACEHOLDER_WIREFRAME_LOCATION]`
+For the visual design of the startup dashboard, refer to the wireframe at: `ai/wireframes/startup-screen-improvement.html`
 
 # Testing Notes
 
