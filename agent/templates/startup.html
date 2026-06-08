@@ -49,6 +49,23 @@
 
     .startup-subtitle { font-size: 12px; color: rgba(255,255,255,0.6); line-height: 1.4; }
 
+    /* ── Progress bar (AI model download) ── */
+    .progress-bar-wrap {
+      flex: 1;
+      background: #e5e7eb;
+      border-radius: 4px;
+      height: 6px;
+      overflow: hidden;
+      min-width: 80px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #3b6ef5;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
     /* ── First-time banner ── */
     .firsttime-banner {
       background: #eff6ff;
@@ -293,6 +310,11 @@
     Dit kan enkele minuten duren afhankelijk van uw internetverbinding. Bij volgende starts gaat dit veel sneller.
   </div>
 
+  <div class="firsttime-banner" id="aimodel-banner" style="display:none">
+    <strong>AI model wordt gedownload</strong> — Dit is eenmalig en kan even duren afhankelijk van uw internetverbinding.
+    Bij volgende starts is het model al beschikbaar.
+  </div>
+
   <div class="phase-list" id="phase-list">
     <!-- Rendered by JS -->
   </div>
@@ -453,6 +475,18 @@
     return html;
   }
 
+  // ── Progress bar helpers ───────────────────────────────────────────────────
+
+  function parsePercent(detail) {
+    // Parses "gemma3:1b — 340 MB / 815 MB (42%)" → 42
+    const m = detail && detail.match(/\((\d+)%\)/);
+    return m ? parseInt(m[1], 10) : null;
+  }
+
+  function progressBarHtml(pct) {
+    return `<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>`;
+  }
+
   // ── Main render ────────────────────────────────────────────────────────────
 
   let lastState = { phases: [] };
@@ -464,12 +498,27 @@
     for (const phase of phases) {
       const row = document.createElement('div');
       row.className = 'phase-row';
+
+      // For pull_ai_model running with a percentage, replace the detail text with a progress bar
+      let detailHtml = '';
+      if ((phase.status === 'success' || phase.status === 'running') && phase.detail) {
+        if (phase.id === 'pull_ai_model' && phase.status === 'running') {
+          const pct = parsePercent(phase.detail);
+          if (pct !== null) {
+            detailHtml = progressBarHtml(pct) +
+              `<div class="phase-detail" style="min-width:40px">${pct}%</div>`;
+          } else {
+            detailHtml = `<div class="phase-detail">${esc(phase.detail)}</div>`;
+          }
+        } else {
+          detailHtml = `<div class="phase-detail">${esc(phase.detail)}</div>`;
+        }
+      }
+
       row.innerHTML =
         `<div class="status-icon">${iconHtml(phase.status, false)}</div>` +
         `<div class="phase-label">${esc(phase.label)}</div>` +
-        ((phase.status === 'success' || phase.status === 'running') && phase.detail
-          ? `<div class="phase-detail">${esc(phase.detail)}</div>`
-          : '') +
+        detailHtml +
         chevronHtml(phase);
       list.appendChild(row);
 
@@ -497,18 +546,33 @@
     return phases.some(p => p.status === 'failed');
   }
 
-  // ── First-time banner ──────────────────────────────────────────────────────
+  // ── First-time banners ─────────────────────────────────────────────────────
 
   let firstTimeBannerShown = false;
+  let aiModelBannerShown = false;
 
-  function checkFirstTimeBanner(phases) {
-    if (firstTimeBannerShown) return;
-    const pullPhase = phases.find(p => p.id === 'pull_images');
-    if (!pullPhase || !pullPhase.sub_steps) return;
-    const downloaded = pullPhase.sub_steps.filter(s => s.detail === 'Gedownload' || s.detail === 'Downloaden...').length;
-    if (downloaded > 2) {
-      document.getElementById('firsttime-banner').style.display = 'block';
-      firstTimeBannerShown = true;
+  function checkBanners(phases) {
+    if (!firstTimeBannerShown) {
+      const pullPhase = phases.find(p => p.id === 'pull_images');
+      if (pullPhase && pullPhase.sub_steps) {
+        const downloading = pullPhase.sub_steps.filter(
+          s => s.detail === 'Gedownload' || s.detail === 'Downloaden...'
+        ).length;
+        if (downloading > 2) {
+          document.getElementById('firsttime-banner').style.display = 'block';
+          firstTimeBannerShown = true;
+        }
+      }
+    }
+
+    if (!aiModelBannerShown) {
+      const modelPhase = phases.find(p => p.id === 'pull_ai_model');
+      if (modelPhase && modelPhase.status === 'running' && modelPhase.detail &&
+          !modelPhase.detail.includes('al beschikbaar') &&
+          !modelPhase.detail.includes('Controleren')) {
+        document.getElementById('aimodel-banner').style.display = 'block';
+        aiModelBannerShown = true;
+      }
     }
   }
 
@@ -516,19 +580,19 @@
 
   let allDone = false;
 
-  function onAllDone() {
+  function onAllDone(redirectUrl) {
     if (allDone) return;
     allDone = true;
 
-    document.getElementById('header-subtitle').textContent = 'Vereisten geslaagd — services actief';
+    document.getElementById('header-subtitle').textContent = 'Applicatie is gereed!';
     document.getElementById('ready-banner').style.display = 'flex';
 
     const link = document.getElementById('ready-manual-link');
-    link.href = FRONTEND;
+    link.href = redirectUrl;
     document.getElementById('ready-link').style.display = 'block';
 
     setTimeout(() => {
-      window.location.href = FRONTEND;
+      window.location.href = redirectUrl;
     }, 2000);
   }
 
@@ -538,10 +602,14 @@
     if (!state || !state.phases) return;
     lastState = state;
     renderPhases(state.phases);
-    checkFirstTimeBanner(state.phases);
+    checkBanners(state.phases);
 
-    if (allPhasesSucceeded(state.phases)) {
-      onAllDone();
+    // Redirect is triggered by redirect_url on the ready phase
+    if (!allDone) {
+      const readyPhase = state.phases.find(p => p.id === 'ready' && p.redirect_url);
+      if (readyPhase) {
+        onAllDone(readyPhase.redirect_url);
+      }
     }
   }
 

@@ -34,10 +34,11 @@ class PhaseStatus(Enum):
 
 @dataclass
 class PhaseResult:
-    status: PhaseStatus
-    detail: str | None = None
-    errors: list[dict] | None = None
-    link:   str | None = None
+    status:       PhaseStatus
+    detail:       str | None = None
+    errors:       list[dict] | None = None
+    link:         str | None = None
+    redirect_url: str | None = None
 
 
 @dataclass
@@ -50,13 +51,14 @@ class SubStep:
 
 @dataclass
 class PhaseState:
-    id:        str
-    label:     str
-    status:    PhaseStatus          = PhaseStatus.PENDING
-    detail:    str | None           = None
-    errors:    list[dict] | None    = None
-    link:      str | None           = None
-    sub_steps: list[SubStep] | None = None
+    id:           str
+    label:        str
+    status:       PhaseStatus          = PhaseStatus.PENDING
+    detail:       str | None           = None
+    errors:       list[dict] | None    = None
+    link:         str | None           = None
+    sub_steps:    list[SubStep] | None = None
+    redirect_url: str | None           = None
 
 
 @dataclass
@@ -613,12 +615,188 @@ class StartServicesPhase(StartupPhase):
 
 
 # ---------------------------------------------------------------------------
+# Phase 8 — Pull AI model from Ollama
+# ---------------------------------------------------------------------------
+
+class PullAIModelPhase(StartupPhase):
+    def __init__(self, model: str = "gemma3:1b", ollama_url: str = "http://localhost:11434"):
+        self.model = model
+        self.ollama_url = ollama_url
+        self.timeout = 600
+
+    async def execute(self, phase_state: PhaseState = None, notify: callable = None) -> PhaseResult:
+        import httpx
+        import json as _json
+        logger.info(f"Phase 8: checking AI model {self.model}")
+
+        phase_state.detail = "Controleren of model beschikbaar is..."
+        notify()
+
+        # Step 1 — check if model already cached
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"{self.ollama_url}/api/tags", timeout=10)
+                if resp.status_code == 200:
+                    for m in resp.json().get("models", []):
+                        if m.get("name", "").startswith(self.model):
+                            logger.info(f"Phase 8: model {self.model} already available")
+                            return PhaseResult(
+                                status=PhaseStatus.SUCCESS,
+                                detail=f"Model {self.model} al beschikbaar",
+                            )
+        except httpx.ConnectError:
+            return PhaseResult(
+                status=PhaseStatus.FAILED,
+                detail="Ollama service is niet bereikbaar. Start de applicatie opnieuw.",
+            )
+        except Exception as e:
+            return PhaseResult(
+                status=PhaseStatus.FAILED,
+                detail=f"Fout bij controleren model: {e}",
+            )
+
+        # Step 2 — pull with streaming progress
+        logger.info(f"Phase 8: pulling model {self.model}")
+        phase_state.detail = f"Voorbereiden download {self.model}..."
+        notify()
+
+        try:
+            last_notify_time = 0.0
+
+            async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout)) as client:
+                async with client.stream(
+                    "POST",
+                    f"{self.ollama_url}/api/pull",
+                    json={"name": self.model, "stream": True},
+                ) as response:
+                    async for line in response.aiter_lines():
+                        if not line.strip():
+                            continue
+                        try:
+                            data = _json.loads(line)
+                        except _json.JSONDecodeError:
+                            continue
+
+                        if "error" in data:
+                            err = data["error"]
+                            logger.error(f"Phase 8: Ollama error: {err}")
+                            if "does not exist" in err or "not found" in err:
+                                detail = f"Model {self.model} kon niet worden gevonden. Neem contact op met de beheerder."
+                            else:
+                                detail = f"Fout: {err}"
+                            return PhaseResult(status=PhaseStatus.FAILED, detail=detail)
+
+                        if data.get("status") == "success":
+                            logger.info(f"Phase 8: model {self.model} downloaded successfully")
+                            return PhaseResult(
+                                status=PhaseStatus.SUCCESS,
+                                detail=f"Model {self.model} gedownload",
+                            )
+
+                        total = data.get("total", 0)
+                        completed = data.get("completed", 0)
+                        if total > 0:
+                            total_mb = total // 1_000_000
+                            completed_mb = completed // 1_000_000
+                            pct = round((completed / total) * 100)
+                            phase_state.detail = f"{self.model} — {completed_mb} MB / {total_mb} MB ({pct}%)"
+                        else:
+                            status_text = data.get("status", "")
+                            if status_text:
+                                phase_state.detail = status_text
+
+                        now = asyncio.get_event_loop().time()
+                        if now - last_notify_time >= 1.0:
+                            notify()
+                            last_notify_time = now
+
+        except httpx.ConnectError:
+            return PhaseResult(
+                status=PhaseStatus.FAILED,
+                detail="Ollama service is niet bereikbaar. Start de applicatie opnieuw.",
+            )
+        except httpx.ReadTimeout:
+            return PhaseResult(
+                status=PhaseStatus.FAILED,
+                detail="Het downloaden van het AI model duurde te lang. Controleer uw internetverbinding en start de applicatie opnieuw.",
+            )
+        except httpx.ReadError:
+            return PhaseResult(
+                status=PhaseStatus.FAILED,
+                detail="Verbinding verbroken tijdens downloaden. Controleer uw internetverbinding en start de applicatie opnieuw.",
+            )
+        except Exception as e:
+            return PhaseResult(
+                status=PhaseStatus.FAILED,
+                detail=f"Onverwachte fout: {e}",
+            )
+
+        return PhaseResult(
+            status=PhaseStatus.FAILED,
+            detail="Model download onverwacht afgebroken. Start de applicatie opnieuw.",
+        )
+
+
+# ---------------------------------------------------------------------------
+# Phase 9 — Ready
+# ---------------------------------------------------------------------------
+
+class ReadyPhase(StartupPhase):
+    def __init__(self, frontend_url: str = "http://localhost:4210",
+                 backend_health_url: str = "http://localhost:8010/api/health"):
+        self.frontend_url = frontend_url
+        self.backend_health_url = backend_health_url
+
+    async def execute(self, phase_state: PhaseState = None, notify: callable = None) -> PhaseResult:
+        import httpx
+        logger.info("Phase 9: final service verification")
+        phase_state.detail = "Laatste controles uitvoeren..."
+        notify()
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(self.backend_health_url, timeout=10)
+                if resp.status_code != 200:
+                    return PhaseResult(
+                        status=PhaseStatus.FAILED,
+                        detail="Backend reageert niet meer. Start de applicatie opnieuw.",
+                    )
+        except Exception:
+            return PhaseResult(
+                status=PhaseStatus.FAILED,
+                detail="Backend is niet bereikbaar. Start de applicatie opnieuw.",
+            )
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(self.frontend_url, timeout=10)
+                if resp.status_code != 200:
+                    return PhaseResult(
+                        status=PhaseStatus.FAILED,
+                        detail="Frontend reageert niet meer. Start de applicatie opnieuw.",
+                    )
+        except Exception:
+            return PhaseResult(
+                status=PhaseStatus.FAILED,
+                detail="Frontend is niet bereikbaar. Start de applicatie opnieuw.",
+            )
+
+        logger.info("Phase 9: all services verified — application is ready")
+        return PhaseResult(
+            status=PhaseStatus.SUCCESS,
+            detail="Doorsturen naar applicatie...",
+            redirect_url=self.frontend_url,
+        )
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
 
 class StartupOrchestrator:
-    def __init__(self, compose_file: str):
+    def __init__(self, compose_file: str, config: dict | None = None):
         self.compose_file = compose_file
+        cfg = config or {}
         self.state = StartupState(phases=[
             PhaseState(id="docker_installed", label="Docker geïnstalleerd"),
             PhaseState(id="docker_version",   label="Docker Compose compatibel"),
@@ -627,6 +805,8 @@ class StartupOrchestrator:
             PhaseState(id="port_check",       label="Poorten beschikbaar"),
             PhaseState(id="pull_images",      label="Docker images downloaden"),
             PhaseState(id="start_services",   label="Services opstarten"),
+            PhaseState(id="pull_ai_model",    label="AI model downloaden"),
+            PhaseState(id="ready",            label="Applicatie gereed"),
         ])
         self._phases: list[StartupPhase] = [
             DockerInstalledCheck(),
@@ -636,6 +816,8 @@ class StartupOrchestrator:
             PortCheckPhase(ports=[4210, 8010, 7777, 5442, 11434]),
             PullImagesPhase(compose_file),
             StartServicesPhase(compose_file),
+            PullAIModelPhase(model=cfg.get("ai_model", "gemma3:1b")),
+            ReadyPhase(frontend_url=cfg.get("frontend_url", "http://localhost:4210")),
         ]
         self._on_update = None
 
@@ -644,27 +826,34 @@ class StartupOrchestrator:
 
     async def run(self) -> bool:
         """Run all phases in order. Returns True if all passed, False on first failure."""
+        import time
+        start_time = time.time()
+
         for i, phase in enumerate(self._phases):
             phase_state = self.state.phases[i]
             self.state.current_phase = phase_state.id
-            phase_state.status    = PhaseStatus.RUNNING
-            phase_state.detail    = None
-            phase_state.errors    = None
-            phase_state.link      = None
-            phase_state.sub_steps = None
+            phase_state.status       = PhaseStatus.RUNNING
+            phase_state.detail       = None
+            phase_state.errors       = None
+            phase_state.link         = None
+            phase_state.sub_steps    = None
+            phase_state.redirect_url = None
             self._notify()
 
             result = await phase.execute(phase_state, self._notify)
 
-            phase_state.status = result.status
-            phase_state.detail = result.detail
-            phase_state.errors = result.errors
-            phase_state.link   = result.link
+            phase_state.status       = result.status
+            phase_state.detail       = result.detail
+            phase_state.errors       = result.errors
+            phase_state.link         = result.link
+            phase_state.redirect_url = result.redirect_url
             self._notify()
 
             if result.status == PhaseStatus.FAILED:
                 return False
 
+        elapsed = time.time() - start_time
+        logger.info(f"Startup completed in {elapsed:.1f} seconds")
         return True
 
     def get_state_dict(self) -> dict:
@@ -687,6 +876,7 @@ class StartupOrchestrator:
                         }
                         for s in p.sub_steps
                     ] if p.sub_steps else None,
+                    "redirect_url": p.redirect_url,
                 }
                 for p in self.state.phases
             ],

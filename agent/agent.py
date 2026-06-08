@@ -427,7 +427,7 @@ def main():
 
     # 4. Run prerequisite checks (blocks until all pass or one fails)
     compose_path = get_compose_path()
-    _orchestrator = StartupOrchestrator(compose_path)
+    _orchestrator = StartupOrchestrator(compose_path, CONFIG)
     _orchestrator.set_update_callback(_on_startup_state_update)
 
     logger.info("Running startup prerequisite checks...")
