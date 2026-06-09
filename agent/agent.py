@@ -46,6 +46,12 @@ def _base_dir() -> Path:
         return Path(sys.executable).parent
     return Path(__file__).parent
 
+def _resources_dir() -> Path:
+    """Returns the directory where PyInstaller extracts bundled data,
+    or the script directory for normal Python runs."""
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS)
+    return Path(__file__).parent
 
 def load_config() -> dict:
     config = DEFAULT_CONFIG.copy()
@@ -141,7 +147,7 @@ def health_backend():
 
 @app.get("/loading")
 def loading_page():
-    html = (_base_dir() / "templates" / "startup.html").read_text(encoding="utf-8")
+    html = (_resources_dir() / "templates" / "startup.html").read_text(encoding="utf-8")
     return Response(html, mimetype="text/html")
 
 
