@@ -89,7 +89,7 @@ def normalize_newlines(text):
 try:
     stopwords.words("english")  # Check if stopwords are already downloaded
 except LookupError:
-    nltk.download("stopwords")  # Download stopwords if not available
+    nltk.download("stopwords", quiet=True)
 
 def remove_stopwords(text, language):
     """
