@@ -134,6 +134,42 @@ def startup_status_stream():
     )
 
 
+@app.post("/shutdown")
+def shutdown():
+    """Shut down the application: cancel analyses, stop Docker services, exit."""
+    logger.info("Shutdown requested by user.")
+
+    def _shutdown_sequence():
+        # 1. Cancel any running analyses (best-effort — don't block shutdown on failure)
+        try:
+            req = urllib.request.Request(
+                "http://localhost:8010/api/cancel-all-analyses",
+                method="POST",
+                data=b"",
+                headers={"Content-Type": "application/json"},
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                result = json.loads(resp.read())
+                logger.info(
+                    "Shutdown: cancelled %d analyses and %d tasks.",
+                    result.get("cancelled_analyses", 0),
+                    result.get("cancelled_tasks", 0),
+                )
+        except Exception as e:
+            logger.warning("Shutdown: could not cancel analyses (backend may be down): %s", e)
+
+        # 2. Stop Docker services
+        time.sleep(0.5)  # Brief pause to ensure the HTTP response is flushed
+        stop_docker_services()
+
+        # 3. Exit
+        logger.info("Shutdown complete. Exiting.")
+        os._exit(0)
+
+    threading.Thread(target=_shutdown_sequence, daemon=True).start()
+    return jsonify({"status": "shutting_down", "message": "De applicatie wordt afgesloten..."})
+
+
 @app.get("/health/backend")
 def health_backend():
     """Proxy health check to the frontend/backend (avoids CORS on the loading page)."""
