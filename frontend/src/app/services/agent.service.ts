@@ -44,4 +44,11 @@ export class AgentService {
   pickFolder(): Observable<FolderSelection> {
     return this.http.post<FolderSelection>(`${this.agentUrl}/pick-folder`, {});
   }
+
+  /**
+   * Shut down the application: cancels running analyses, stops Docker services, exits.
+   */
+  shutdown(): Observable<{ status: string; message: string }> {
+    return this.http.post<{ status: string; message: string }>(`${this.agentUrl}/shutdown`, {});
+  }
 }

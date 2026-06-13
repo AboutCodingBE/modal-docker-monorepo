@@ -17,6 +17,7 @@ class ArchiveAnalysisStatus(str, enum.Enum):
     STARTED = "STARTED"
     FAILED = "FAILED"
     COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
 
 
 class Base(DeclarativeBase):
