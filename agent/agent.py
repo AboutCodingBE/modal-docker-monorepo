@@ -14,6 +14,7 @@ import logging
 import mimetypes
 import os
 import platform
+import signal
 import socket
 import subprocess
 import sys
@@ -386,12 +387,84 @@ def _wait_for_flask(port: int, timeout: float = 10.0) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Previous-instance cleanup
+# ---------------------------------------------------------------------------
+_PORT_FREE_TIMEOUT = 2  # seconds to wait for the port to free after killing
+
+
+def _find_pid_on_port(port: int) -> int | None:
+    """Return the PID of the process listening on port, or None if the port is free."""
+    system = platform.system()
+    try:
+        if system in ("Darwin", "Linux"):
+            result = subprocess.run(
+                ["lsof", "-i", f":{port}", "-t"],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0 or not result.stdout.strip():
+                return None
+            pid_str = result.stdout.strip().split("\n")[0]
+            return int(pid_str)
+
+        elif system == "Windows":
+            result = subprocess.run(
+                ["netstat", "-ano", "-p", "TCP"],
+                capture_output=True,
+                text=True,
+            )
+            for line in result.stdout.splitlines():
+                if f":{port}" in line and "LISTENING" in line:
+                    parts = line.split()
+                    return int(parts[-1])
+            return None
+
+    except Exception as e:
+        logger.warning("Could not check for previous agent on port %d: %s", port, e)
+        return None
+
+
+def _kill_previous_agent(port: int) -> None:
+    """If a previous agent is running on our port, kill it and wait for the port to free up."""
+    pid = _find_pid_on_port(port)
+    if pid is None:
+        return
+
+    logger.info("Previous agent detected (PID %d) — stopping...", pid)
+    try:
+        if platform.system() == "Windows":
+            subprocess.run(
+                ["taskkill", "/PID", str(pid), "/F"],
+                capture_output=True,
+                text=True,
+            )
+        else:
+            os.kill(pid, signal.SIGTERM)
+    except Exception as e:
+        logger.warning("Could not kill previous agent (PID %d): %s", pid, e)
+        return
+
+    deadline = time.time() + _PORT_FREE_TIMEOUT
+    while time.time() < deadline:
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=0.5):
+                time.sleep(0.5)
+        except OSError:
+            logger.info("Previous agent has stopped.")
+            return
+
+    logger.warning(
+        "Previous agent did not release port %d within %d seconds — attempting to start anyway.",
+        port, _PORT_FREE_TIMEOUT,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
 def main():
     import argparse
     import atexit
-    import signal
 
     parser = argparse.ArgumentParser(description="Archive App Local Agent")
     parser.add_argument(
@@ -415,6 +488,9 @@ def main():
 
     # ── Production startup sequence ──────────────────────────────────────────
     global _orchestrator
+
+    # 0. Kill any previous agent instance so we can bind to the port cleanly
+    _kill_previous_agent(port)
 
     # 1. Start Flask in a background thread so /loading is immediately available
     flask_thread = threading.Thread(
