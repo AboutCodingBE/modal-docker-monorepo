@@ -2,5 +2,6 @@
   "agent_port": 9090,
   "frontend_url": "http://localhost:4210",
   "compose_file": "docker-compose.yml",
-  "log_file": "~/.archive-app/agent.log"
+  "log_file": "~/.archive-app/agent.log",
+  "ai_model": "gemma3:1b"
 }

@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MODAL — Opstarten</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: #f0f2f5;
+      color: #111827;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
+    .startup-container { width: 600px; max-width: 100%; }
+
+    /* ── Header ── */
+    .startup-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+      background: #1a2744;
+      border-radius: 10px;
+      padding: 18px 20px;
+      color: #fff;
+    }
+
+    .startup-logo {
+      width: 42px; height: 42px;
+      background: #3b6ef5;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .startup-text { flex: 1; min-width: 0; }
+
+    .startup-title {
+      font-size: 18px; font-weight: 700;
+      letter-spacing: 0.05em; margin-bottom: 2px;
+    }
+
+    .startup-subtitle { font-size: 12px; color: rgba(255,255,255,0.6); line-height: 1.4; }
+
+    /* ── Progress bar (AI model download) ── */
+    .progress-bar-wrap {
+      flex: 1;
+      background: #e5e7eb;
+      border-radius: 4px;
+      height: 6px;
+      overflow: hidden;
+      min-width: 80px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #3b6ef5;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    /* ── First-time banner ── */
+    .firsttime-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #1e40af;
+      line-height: 1.6;
+    }
+
+    .firsttime-banner strong { font-weight: 700; }
+
+    /* ── Phase list ── */
+    .phase-list {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+
+    .phase-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .phase-row:last-child { border-bottom: none; }
+
+    /* ── Status icons (phase level) ── */
+    .status-icon {
+      width: 22px; height: 22px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%; background: #d1d5db;
+    }
+
+    .status-spinner {
+      width: 16px; height: 16px;
+      border: 2px solid #bfdbfe;
+      border-top-color: #3b6ef5;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    .status-check {
+      width: 18px; height: 18px;
+      border-radius: 50%; background: #22c55e;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 11px; font-weight: 700;
+    }
+
+    .status-cross {
+      width: 18px; height: 18px;
+      border-radius: 50%; background: #ef4444;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 11px; font-weight: 700;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .phase-label { flex: 1; font-size: 13px; font-weight: 600; color: #111827; }
+
+    .phase-detail { font-size: 11px; color: #6b7280; text-align: right; flex-shrink: 0; }
+
+    /* ── Chevron toggle ── */
+    .chevron-btn {
+      background: none; border: none; cursor: pointer;
+      padding: 2px 4px; margin-left: 4px; flex-shrink: 0;
+      color: #9ca3af; line-height: 1;
+      font-size: 10px;
+      transition: transform 0.2s;
+    }
+    .chevron-btn.open { transform: rotate(180deg); }
+
+    /* ── Sub-steps ── */
+    .sub-steps {
+      border-top: 1px solid #f3f4f6;
+      background: #fafafa;
+    }
+
+    .sub-step-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 18px 9px 44px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .sub-step-row:last-child { border-bottom: none; }
+
+    /* small status icons */
+    .status-icon-sm {
+      width: 16px; height: 16px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .dot-sm {
+      width: 7px; height: 7px;
+      border-radius: 50%; background: #d1d5db;
+    }
+
+    .spinner-sm {
+      width: 12px; height: 12px;
+      border: 1.5px solid #bfdbfe;
+      border-top-color: #3b6ef5;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    .check-sm {
+      width: 14px; height: 14px;
+      border-radius: 50%; background: #22c55e;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 9px; font-weight: 700;
+    }
+
+    .cross-sm {
+      width: 14px; height: 14px;
+      border-radius: 50%; background: #ef4444;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 9px; font-weight: 700;
+    }
+
+    .sub-step-label { flex: 1; font-size: 12px; color: #374151; }
+
+    .sub-step-detail { font-size: 11px; color: #9ca3af; text-align: right; flex-shrink: 0; }
+
+    /* ── Log box ── */
+    .log-section {
+      padding: 0 18px 14px 44px;
+      border-bottom: 1px solid #f3f4f6;
+      background: #fafafa;
+    }
+    .log-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .log-title { font-size: 11px; font-weight: 600; color: #6b7280; }
+
+    .log-box {
+      background: #1e293b;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 10px; color: #cbd5e1;
+      max-height: 200px; overflow-y: auto;
+      white-space: pre-wrap; word-break: break-all;
+      line-height: 1.5;
+    }
+
+    /* ── Error block ── */
+    .error-block {
+      padding: 0 18px 14px 52px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .error-message {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 12px; color: #991b1b;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .remediation { font-size: 12px; color: #374151; line-height: 1.6; }
+
+    .remediation a { color: #3b6ef5; text-decoration: underline; }
+
+    .code-block {
+      background: #f1f5f9;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 8px 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px; color: #374151;
+      margin: 6px 0;
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 8px;
+    }
+
+    .btn-copy {
+      font-family: inherit; font-size: 10px; font-weight: 600;
+      padding: 3px 8px;
+      background: #fff; border: 1px solid #d1d5db;
+      border-radius: 4px; cursor: pointer; color: #374151;
+      white-space: nowrap; flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .btn-copy:hover { background: #f9fafb; }
+    .btn-copy.copied { color: #16a34a; border-color: #bbf7d0; }
+
+    .remediation-note {
+      font-size: 11px; color: #6b7280;
+      font-style: italic; margin-top: 8px;
+    }
+
+    /* ── Ready banner ── */
+    .ready-banner {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 18px 24px;
+      display: flex; align-items: center; gap: 16px;
+    }
+
+    .ready-icon {
+      width: 36px; height: 36px;
+      border-radius: 50%; background: #22c55e;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .ready-text { flex: 1; }
+
+    .ready-title { font-size: 14px; font-weight: 700; color: #166534; margin-bottom: 4px; }
+
+    .ready-subtitle { font-size: 12px; color: #15803d; }
+
+    .ready-link { font-size: 11px; color: #15803d; margin-top: 6px; }
+    .ready-link a { color: #15803d; }
+  </style>
+</head>
+<body>
+<div class="startup-container">
+
+  <div class="startup-header">
+    <div class="startup-logo">M</div>
+    <div class="startup-text">
+      <div class="startup-title">MODAL</div>
+      <div class="startup-subtitle" id="header-subtitle">Achter de schermen start MODAL meerdere AI-systemen op voor tekstherkenning, taalanalyse en slimme samenvattingen. Even geduld — we zorgen dat alles klaarstaat.</div>
+    </div>
+  </div>
+
+  <div class="firsttime-banner" id="firsttime-banner" style="display:none">
+    <strong>Eerste keer opstarten</strong> — De benodigde bestanden worden gedownload.
+    Dit kan enkele minuten duren afhankelijk van uw internetverbinding. Bij volgende starts gaat dit veel sneller.
+  </div>
+
+  <div class="firsttime-banner" id="aimodel-banner" style="display:none">
+    <strong>AI model wordt gedownload</strong> — Dit is eenmalig en kan even duren afhankelijk van uw internetverbinding.
+    Bij volgende starts is het model al beschikbaar.
+  </div>
+
+  <div class="phase-list" id="phase-list">
+    <!-- Rendered by JS -->
+  </div>
+
+  <div class="ready-banner" id="ready-banner" style="display:none">
+    <div class="ready-icon">✓</div>
+    <div class="ready-text">
+      <div class="ready-title">Services zijn opgestart!</div>
+      <div class="ready-subtitle" id="ready-subtitle">U wordt over enkele seconden doorgestuurd...</div>
+      <div class="ready-link" id="ready-link" style="display:none">
+        <a href="" id="ready-manual-link">Klik hier als u niet automatisch wordt doorgestuurd</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+  const AGENT = '';
+  const FRONTEND = 'http://localhost:4210';
+
+  // ── Copy helper ────────────────────────────────────────────────────────────
+
+  function copyBtn(text, dark) {
+    const id = 'copy-' + Math.random().toString(36).slice(2);
+    const style = dark
+      ? 'background:#334155;border-color:#475569;color:#e2e8f0;'
+      : '';
+    setTimeout(() => {
+      const btn = document.getElementById(id);
+      if (btn) btn.addEventListener('click', () => {
+        navigator.clipboard.writeText(text).then(() => {
+          btn.textContent = 'Gekopieerd!';
+          btn.classList.add('copied');
+          setTimeout(() => { btn.textContent = 'Kopiëren'; btn.classList.remove('copied'); }, 2000);
+        });
+      });
+    }, 0);
+    return `<button class="btn-copy" id="${id}" style="${style || ''}">Kopiëren</button>`;
+  }
+
+  // ── HTML escaping ──────────────────────────────────────────────────────────
+
+  function esc(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // ── Status icon HTML ───────────────────────────────────────────────────────
+
+  function iconHtml(status, small) {
+    const s = small ? '-sm' : '';
+    if (status === 'pending') return `<div class="dot${s}"></div>`;
+    if (status === 'running') return `<div class="spinner${s}"></div>`;
+    if (status === 'success') return `<div class="check${s}">✓</div>`;
+    if (status === 'failed')  return `<div class="cross${s}">✕</div>`;
+    return '';
+  }
+
+  // ── Chevron state ──────────────────────────────────────────────────────────
+
+  const expandedPhases = new Set();  // phase ids that are manually open
+
+  function toggleSubSteps(phaseId) {
+    if (expandedPhases.has(phaseId)) {
+      expandedPhases.delete(phaseId);
+    } else {
+      expandedPhases.add(phaseId);
+    }
+    renderPhases(lastState.phases);
+  }
+
+  // ── Sub-steps HTML ─────────────────────────────────────────────────────────
+
+  function subStepsHtml(phase) {
+    const steps = phase.sub_steps;
+    if (!steps || steps.length === 0) return '';
+
+    // Auto-expand running or failed phases; keep manually expanded ones open
+    const isActive = phase.status === 'running' || phase.status === 'failed';
+    const isOpen = isActive || expandedPhases.has(phase.id);
+
+    if (!isOpen) return '';
+
+    let html = '<div class="sub-steps">';
+
+    for (const step of steps) {
+      html +=
+        `<div class="sub-step-row">` +
+        `<div class="status-icon-sm">${iconHtml(step.status, true)}</div>` +
+        `<div class="sub-step-label">${esc(step.name)}</div>` +
+        (step.detail ? `<div class="sub-step-detail">${esc(step.detail)}</div>` : '') +
+        `</div>`;
+
+      if (step.logs && step.status === 'failed') {
+        html +=
+          `<div class="log-section">` +
+          `<div class="log-header">` +
+          `<span class="log-title">Container logs</span>` +
+          copyBtn(step.logs, true) +
+          `</div>` +
+          `<div class="log-box">${esc(step.logs)}</div>` +
+          `</div>`;
+      }
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  // ── Phase row chevron HTML ─────────────────────────────────────────────────
+
+  function chevronHtml(phase) {
+    if (!phase.sub_steps || phase.sub_steps.length === 0) return '';
+    // Only show chevron when phase is done (running/failed expand automatically)
+    if (phase.status !== 'success') return '';
+    const isOpen = expandedPhases.has(phase.id);
+    const cls = isOpen ? 'open' : '';
+    return `<button class="chevron-btn ${cls}" onclick="toggleSubSteps('${esc(phase.id)}')" title="Toon details">▼</button>`;
+  }
+
+  // ── Error block HTML ───────────────────────────────────────────────────────
+
+  function errorBlockHtml(phase) {
+    let html = '<div class="error-block">';
+
+    if (phase.detail) {
+      html += `<div class="error-message">${esc(phase.detail)}</div>`;
+    }
+
+    if (phase.errors && phase.errors.length > 0) {
+      html += '<div class="remediation">';
+      for (const err of phase.errors) {
+        html += `<div style="margin-bottom:8px">${esc(err.message)}</div>`;
+        html += `<div class="code-block"><span>${esc(err.fix)}</span>${copyBtn(err.fix, false)}</div>`;
+      }
+      html += '</div>';
+    }
+
+    if (phase.link) {
+      html += `<div class="remediation" style="margin-top:8px">
+        Meer informatie: <a href="${esc(phase.link)}" target="_blank" rel="noopener">${esc(phase.link)}</a>
+      </div>`;
+    }
+
+    if (phase.id === 'docker_running' && phase.status === 'failed') {
+      const ua = navigator.platform || '';
+      if (!ua.toLowerCase().includes('win')) {
+        const cmd = 'sudo systemctl start docker';
+        html += `<div class="remediation" style="margin-top:8px">Of voer het volgende uit:
+          <div class="code-block"><span>${esc(cmd)}</span>${copyBtn(cmd, false)}</div>
+        </div>`;
+      }
+    }
+
+    html += '<div class="remediation-note">Start de applicatie opnieuw na het oplossen van het probleem.</div>';
+    html += '</div>';
+    return html;
+  }
+
+  // ── Progress bar helpers ───────────────────────────────────────────────────
+
+  function parsePercent(detail) {
+    // Parses "gemma3:1b — 340 MB / 815 MB (42%)" → 42
+    const m = detail && detail.match(/\((\d+)%\)/);
+    return m ? parseInt(m[1], 10) : null;
+  }
+
+  function progressBarHtml(pct) {
+    return `<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>`;
+  }
+
+  // ── Main render ────────────────────────────────────────────────────────────
+
+  let lastState = { phases: [] };
+
+  function renderPhases(phases) {
+    const list = document.getElementById('phase-list');
+    list.innerHTML = '';
+
+    for (const phase of phases) {
+      const row = document.createElement('div');
+      row.className = 'phase-row';
+
+      // For pull_ai_model running with a percentage, replace the detail text with a progress bar
+      let detailHtml = '';
+      if ((phase.status === 'success' || phase.status === 'running') && phase.detail) {
+        if (phase.id === 'pull_ai_model' && phase.status === 'running') {
+          const pct = parsePercent(phase.detail);
+          if (pct !== null) {
+            detailHtml = progressBarHtml(pct) +
+              `<div class="phase-detail" style="min-width:40px">${pct}%</div>`;
+          } else {
+            detailHtml = `<div class="phase-detail">${esc(phase.detail)}</div>`;
+          }
+        } else {
+          detailHtml = `<div class="phase-detail">${esc(phase.detail)}</div>`;
+        }
+      }
+
+      row.innerHTML =
+        `<div class="status-icon">${iconHtml(phase.status, false)}</div>` +
+        `<div class="phase-label">${esc(phase.label)}</div>` +
+        detailHtml +
+        chevronHtml(phase);
+      list.appendChild(row);
+
+      // Sub-steps block
+      if (phase.sub_steps && phase.sub_steps.length > 0) {
+        const subEl = document.createElement('div');
+        subEl.innerHTML = subStepsHtml(phase);
+        if (subEl.firstElementChild) list.appendChild(subEl.firstElementChild);
+      }
+
+      // Error block (shown for all failed phases, with or without sub-steps)
+      if (phase.status === 'failed') {
+        const block = document.createElement('div');
+        block.innerHTML = errorBlockHtml(phase);
+        if (block.firstElementChild) list.appendChild(block.firstElementChild);
+      }
+    }
+  }
+
+  function allPhasesSucceeded(phases) {
+    return phases.length > 0 && phases.every(p => p.status === 'success');
+  }
+
+  function anyPhaseFailed(phases) {
+    return phases.some(p => p.status === 'failed');
+  }
+
+  // ── First-time banners ─────────────────────────────────────────────────────
+
+  let firstTimeBannerShown = false;
+  let aiModelBannerShown = false;
+
+  function checkBanners(phases) {
+    if (!firstTimeBannerShown) {
+      const pullPhase = phases.find(p => p.id === 'pull_images');
+      if (pullPhase && pullPhase.sub_steps) {
+        const downloading = pullPhase.sub_steps.filter(
+          s => s.detail === 'Gedownload' || s.detail === 'Downloaden...'
+        ).length;
+        if (downloading > 2) {
+          document.getElementById('firsttime-banner').style.display = 'block';
+          firstTimeBannerShown = true;
+        }
+      }
+    }
+
+    if (!aiModelBannerShown) {
+      const modelPhase = phases.find(p => p.id === 'pull_ai_model');
+      if (modelPhase && modelPhase.status === 'running' && modelPhase.detail &&
+          !modelPhase.detail.includes('al beschikbaar') &&
+          !modelPhase.detail.includes('Controleren')) {
+        document.getElementById('aimodel-banner').style.display = 'block';
+        aiModelBannerShown = true;
+      }
+    }
+  }
+
+  // ── Ready / redirect ───────────────────────────────────────────────────────
+
+  let allDone = false;
+
+  function onAllDone(redirectUrl) {
+    if (allDone) return;
+    allDone = true;
+
+    document.getElementById('header-subtitle').textContent = 'Applicatie is gereed!';
+    document.getElementById('ready-banner').style.display = 'flex';
+
+    const link = document.getElementById('ready-manual-link');
+    link.href = redirectUrl;
+    document.getElementById('ready-link').style.display = 'block';
+
+    setTimeout(() => {
+      window.location.href = redirectUrl;
+    }, 2000);
+  }
+
+  // ── State handling ─────────────────────────────────────────────────────────
+
+  function onState(state) {
+    if (!state || !state.phases) return;
+    lastState = state;
+    renderPhases(state.phases);
+    checkBanners(state.phases);
+
+    // Redirect is triggered by redirect_url on the ready phase
+    if (!allDone) {
+      const readyPhase = state.phases.find(p => p.id === 'ready' && p.redirect_url);
+      if (readyPhase) {
+        onAllDone(readyPhase.redirect_url);
+      }
+    }
+  }
+
+  // ── SSE connection with polling fallback ───────────────────────────────────
+
+  function startPolling() {
+    async function poll() {
+      if (allDone) return;
+      try {
+        const res = await fetch(AGENT + '/startup-status');
+        const state = await res.json();
+        onState(state);
+        if (!anyPhaseFailed(state.phases || []) && !allPhasesSucceeded(state.phases || [])) {
+          setTimeout(poll, 2000);
+        }
+      } catch (_) {
+        setTimeout(poll, 2000);
+      }
+    }
+    poll();
+  }
+
+  (function connect() {
+    if (typeof EventSource === 'undefined') { startPolling(); return; }
+
+    const sse = new EventSource(AGENT + '/startup-status/stream');
+
+    sse.onmessage = (e) => {
+      try {
+        const state = JSON.parse(e.data);
+        onState(state);
+        if (anyPhaseFailed(state.phases || []) || allPhasesSucceeded(state.phases || [])) {
+          sse.close();
+        }
+      } catch (_) {}
+    };
+
+    sse.onerror = () => {
+      sse.close();
+      if (!allDone) startPolling();
+    };
+  })();
+</script>
+</body>
+</html>
