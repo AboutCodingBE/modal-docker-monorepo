@@ -25,8 +25,13 @@ def _file_prompt(text: str) -> str:
 
 def _folder_prompt(text: str) -> str:
     return (
-        "Geef een antwoord in een korte zin. Geef GEEN verdere toelichting bij je antwoord.\n\n"
-        f"Vat deze samenvattingen samen in het Nederlands:\n\n{text}"
+        "Je bent een archivaris die een overzicht maakt van de inhoud van een map.\n\n"
+        "Deze map bevat meerdere, op zichzelf staande documenten. "
+        "Geef een beknopt overzicht in 2 tot 3 zinnen in het Nederlands. "
+        "Beschrijf welke thema's en onderwerpen aan bod komen en welk soort documenten de map bevat. "
+        "Leg GEEN verbanden tussen de documenten die er niet zijn. "
+        "Geef GEEN opsomming, maar een beschrijvend overzicht van de collectie.\n\n"
+        f"Samenvattingen van de individuele documenten:\n\n{text}"
     )
 
 
