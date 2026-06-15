@@ -723,3 +723,103 @@ class TestWaaromZijnParentIdsNull:
             f"  full_path van Foto-archief  = {repr(folder.full_path)}\n"
             f"  → matchen deze twee exact? {repr('Foto-archief') == repr(folder.full_path)}"
         )
+
+    @pytest.mark.asyncio
+    async def test_09_agent_geeft_backslash_paden_parent_id_klopt(
+        self, async_db_session: AsyncSession, tmp_path: Path
+    ):
+        """Simuleert agent-output op Windows: absolute_path bevat backslashes
+        zoals de agent ze teruggeeft aan de Linux-container.
+
+        De Linux-container draait folder_analysis.py en ontvangt van de Windows-agent
+        paden zoals 'C:\\\\archief\\\\Foto-archief\\\\foto1.jpg'. De fix in
+        folder_analysis.py normaliseert eerst naar forward slashes en splitst
+        dan pas — zo matcht _parent_path altijd met full_path in path_to_id.
+
+        We simuleren die verwerking hier door entries te bouwen zoals
+        folder_analysis.py dat na de fix doet, en verifiëren via persist_all
+        dat parent_id correct wordt gezet.
+        """
+        from app.shared.path_utils import normalize_path as _normalize
+
+        archive = await _make_archive(
+            async_db_session, "test-agent-backslash", str(tmp_path)
+        )
+        now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+
+        # Agent op Windows stuurt paden met backslashes
+        agent_map_path      = "C:\\archief\\Foto-archief"
+        agent_bestand_path  = "C:\\archief\\Foto-archief\\foto1.jpg"
+
+        # Simuleer de verwerking in folder_analysis.py (na de fix):
+        #   full_path   = normalize_path(absolute_path)
+        #   parent_path = full_path.rsplit("/", 1)[0]
+        map_full      = _normalize(agent_map_path)        # "C:/archief/Foto-archief"
+        map_parent    = map_full.rsplit("/", 1)[0]        # "C:/archief"
+        foto_full     = _normalize(agent_bestand_path)    # "C:/archief/Foto-archief/foto1.jpg"
+        foto_parent   = foto_full.rsplit("/", 1)[0]       # "C:/archief/Foto-archief"
+
+        entries = [
+            {
+                "archive_id": archive.id,
+                "_parent_path": map_parent,   # "C:/archief" — niet in path_to_id → parent_id NULL
+                "name": "Foto-archief",
+                "full_path": map_full,
+                "relative_path": "Foto-archief",
+                "is_directory": True,
+                "extension": None,
+                "size_bytes": None,
+                "sha256_hash": None,
+                "created_at": None,
+                "modified_at": now,
+                "discovered_at": now,
+            },
+            {
+                "archive_id": archive.id,
+                "_parent_path": foto_parent,  # "C:/archief/Foto-archief" → moet matchen met map_full
+                "name": "foto1.jpg",
+                "full_path": foto_full,
+                "relative_path": "Foto-archief/foto1.jpg",
+                "is_directory": False,
+                "extension": "jpg",
+                "size_bytes": 0,
+                "sha256_hash": None,
+                "created_at": None,
+                "modified_at": now,
+                "discovered_at": now,
+            },
+        ]
+
+        repo = FileRepository(async_db_session)
+        await repo.persist_all(entries)
+
+        result = await async_db_session.execute(
+            text("SELECT id, name, full_path, parent_id FROM files WHERE archive_id = :aid"),
+            {"aid": str(archive.id)},
+        )
+        rows = result.fetchall()
+
+        assert len(rows) == 2, (
+            f"Verwacht 2 records, maar {len(rows)} gevonden: {[r.name for r in rows]}"
+        )
+
+        folder = next((r for r in rows if r.name == "Foto-archief"), None)
+        foto   = next((r for r in rows if r.name == "foto1.jpg"),    None)
+
+        assert folder is not None, "'Foto-archief' niet gevonden"
+        assert foto   is not None, "'foto1.jpg' niet gevonden"
+
+        # De map heeft geen bekende parent (archief-root zit niet in path_to_id) → NULL
+        assert folder.parent_id is None, (
+            f"'Foto-archief' heeft parent_id={folder.parent_id}, verwacht NULL\n"
+            f"  full_path = {folder.full_path!r}"
+        )
+
+        # Het bestand moet parent_id == id van de map hebben
+        assert foto.parent_id == folder.id, (
+            f"'foto1.jpg' heeft parent_id={foto.parent_id}, "
+            f"maar verwacht parent_id={folder.id}\n"
+            f"  foto_parent  (= _parent_path) = {foto_parent!r}\n"
+            f"  map_full     (= full_path map) = {map_full!r}\n"
+            f"  matchen?     {foto_parent == map_full}"
+        )

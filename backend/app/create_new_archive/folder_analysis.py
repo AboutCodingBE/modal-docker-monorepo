@@ -53,8 +53,8 @@ class FolderAnalysis:
                 else None
             )
 
-            full_path    = normalize_path(f["absolute_path"])
-            parent_path  = normalize_path(os.path.dirname(f["absolute_path"]))
+            full_path     = normalize_path(f["absolute_path"])
+            parent_path   = full_path.rsplit("/", 1)[0]   # split ná normalisatie, niet ervóór
             relative_path = normalize_path(f["relative_path"])
 
             if is_directory:
