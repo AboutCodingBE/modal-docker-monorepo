@@ -11,3 +11,4 @@ langdetect==1.0.9
 nltk==3.9.1
 psycopg[binary]==3.2.10
 spacy==3.8.13
+pytest==9.1.0
