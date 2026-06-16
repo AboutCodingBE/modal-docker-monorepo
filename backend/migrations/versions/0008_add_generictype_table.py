@@ -1,7 +1,7 @@
 """add generictype table
 
-Revision ID: 0005
-Revises: 0004
+Revision ID: 0008
+Revises: 0007
 Create Date: 2026-05-19
 
 """
@@ -11,8 +11,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects.postgresql import UUID
 
-revision: str = "0005"
-down_revision: str | None = "0004"
+revision: str = "0008"
+down_revision: str | None = "0007"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
