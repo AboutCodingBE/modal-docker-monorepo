@@ -6,22 +6,83 @@ on:
       - 'v*'
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            zip_name: archive-app-linux.zip
-            binary: agent/dist/archive-agent
-          - os: macos-latest
-            zip_name: archive-app-macos.zip
-            binary: agent/dist/archive-agent
-          - os: windows-latest
-            zip_name: archive-app-windows.zip
-            binary: agent/dist/archive-agent.exe
+  build-backend-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
 
-    runs-on: ${{ matrix.os }}
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/archive-app-backend
+          tags: |
+            type=raw,value=${{ github.ref_name }}
+            type=raw,value=latest
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-frontend-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/archive-app-frontend
+          tags: |
+            type=raw,value=${{ github.ref_name }}
+            type=raw,value=latest
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-linux:
+    needs: [build-backend-image, build-frontend-image]
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -35,54 +96,189 @@ jobs:
           pip install -r agent/requirements.txt
           pip install pyinstaller
 
-      - name: Build binary (Linux/macOS)
-        if: runner.os != 'Windows'
+      - name: Build binary
         run: |
           cd agent
-          pyinstaller --onefile --name archive-agent --add-data "config.json:." agent.py
+          pyinstaller --onefile --name archive-agent --add-data "config.json:." --add-data "templates:templates" agent.py
 
-      - name: Build binary (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          cd agent
-          pyinstaller --onefile --name archive-agent --add-data "config.json;." agent.py
+      - name: Make binary executable
+        run: chmod +x agent/dist/archive-agent
 
-      - name: Make binary executable (Linux/macOS)
-        if: runner.os != 'Windows'
-        run: chmod +x ${{ matrix.binary }}
-
-      - name: Stage release files (Linux/macOS)
-        if: runner.os != 'Windows'
+      - name: Stage release files
         run: |
           mkdir release-staging
-          cp ${{ matrix.binary }} release-staging/archive-agent
+          cp agent/dist/archive-agent release-staging/archive-agent
           cp docker-compose.prod.yml release-staging/docker-compose.prod.yml
           cp README-RELEASE.md release-staging/README-RELEASE.md
           cp diagnostic.sh release-staging/diagnostic.sh
           chmod +x release-staging/diagnostic.sh
           echo '{"agent_port":9090,"frontend_url":"http://localhost:4210","compose_file":"docker-compose.prod.yml","log_file":"~/.archive-app/agent.log"}' > release-staging/config.json
-          cd release-staging && zip ../${{ matrix.zip_name }} *
 
-      - name: Stage release files (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
+      - name: Pin image tags to release version
         run: |
-          New-Item -ItemType Directory release-staging
-          Copy-Item ${{ matrix.binary }} release-staging/archive-agent.exe
-          Copy-Item docker-compose.prod.yml release-staging/docker-compose.prod.yml
-          Copy-Item README-RELEASE.md release-staging/README-RELEASE.md
-          Copy-Item diagnostic.ps1 release-staging/diagnostic.ps1
-          '{"agent_port":9090,"frontend_url":"http://localhost:4210","compose_file":"docker-compose.prod.yml","log_file":"~/.archive-app/agent.log"}' | Out-File -FilePath release-staging/config.json -Encoding utf8
-          Compress-Archive -Path release-staging/* -DestinationPath ${{ matrix.zip_name }}
+          sed -i "s|archive-app-backend:latest|archive-app-backend:${{ github.ref_name }}|g" release-staging/docker-compose.prod.yml
+          sed -i "s|archive-app-frontend:latest|archive-app-frontend:${{ github.ref_name }}|g" release-staging/docker-compose.prod.yml
+
+      - name: Package release
+        run: cd release-staging && zip ../archive-app-linux.zip *
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.zip_name }}
-          path: ${{ matrix.zip_name }}
+          name: archive-app-linux.zip
+          path: archive-app-linux.zip
+
+  build-macos-arm64:
+    needs: [build-backend-image, build-frontend-image]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r agent/requirements.txt
+          pip install pyinstaller
+
+      - name: Build binary
+        run: |
+          cd agent
+          pyinstaller --onefile --name archive-agent --add-data "config.json:." --add-data "templates:templates" agent.py
+
+      - name: Make binary executable
+        run: chmod +x agent/dist/archive-agent
+
+      - name: Stage release files
+        run: |
+          mkdir release-staging
+          cp agent/dist/archive-agent release-staging/archive-agent
+          cp docker-compose.prod.yml release-staging/docker-compose.prod.yml
+          cp README-RELEASE.md release-staging/README-RELEASE.md
+          cp diagnostic.sh release-staging/diagnostic.sh
+          chmod +x release-staging/diagnostic.sh
+          echo '{"agent_port":9090,"frontend_url":"http://localhost:4210","compose_file":"docker-compose.prod.yml","log_file":"~/.archive-app/agent.log"}' > release-staging/config.json
+
+      - name: Pin image tags to release version
+        run: |
+          sed -i '' "s|archive-app-backend:latest|archive-app-backend:${{ github.ref_name }}|g" release-staging/docker-compose.prod.yml
+          sed -i '' "s|archive-app-frontend:latest|archive-app-frontend:${{ github.ref_name }}|g" release-staging/docker-compose.prod.yml
+
+      - name: Package release
+        run: cd release-staging && zip ../archive-app-macos-arm64.zip *
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-app-macos-arm64.zip
+          path: archive-app-macos-arm64.zip
+
+  build-macos-intel:
+    needs: [build-backend-image, build-frontend-image]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install x86_64 Python via official installer
+        run: |
+          curl -o python.pkg https://www.python.org/ftp/python/3.12.8/python-3.12.8-macos11.pkg
+          sudo installer -pkg python.pkg -target /
+          echo "/Library/Frameworks/Python.framework/Versions/3.12/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          arch -x86_64 /Library/Frameworks/Python.framework/Versions/3.12/bin/python3 -m pip install -r agent/requirements.txt
+          arch -x86_64 /Library/Frameworks/Python.framework/Versions/3.12/bin/python3 -m pip install pyinstaller
+
+      - name: Build x86_64 binary
+        run: |
+          cd agent
+          arch -x86_64 /Library/Frameworks/Python.framework/Versions/3.12/bin/python3 -m PyInstaller --onefile --name archive-agent --add-data "config.json:." --add-data "templates:templates" agent.py
+
+      - name: Verify architecture
+        run: |
+          file agent/dist/archive-agent
+          lipo -info agent/dist/archive-agent
+
+      - name: Make binary executable
+        run: chmod +x agent/dist/archive-agent
+
+      - name: Stage release files
+        run: |
+          mkdir release-staging
+          cp agent/dist/archive-agent release-staging/archive-agent
+          cp docker-compose.prod.yml release-staging/docker-compose.prod.yml
+          cp README-RELEASE.md release-staging/README-RELEASE.md
+          cp diagnostic.sh release-staging/diagnostic.sh
+          chmod +x release-staging/diagnostic.sh
+          echo '{"agent_port":9090,"frontend_url":"http://localhost:4210","compose_file":"docker-compose.prod.yml","log_file":"~/.archive-app/agent.log"}' > release-staging/config.json
+
+      - name: Pin image tags to release version
+        run: |
+          sed -i '' "s|archive-app-backend:latest|archive-app-backend:${{ github.ref_name }}|g" release-staging/docker-compose.prod.yml
+          sed -i '' "s|archive-app-frontend:latest|archive-app-frontend:${{ github.ref_name }}|g" release-staging/docker-compose.prod.yml
+
+      - name: Package release
+        run: cd release-staging && zip ../archive-app-macos-intel.zip *
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-app-macos-intel.zip
+          path: archive-app-macos-intel.zip
+
+  build-windows:
+    needs: [build-backend-image, build-frontend-image]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r agent/requirements.txt
+          pip install pyinstaller
+
+      - name: Build binary
+        run: |
+          cd agent
+          pyinstaller --onefile --name archive-agent --add-data "config.json;." --add-data "templates;templates" agent.py
+
+      - name: Stage release files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory release-staging
+          Copy-Item agent/dist/archive-agent.exe release-staging/archive-agent.exe
+          Copy-Item docker-compose.prod.yml release-staging/docker-compose.prod.yml
+          Copy-Item README-RELEASE.md release-staging/README-RELEASE.md
+          Copy-Item diagnostic.ps1 release-staging/diagnostic.ps1
+          '{"agent_port":9090,"frontend_url":"http://localhost:4210","compose_file":"docker-compose.prod.yml","log_file":"~/.archive-app/agent.log"}' | Out-File -FilePath release-staging/config.json -Encoding utf8
+
+      - name: Pin image tags to release version
+        shell: pwsh
+        run: |
+          (Get-Content release-staging/docker-compose.prod.yml) -replace 'archive-app-backend:latest', "archive-app-backend:${{ github.ref_name }}" | Set-Content release-staging/docker-compose.prod.yml
+          (Get-Content release-staging/docker-compose.prod.yml) -replace 'archive-app-frontend:latest', "archive-app-frontend:${{ github.ref_name }}" | Set-Content release-staging/docker-compose.prod.yml
+
+      - name: Package release
+        shell: pwsh
+        run: Compress-Archive -Path release-staging/* -DestinationPath archive-app-windows.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-app-windows.zip
+          path: archive-app-windows.zip
 
   release:
-    needs: [build]
+    needs: [build-linux, build-macos-arm64, build-macos-intel, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -99,5 +295,6 @@ jobs:
           generate_release_notes: true
           files: |
             archive-app-linux.zip
-            archive-app-macos.zip
+            archive-app-macos-arm64.zip
+            archive-app-macos-intel.zip
             archive-app-windows.zip

@@ -68,6 +68,7 @@ class PerformTikaAnalysis:
                 await self._session.commit()
 
                 try:
+                    _logger.info(f"Fetching file from agent: {settings.agent_url}/file-content?path={file_path}")
                     async with httpx.AsyncClient() as client:
                         resp = await client.get(
                             f"{settings.agent_url}/file-content",
@@ -76,6 +77,7 @@ class PerformTikaAnalysis:
                         )
                         resp.raise_for_status()
                         file_content = resp.content
+                        _logger.info(f"Agent response: status={resp.status_code}, content_length={len(resp.content)}, first20={resp.content[:20]!r}")
                 except Exception as e:
                     _logger.error(f"{log_context(archive_id, file_name)}Failed to fetch file from agent: {e}")
                     failed_count += 1

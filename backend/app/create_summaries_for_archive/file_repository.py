@@ -50,5 +50,5 @@ class FileRepository:
             }
             for f in result.scalars().all()
         ]
-        folders.sort(key=lambda f: f["relative_path"].count("/"), reverse=True)
+        folders.sort(key=lambda f: f["relative_path"].count("/") if f["relative_path"] != "." else -1, reverse=True)
         return folders

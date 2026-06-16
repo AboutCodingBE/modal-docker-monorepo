@@ -8,6 +8,7 @@ export interface AnalysisProgressEvent {
   failed_count: number;
   current_file: string | null;
   percentage: number;
+  type?: string;
 }
 
 export interface Archive {

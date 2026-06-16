@@ -2,6 +2,7 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -16,6 +17,7 @@ class ArchiveAnalysisStatus(str, enum.Enum):
     STARTED = "STARTED"
     FAILED = "FAILED"
     COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
 
 
 class Base(DeclarativeBase):
@@ -105,10 +107,12 @@ class AnalysisTask(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    task_type: Mapped[str] = mapped_column(String(20), nullable=False, default="analysis")
     total_files: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     processed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     failed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     current_file: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -172,3 +176,22 @@ class Summary(Base):
     result: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     archive_analysis: Mapped["ArchiveAnalysis"] = relationship("ArchiveAnalysis", back_populates="summaries")
+
+
+class Ner(Base):
+    __tablename__ = "ner"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
+    analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archive_analysis.id", ondelete="CASCADE"), nullable=False)
+    parent_folder_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="SET NULL"), nullable=True)
+    file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
+
+    persons: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
+    persons_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    locations: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
+    locations_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    organisations: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
+    organisations_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    misc: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
+    misc_count: Mapped[int | None] = mapped_column(Integer, nullable=True)

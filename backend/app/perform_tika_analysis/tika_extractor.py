@@ -20,14 +20,18 @@ def TIKA_text_extract(file_content: bytes):
     or the string "None" if extraction fails.
     """
     try:
+        import os
+
         parsed = parser.from_buffer(
             file_content,
-            serverEndpoint=f"{settings.tika_url}/",
+            serverEndpoint=settings.tika_url,
             requestOptions={'timeout': 300},
         )
 
         text = parsed.get('content', '')
         metadata = parsed.get('metadata', {})
+        _logger.debug(f"Tika parsed result: status={parsed.get('status')}, content_length={len(text)}, metadata_keys={list(parsed.get('metadata', {}).keys())}")
+
 
         text_language = language.from_buffer(text)
         file_mimetype = detector.from_buffer(file_content)

@@ -14,7 +14,7 @@
     </div>
 
     <div class="modal-body">
-      @for (t of types; track t.type) {
+      @for (t of types(); track t.type) {
         <div class="tool-row" [class.tool-row--checked]="isChecked(t.type)">
           <input
             type="checkbox"
@@ -32,7 +32,7 @@
               <div class="model-label">Model</div>
               <span class="model-badge">{{ getModel(t.type) }}</span>
             </div>
-            @if (modelOptions[t.type].length > 1) {
+            @if (modelOptions()[t.type].length > 1) {
               <button
                 class="btn-config"
                 [class.btn-config--active]="openPopover() === t.type"
@@ -47,7 +47,7 @@
                 <div class="model-popover">
                   <div class="popover-header">Kies model</div>
                   <ul class="popover-list">
-                    @for (m of modelOptions[t.type]; track m) {
+                    @for (m of modelOptions()[t.type]; track m) {
                       <li
                         [class.popover-item--selected]="getModel(t.type) === m"
                         (click)="pickModel(t.type, m)"

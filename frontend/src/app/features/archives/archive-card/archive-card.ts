@@ -3,6 +3,11 @@ import { Archive } from '../../../models/archive.model';
 import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
 import { AnalysisPipeline } from '../../analysis/analysis-pipeline/analysis-pipeline';
 
+const TYPE_LABELS: Record<string, string> = {
+  summary: 'Samenvatting',
+  ner: 'Entiteitsherkenning',
+};
+
 @Component({
   selector: 'app-archive-card',
   templateUrl: './archive-card.html',
@@ -37,4 +42,9 @@ export class ArchiveCard {
   showPipeline = computed(() => !!this.archive().analysisEvent);
 
   progress = computed(() => this.archive().progress ?? 0);
+
+  stepName = computed(() => {
+    const type = this.archive().analysisEvent?.type;
+    return type ? (TYPE_LABELS[type] ?? type) : 'Analyse';
+  });
 }

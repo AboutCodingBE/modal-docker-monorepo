@@ -30,7 +30,7 @@
 
   @if (showPipeline()) {
     <div class="card-pipeline">
-      <app-analysis-pipeline [event]="archive().analysisEvent!" stepName="Samenvatting" />
+      <app-analysis-pipeline [event]="archive().analysisEvent!" [stepName]="stepName()" />
     </div>
   } @else if (showProgressBar()) {
     <div class="card-progress">

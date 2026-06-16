@@ -11,10 +11,12 @@ async def create_task(
     session: AsyncSession,
     archive_id: uuid.UUID,
     total_files: int,
+    task_type: str = "analysis",
 ) -> AnalysisTask:
     task = AnalysisTask(
         archive_id=archive_id,
         status="pending",
+        task_type=task_type,
         total_files=total_files,
     )
     session.add(task)
@@ -88,7 +90,7 @@ async def get_active_tasks(session: AsyncSession) -> list[AnalysisTask]:
     result = await session.execute(
         select(AnalysisTask)
         .where(AnalysisTask.status.in_(["pending", "running"]))
-        .order_by(AnalysisTask.started_at.desc().nullslast())
+        .order_by(AnalysisTask.created_at.asc())
     )
     return list(result.scalars().all())
 

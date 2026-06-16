@@ -31,5 +31,79 @@
     </a>
   </nav>
 
+  <div class="sidebar-spacer"></div>
+
+  <div class="sidebar-bottom">
+    <div class="sidebar-divider"></div>
+    <button class="btn-shutdown" (click)="onShutdownClick()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" x2="9" y1="12" y2="12"/>
+      </svg>
+      Afsluiten
+    </button>
+  </div>
+
   <div class="sidebar-version">MODAL V1.2.0</div>
 </aside>
+
+<!-- Confirmation dialog -->
+@if (shutdownState() === 'confirming') {
+  <div class="overlay" (click)="onCancelShutdown()">
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-title">Applicatie afsluiten</div>
+      <div class="dialog-body">
+        @if (hasActiveAnalysis()) {
+          <p class="dialog-warning">Er is momenteel een analyse actief. Deze wordt gestopt als u verdergaat.</p>
+        }
+        <p>Weet u zeker dat u de applicatie wilt stoppen?</p>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn-cancel" (click)="onCancelShutdown()">Annuleren</button>
+        <button class="btn-confirm" (click)="onConfirmShutdown()">Stoppen</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Shutting down overlay -->
+@if (shutdownState() === 'shutting_down') {
+  <div class="overlay">
+    <div class="dialog">
+      <div class="dialog-title">Afsluiten...</div>
+      <div class="dialog-body">
+        <p>De applicatie wordt afgesloten. Even geduld.</p>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Done overlay -->
+@if (shutdownState() === 'done') {
+  <div class="overlay">
+    <div class="dialog">
+      <div class="dialog-icon dialog-icon--success">✓</div>
+      <div class="dialog-title">Applicatie afgesloten</div>
+      <div class="dialog-body">
+        <p>De applicatie is afgesloten. U kunt dit venster sluiten.</p>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Error overlay -->
+@if (shutdownState() === 'error') {
+  <div class="overlay">
+    <div class="dialog">
+      <div class="dialog-icon dialog-icon--error">!</div>
+      <div class="dialog-title">Fout bij afsluiten</div>
+      <div class="dialog-body">
+        <p>Er is een fout opgetreden bij het afsluiten. Sluit het venster en probeer het opnieuw.</p>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn-cancel" (click)="onCancelShutdown()">Sluiten</button>
+      </div>
+    </div>
+  </div>
+}

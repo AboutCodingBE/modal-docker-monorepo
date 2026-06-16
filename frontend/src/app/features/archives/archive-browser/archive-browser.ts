@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Archive } from '../../../models/archive.model';
 import { ArchiveService } from '../../../services/archive.service';
-import { TaskProgressService } from '../../../services/task-progress.service';
+import { ActiveTask, TaskProgressService } from '../../../services/task-progress.service';
 import { ArchiveCard } from '../archive-card/archive-card';
 import { NewArchiveModal } from '../new-archive-modal/new-archive-modal';
 import { AnalysisModal } from '../../analysis/analysis-modal/analysis-modal';
@@ -26,6 +26,12 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
   // Track which task IDs belong to AI analysis (vs Tika ingestion)
   private analysisTaskIds = new Set<string>();
 
+  // Per-archive queue of task IDs not yet subscribed to SSE
+  private taskQueues = new Map<string, string[]>();
+
+  // Maps task ID to its analysis type (e.g. 'summary', 'ner')
+  private taskTypes = new Map<string, string>();
+
   private updatesSub?: Subscription;
 
   constructor(
@@ -40,7 +46,7 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
         this.archives.set(archives);
         this.loading.set(false);
         this._subscribeToUpdates();
-        this.taskProgress.loadAndTrack();
+        this._loadAndTrack();
       },
       error: () => {
         this.loadError.set(true);
@@ -85,11 +91,17 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
     this.analysisModalArchive.set(null);
   }
 
-  onAnalysisStarted(event: { archiveId: string; taskIds: string[] }): void {
-    // Register task IDs as AI analysis tasks
-    for (const taskId of event.taskIds) {
+  onAnalysisStarted(event: { archiveId: string; tasks: { taskId: string; type: string }[] }): void {
+    // Register all task IDs as AI analysis tasks
+    for (const { taskId, type } of event.tasks) {
       this.analysisTaskIds.add(taskId);
-      this.taskProgress.track(event.archiveId, taskId);
+      this.taskTypes.set(taskId, type);
+    }
+
+    // Open SSE only for the first task; queue the rest
+    if (event.tasks.length > 0) {
+      this.taskProgress.track(event.archiveId, event.tasks[0].taskId);
+      this.taskQueues.set(event.archiveId, event.tasks.slice(1).map(t => t.taskId));
     }
 
     // Mark archive as in_progress immediately
@@ -116,10 +128,14 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
           if (isAiAnalysis) {
             // AI analysis: completed → 'analysed', active → keep pipeline event
             const completedStatus = isCompleted ? 'analysed' as const : isFailed ? 'failed' as const : 'in_progress' as const;
+            const enrichedEvent = isCompleted || isFailed ? null : {
+              ...update.event,
+              type: this.taskTypes.get(update.event.task_id),
+            };
             return {
               ...a,
               status: completedStatus,
-              analysisEvent: isCompleted || isFailed ? null : update.event,
+              analysisEvent: enrichedEvent,
             };
           } else {
             // Tika ingestion: completed → 'ingested', active → progress bar
@@ -131,6 +147,53 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
           }
         })
       );
+
+      // When an AI analysis task finishes, start the next queued task
+      if (isAiAnalysis && (isCompleted || isFailed)) {
+        const queue = this.taskQueues.get(update.archiveId) ?? [];
+        if (queue.length > 0) {
+          const [nextTaskId, ...rest] = queue;
+          this.taskQueues.set(update.archiveId, rest);
+          this.taskProgress.track(update.archiveId, nextTaskId);
+        } else {
+          this.taskQueues.delete(update.archiveId);
+        }
+      }
+    });
+  }
+
+  // ── Reload / navigate-back: reconnect to in-flight tasks ──────────────────
+
+  private _loadAndTrack(): void {
+    this.taskProgress.getActiveTasks().subscribe({
+      next: (tasks) => {
+        // Emit an immediate snapshot for each task so cards show current state
+        for (const task of tasks) {
+          this.taskProgress.emitSnapshot(task);
+        }
+
+        // Tika tasks: subscribe immediately
+        for (const task of tasks.filter(t => t.task_type === 'tika')) {
+          this.taskProgress.track(task.archive_id, task.task_id);
+        }
+
+        // Analysis tasks: group by archive (already ordered by created_at ASC),
+        // subscribe to the first per archive and queue the rest
+        const byArchive = new Map<string, ActiveTask[]>();
+        for (const task of tasks.filter(t => t.task_type === 'analysis')) {
+          this.analysisTaskIds.add(task.task_id);
+          const list = byArchive.get(task.archive_id) ?? [];
+          list.push(task);
+          byArchive.set(task.archive_id, list);
+        }
+
+        for (const [archiveId, archiveTasks] of byArchive) {
+          this.taskProgress.track(archiveId, archiveTasks[0].task_id);
+          if (archiveTasks.length > 1) {
+            this.taskQueues.set(archiveId, archiveTasks.slice(1).map(t => t.task_id));
+          }
+        }
+      },
     });
   }
 }
