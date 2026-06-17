@@ -134,7 +134,7 @@ class FileClassifier:
             '.csv': 'gegevensbestand',
             '.dat': 'gegevensbestand',
             '.mdb': 'gegevensbestand',
-            'json': 'gegevensbestand',
+            '.json': 'gegevensbestand',
         }
 
 

@@ -2,7 +2,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.calculate_generic_type.file_repository import FileRepository
 from app.calculate_generic_type.generic_type_repository import GenericTypeRepository
@@ -15,12 +15,15 @@ fileclassifier = FileClassifier()
 
 
 class CalculateGenericType:
-    """Flow controller for running Generic type calculation on all files in an archive."""
+    """Flow controller for running Generic type calculation on all files in an archive.
 
-    def __init__(self, session: AsyncSession):
-        self._session = session
-        self._file_repo = FileRepository(session)
-        self._generic_type_repo = GenericTypeRepository(session)
+    Accepts a session_factory rather than a single session so that each unit of
+    DB work gets its own short-lived connection. The connection is released
+    before every classifier call, preventing pool exhaustion during long analyses.
+    """
+
+    def __init__(self, session_factory: async_sessionmaker):
+        self._session_factory = session_factory
 
     def _ensure_single_value(self, value):
         """Reduces lists to their first element; converts empty strings to None."""
@@ -44,47 +47,51 @@ class CalculateGenericType:
             return None
 
     async def execute(self, archive_id: uuid.UUID, task_id: uuid.UUID) -> None:
-        await task_tracker.start_task(self._session, task_id)
-        await self._session.commit()
-
-        files = await self._file_repo.get_by_archive(archive_id)
-
-        #
-        
-        processed = 0
-        failed_count = 0
-
         try:
+            # ── Phase 0: start task and fetch file list ───────────────────────
+            async with self._session_factory() as session:
+                await task_tracker.start_task(session, task_id)
+                files = await FileRepository(session).get_by_archive(archive_id)
+                await session.commit()
+
+            processed = 0
+            failed_count = 0
+
+            # ── File classification loop ──────────────────────────────────────
             for file in files:
-                
                 file_path = file["path"]
                 file_name = file["name"]
                 file_id = file["id"]
-                file_mimetype=file["tika_analysis"]["mime_type"] if file["tika_analysis"] else None
-                generic_type = fileclassifier.get_generic_type(file_name,file_mimetype)
 
-                await task_tracker.update_progress(self._session, task_id, processed, failed_count, file_path)
-                await self._session.commit()
+                # Update progress — short session, released before classifier call.
+                async with self._session_factory() as session:
+                    await task_tracker.update_progress(session, task_id, processed, failed_count, file_path)
+                    await session.commit()
 
+                # No DB connection held during classification.
+                file_mimetype = file["tika_analysis"]["mime_type"] if file["tika_analysis"] else None
+                generic_type = fileclassifier.get_generic_type(file_name, file_mimetype)
 
                 try:
-                    await self._generic_type_repo.persist(
-                        file_id,
-                        generic_type
-                    )
+                    async with self._session_factory() as session:
+                        await GenericTypeRepository(session).persist(file_id, generic_type)
+                        await session.commit()
                     processed += 1
                     _logger.info(f"{log_context(archive_id, file_name)}Extraction saved.")
                 except Exception as e:
                     _logger.error(f"{log_context(archive_id, file_name)}Failed to persist Generic Type: {e}")
                     failed_count += 1
-                    continue
 
-            await task_tracker.update_progress(self._session, task_id, processed, failed_count, None)
-            await task_tracker.complete_task(self._session, task_id)
-            await self._session.commit()
+            # ── Completion ────────────────────────────────────────────────────
+            async with self._session_factory() as session:
+                await task_tracker.update_progress(session, task_id, processed, failed_count, None)
+                await task_tracker.complete_task(session, task_id)
+                await session.commit()
+
             _logger.info(f"{log_context(archive_id)}Generic type calculation complete. Processed: {processed}, failed: {failed_count}")
 
         except Exception as e:
             _logger.error(f"{log_context(archive_id)}Generic type calculation failed unexpectedly: {e}")
-            await task_tracker.fail_task(self._session, task_id)
-            await self._session.commit()
+            async with self._session_factory() as session:
+                await task_tracker.fail_task(session, task_id)
+                await session.commit()
