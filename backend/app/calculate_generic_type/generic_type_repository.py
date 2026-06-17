@@ -13,11 +13,13 @@ class GenericTypeRepository:
     async def persist(
         self,
         file_id: str,
+        archive_id: uuid.UUID,
         generic_type: str,
     ) -> GenericType:
         genericType = GenericType(
             id=uuid.uuid4(),
             file_id=file_id,
+            archive_id=archive_id,
             generic_type=generic_type,
             analyzed_at=datetime.now(timezone.utc),
         )

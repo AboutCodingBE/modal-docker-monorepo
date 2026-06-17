@@ -13,6 +13,7 @@ from app.shared.models import Archive
 from app.shared.database import _session_factory
 from app.analysis import task_tracker
 from app.perform_tika_analysis.perform_tika_analysis import PerformTikaAnalysis
+from app.calculate_generic_type.calculate_generic_type import CalculateGenericType
 
 
 class CreateArchive:
@@ -73,3 +74,14 @@ async def _run_tika(archive_id: uuid.UUID, task_id: uuid.UUID) -> None:
                 await session.commit()
             except Exception:
                 pass
+            return
+
+    # Tika completed — immediately run generic type classification
+    try:
+        async with _session_factory() as session:
+            generic_type_task = await task_tracker.create_task(session, archive_id, total_files=0, task_type="generic_type")
+            await session.commit()
+
+        await CalculateGenericType(_session_factory).execute(archive_id, generic_type_task.id)
+    except Exception as e:
+        _logger.error(f"Background generic type task failed for archive {archive_id}: {e}")

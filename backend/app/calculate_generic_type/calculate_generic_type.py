@@ -74,7 +74,7 @@ class CalculateGenericType:
 
                 try:
                     async with self._session_factory() as session:
-                        await GenericTypeRepository(session).persist(file_id, generic_type)
+                        await GenericTypeRepository(session).persist(file_id, archive_id, generic_type)
                         await session.commit()
                     processed += 1
                     _logger.info(f"{log_context(archive_id, file_name)}Extraction saved.")
