@@ -7,7 +7,9 @@ Gegenereerde bestanden worden mee gecommit zodat tests reproduceerbaar zijn
 zonder runtime-generatie. Draai dit script opnieuw als je een fixture aanpast.
 """
 
+import io
 import sys
+import zipfile
 from pathlib import Path
 
 # Windows-terminals gebruiken standaard cp1252; zet stdout op UTF-8 zodat
@@ -86,6 +88,79 @@ def create_corrupt_pdf() -> bytes:
     return b"%PDF-1.4\nCORRUPTE INHOUD - GEEN GELDIGE PDF-STRUCTUUR\xff\xfe\xfd"
 
 
+def create_normaal_docx() -> bytes:
+    """Minimale geldige DOCX met Nederlandstalige tekst en auteurmetadata.
+
+    DOCX is een ZIP-bestand met XML-onderdelen. De minimale structuur bevat:
+      - [Content_Types].xml  — welke onderdelen er in de ZIP zitten
+      - _rels/.rels          — verwijzing naar het hoofddocument
+      - word/document.xml    — de eigenlijke tekst
+      - docProps/core.xml    — auteur en aanmaakdatum (dc:creator, dcterms:created)
+
+    Tika extraheert hieruit:
+      - mime_type : application/vnd.openxmlformats-officedocument.wordprocessingml.document
+      - content   : bevat 'testdocument' en 'gemeentearchief'
+      - dc:creator: T. Testpersoon
+      - dcterms:created: 2007-01-15T09:00:00Z
+    """
+    content_types = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        '<Default Extension="xml" ContentType="application/xml"/>'
+        '<Override PartName="/word/document.xml"'
+        ' ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+        '<Override PartName="/docProps/core.xml"'
+        ' ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
+        '</Types>'
+    )
+    rels = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1"'
+        ' Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"'
+        ' Target="word/document.xml"/>'
+        '<Relationship Id="rId2"'
+        ' Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties"'
+        ' Target="docProps/core.xml"/>'
+        '</Relationships>'
+    )
+    document = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        '<w:body>'
+        '<w:p><w:r><w:t>Dit is een testdocument van het gemeentearchief in DOCX-formaat.</w:t></w:r></w:p>'
+        '<w:p><w:r><w:t>Het bevat meerdere Nederlandse zinnen voor taaldetectie.</w:t></w:r></w:p>'
+        '<w:p><w:r><w:t>Auteur: T. Testpersoon. Datum: vijftien januari tweeduizend zeven.</w:t></w:r></w:p>'
+        '</w:body>'
+        '</w:document>'
+    )
+    word_rels = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>'
+    )
+    core = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<cp:coreProperties'
+        ' xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"'
+        ' xmlns:dc="http://purl.org/dc/elements/1.1/"'
+        ' xmlns:dcterms="http://purl.org/dc/terms/"'
+        ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+        '<dc:creator>T. Testpersoon</dc:creator>'
+        '<dcterms:created xsi:type="dcterms:W3CDTF">2007-01-15T09:00:00Z</dcterms:created>'
+        '</cp:coreProperties>'
+    )
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("[Content_Types].xml", content_types)
+        zf.writestr("_rels/.rels", rels)
+        zf.writestr("word/document.xml", document)
+        zf.writestr("word/_rels/document.xml.rels", word_rels)
+        zf.writestr("docProps/core.xml", core)
+    return buf.getvalue()
+
+
 # Bestandsnamen voor M1.01 — exotische bestandsnamen.
 # Lege bestanden (0 bytes): de content is niet relevant, alleen de naam telt.
 M1_EXOTIC_NAMES = [
@@ -126,3 +201,7 @@ if __name__ == "__main__":
     leeg_path = data_m2 / "leeg_bestand.txt"
     leeg_path.write_bytes(b"")
     print(f"Aangemaakt: data_M2/{leeg_path.name}")
+
+    docx_path = data_m2 / "normaal_document.docx"
+    docx_path.write_bytes(create_normaal_docx())
+    print(f"Aangemaakt: data_M2/{docx_path.name}")
