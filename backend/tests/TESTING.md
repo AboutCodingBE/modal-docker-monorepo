@@ -12,11 +12,13 @@ tests/
 ├── unit/               # pure logica, geen I/O, geen database
 ├── integration/        # één of meerdere services + database
 ├── e2e/                # volledige stack, end-to-end scenario's
+├── kpi/                # kwaliteitsmetrieken op echte archiefdata (zie §KPI)
 ├── testdata/
 │   ├── data_M1/        # fixture-bestanden voor create_archive tests
 │   ├── data_M2/        # PDF, DOCX, afbeeldingen voor Tika tests
 │   ├── data_M3/        # documenten voor NER- en summarytests
-│   └── data_M4/        # documenten voor zoektests
+│   ├── data_M4/        # documenten voor zoektests
+│   └── data_kpi/       # echte archiefdata + expert-annotaties (JSON)
 └── conftest.py         # gedeelde fixtures (DB-sessie, service-checks)
 ```
 
@@ -119,6 +121,45 @@ Tests zijn productiecode. De standaarden van een professioneel test engineer gel
 Niet andersom. Dus we maken geen test die de perceptie wekt dat de code werkt. We scannen dus de code enkel om ze correct te kunnen gebruiken in de tests niet om tests te creeren die succesvol zijn. De beste tests zijn net diegene die irregulariteiten in de code blootleggen!!!
 
 
+
+---
+
+## KPI-tests (`tests/kpi/`)
+
+KPI-tests meten de **kwaliteit** van AI-componenten op echte archiefdata.
+Ze zijn fundamenteel anders dan integratietests:
+
+| Integratietest                  | KPI-test                                      |
+|---------------------------------|-----------------------------------------------|
+| Correct / incorrect (binair)    | Afstand van het perfecte resultaat (metriek)  |
+| Assertion faalt = bug           | Score onder drempel = kwaliteitsprobleem      |
+| Draait bij elke commit          | Draait periodiek of op aanvraag               |
+| Testdata gegenereerd            | Testdata = echte archiefbestanden             |
+
+### Metrieken
+
+| Domein        | Metriek             | Drempel (conftest.py) |
+|---------------|---------------------|-----------------------|
+| NER           | F1-score            | `NER_F1_DREMPEL`      |
+| Samenvatting  | ROUGE-1 recall      | `SUMMARY_ROUGE1_DREMPEL` |
+| Zoeken        | Precision@5         | `SEARCH_PRECISION_AT_5_DREMPEL` |
+
+Drempelwaarden worden bijgehouden in `tests/kpi/conftest.py` en zijn aanpasbaar
+door domeinexperts zonder dat de testcode hoeft te wijzigen.
+
+### Workflow voor domeinexperts
+
+1. Voeg een archiefdocument toe aan `tests/testdata/data_kpi/`
+2. Schrijf de verwachte annotaties in de bijbehorende JSON (zie module-docstring per testbestand)
+3. Commit bestand + annotaties mee in de repo
+4. Voer de KPI-tests uit: `pytest tests/kpi/ -v`
+
+### KPI-tests draaien
+
+```bash
+pytest tests/kpi/ -v                  # alle KPI-tests
+pytest tests/kpi/test_kpi_ner.py -v   # enkel NER
+```
 
 ---
 
