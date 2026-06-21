@@ -76,6 +76,16 @@ def create_normaal_pdf() -> bytes:
     return header + b"".join(objects) + xref + trailer
 
 
+def create_corrupt_pdf() -> bytes:
+    """PDF-header gevolgd door ongeldige inhoud.
+
+    Tika herkent de %PDF-header en probeert het als PDF te parsen,
+    maar de structuur is volledig ongeldig. Bedoeld om te testen of
+    de pipeline niet crasht bij een corrupt bestand.
+    """
+    return b"%PDF-1.4\nCORRUPTE INHOUD - GEEN GELDIGE PDF-STRUCTUUR\xff\xfe\xfd"
+
+
 # Bestandsnamen voor M1.01 — exotische bestandsnamen.
 # Lege bestanden (0 bytes): de content is niet relevant, alleen de naam telt.
 M1_EXOTIC_NAMES = [
@@ -108,3 +118,11 @@ if __name__ == "__main__":
     pdf_path = data_m2 / "normaal_document.pdf"
     pdf_path.write_bytes(create_normaal_pdf())
     print(f"Aangemaakt: data_M2/{pdf_path.name}")
+
+    corrupt_path = data_m2 / "corrupt_document.pdf"
+    corrupt_path.write_bytes(create_corrupt_pdf())
+    print(f"Aangemaakt: data_M2/{corrupt_path.name}")
+
+    leeg_path = data_m2 / "leeg_bestand.txt"
+    leeg_path.write_bytes(b"")
+    print(f"Aangemaakt: data_M2/{leeg_path.name}")

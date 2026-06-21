@@ -115,6 +115,43 @@ async def async_db_session():
     await engine.dispose()
 
 
+@pytest_asyncio.fixture()
+async def committing_db_session():
+    """Async DB-sessie voor tests die echte commits vereisen.
+
+    Gebruik wanneer de te testen code intern session.commit() aanroept
+    (bv. PerformTikaAnalysis.execute() voor voortgangsupdates). De rollback-
+    aanpak van async_db_session werkt dan niet meer.
+
+    Cleanup via expliciete DELETE-statements per archive_id na de test.
+
+    Gebruik in een test:
+        session, cleanup_ids = committing_db_session
+        archive_id = ...
+        cleanup_ids.append(archive_id)   # registreer voor cleanup
+        await session.commit()           # commit de setup zelf
+        await PerformTikaAnalysis(session).execute(archive_id, task_id)
+    """
+    engine = create_async_engine(ASYNC_DATABASE_URL, echo=False)
+    session = AsyncSession(engine, expire_on_commit=False)
+    archive_ids: list[uuid.UUID] = []
+    try:
+        yield session, archive_ids
+    finally:
+        for aid in archive_ids:
+            for stmt in [
+                "DELETE FROM tika_analyses WHERE file_id IN (SELECT id FROM files WHERE archive_id = :aid)",
+                "DELETE FROM ner WHERE file_id IN (SELECT id FROM files WHERE archive_id = :aid)",
+                "DELETE FROM analysis_tasks WHERE archive_id = :aid",
+                "DELETE FROM files WHERE archive_id = :aid",
+                "DELETE FROM archives WHERE id = :aid",
+            ]:
+                await session.execute(text(stmt), {"aid": str(aid)})
+        await session.commit()
+        await session.close()
+    await engine.dispose()
+
+
 # scope="session" means this engine is created once for the entire test run,
 # not once per test. Creating a DB engine is expensive, so we reuse it.
 # fixture == preparatory work before the actual testing
