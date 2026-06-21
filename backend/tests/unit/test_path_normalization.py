@@ -9,6 +9,10 @@ De Linux-container verwerkt die in folder_analysis.py via:
   parent_path = full_path.rsplit("/", 1)[0]
 
 Deze tests documenteren en bewaken dat gedrag.
+
+Story: "Geeft normalize_path Windows-backslashes correct om naar
+forward slashes, zodat _parent_path altijd matcht met full_path van de
+parent-map, ongeacht het besturingssysteem?"
 """
 
 import os
