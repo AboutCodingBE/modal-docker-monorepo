@@ -113,6 +113,13 @@ Tests zijn productiecode. De standaarden van een professioneel test engineer gel
 - Geen overbodige abstractie: drie vergelijkbare regels zijn beter dan een hulpfunctie
   die maar één keer gebruikt wordt.
 
+
+### 9. Tests zijn gemaakt om de code te doen falen!
+
+Niet andersom. Dus we maken geen test die de perceptie wekt dat de code werkt. We scannen dus de code enkel om ze correct te kunnen gebruiken in de tests niet om tests te creeren die succesvol zijn. De beste tests zijn net diegene die irregulariteiten in de code blootleggen!!!
+
+
+
 ---
 
 ## Vereiste services per testniveau
