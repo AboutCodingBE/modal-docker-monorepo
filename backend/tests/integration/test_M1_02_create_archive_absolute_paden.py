@@ -50,7 +50,6 @@ async def test_paden_worden_correct_genormaliseerd_en_opgeslagen(
     """Scant een tijdelijke map met mappen die spaties, accenten en diepe nesting
     bevatten. Controleert dat full_path en relative_path correct in de DB staan.
     """
-    agent_url = requires_agent  # bevestigt dat de agent bereikbaar is op dit adres
     # Bouw drie directory-structuren op in tmp_path:
     #   1. Map met spaties in de naam
     #   2. Map met accenten in de naam

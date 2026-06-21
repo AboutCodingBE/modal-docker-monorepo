@@ -56,11 +56,10 @@ async def test_exotische_bestandsnamen_worden_exact_bewaard(
     """Laat de echte agent tests/testdata/data_M1/ scannen en controleert
     dat elke exotische bestandsnaam ongewijzigd in de database staat.
     """
-    agent_url = requires_agent
     assert DATA_DIR.is_dir(), (
         f"Testdata-map niet gevonden: {DATA_DIR} — "
         f"draai eerst: python tests/testdata/create_testdata.py\n"
-        f"(agent bereikbaar op {agent_url})"
+        f"(agent bereikbaar op {requires_agent})"
     )
 
     archive_id = uuid.uuid4()

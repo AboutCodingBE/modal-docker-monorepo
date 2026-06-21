@@ -73,7 +73,6 @@ async def test_leeg_bestand_wordt_correct_opgeslagen(
     tmp_path,
 ):
     """Controleert dat een bestand van 0 bytes correct wordt opgeslagen met size_bytes=0."""
-    agent_url = requires_agent  # bevestigt dat de agent bereikbaar is op dit adres
     # Path.touch() maakt een leeg bestand aan — 0 bytes, geen inhoud.
     (tmp_path / "leeg_bestand.txt").touch()
 
@@ -98,7 +97,6 @@ async def test_binaire_bestanden_worden_correct_opgeslagen(
     """Controleert dat bestanden met binaire extensies (.exe, .db, Thumbs.db) worden
     opgeslagen zonder filtering — het systeem mag bij M1 niet filteren op extensie.
     """
-    agent_url = requires_agent  # bevestigt dat de agent bereikbaar is op dit adres
     # Schrijf de typische magic bytes zodat ook de bestandsgrootte > 0 is.
     BINARY_FILES = {
         "programma.exe": b"\x4d\x5a",           # MZ-header (Windows executable)

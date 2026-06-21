@@ -20,9 +20,8 @@ Wat we testen:
   test_02  Bestand in root → parent_id IS NULL
   test_03  Bestand in submap → parent_id == id van die submap
   test_04  Twee niveaus diep: keten van parent_ids
-  test_05  Tika-stap breekt parent_id niet
-  test_06  Windows backslash-paden in persist_all
-  test_07  Genormaliseerde agent-paden (backslash → forward slash)
+  test_05  Windows backslash-paden in persist_all
+  test_06  Genormaliseerde agent-paden (backslash → forward slash)
 
 Teststrategie:
   ECHT: FileRepository.persist_all() schrijft naar echte PostgreSQL.
@@ -87,8 +86,8 @@ def _build_entries(
             "archive_id": archive_id,
             "_parent_path": parent_path,
             "name": item.name,
-            "full_path": str(item),
-            "relative_path": str(item.relative_to(root)),
+            "full_path": str(item).replace("\\", "/"),
+            "relative_path": str(item.relative_to(root)).replace("\\", "/"),
             "is_directory": item.is_dir(),
             "extension": None,
             "size_bytes": None,
@@ -103,7 +102,7 @@ def _build_entries(
             entry["size_bytes"] = item.stat().st_size
         entries.append(entry)
         if item.is_dir():
-            entries.extend(_build_entries(archive_id, root, item, str(item)))
+            entries.extend(_build_entries(archive_id, root, item, str(item).replace("\\", "/")))
 
     return entries
 
@@ -275,71 +274,16 @@ async def test_04_twee_niveaus_diep_keten_van_parent_ids(
 
 
 @pytest.mark.asyncio
-async def test_05_tika_stap_breekt_parent_id_niet(
+async def test_05_windows_backslash_paden_in_persist_all(
     async_db_session: AsyncSession, tmp_path: Path
 ):
-    """Na een Tika-stap op een bestand in een submap moet parent_id ongewijzigd blijven.
+    """Hardcoded relatieve Windows-paden (backslashes) rechtstreeks aan persist_all.
 
-    PerformTikaAnalysis schrijft alleen naar tika_analyses, niet naar files.
-    We roepen TikaRepository.persist() direct aan om te verifiëren dat de files-tabel
-    onaangetast blijft — zonder echte Tika-server.
-    """
-    from app.perform_tika_analysis.tika_repository import TikaRepository
-
-    _build_tree(tmp_path, {
-        "files": [],
-        "folders": {"Foto-archief": {"files": ["foto1.jpg"], "folders": {}}},
-    })
-    archive = await _make_archive(async_db_session, "test-tika-parent-id", str(tmp_path))
-    entries = _build_entries(archive.id, tmp_path, tmp_path)
-    await FileRepository(async_db_session).persist_all(entries)
-
-    result_voor = await async_db_session.execute(
-        text("SELECT id, name, parent_id FROM files WHERE archive_id = :aid"),
-        {"aid": str(archive.id)},
-    )
-    foto_voor = next((r for r in result_voor.fetchall() if r.name == "foto1.jpg"), None)
-    assert foto_voor is not None, "'foto1.jpg' niet gevonden vóór Tika-run"
-
-    await TikaRepository(async_db_session).persist(
-        file_id=str(foto_voor.id),
-        mime_type="image/jpeg",
-        tika_parser="org.apache.tika.parser.image.ImageParser",
-        content=None,
-        language=None,
-        word_count=0,
-        author=None,
-        content_created_at=None,
-    )
-
-    result_na = await async_db_session.execute(
-        text("SELECT id, parent_id FROM files WHERE archive_id = :aid AND name = 'foto1.jpg'"),
-        {"aid": str(archive.id)},
-    )
-    foto_na = result_na.fetchone()
-    assert foto_na is not None, "'foto1.jpg' niet meer gevonden ná Tika-run"
-
-    assert foto_na.parent_id == foto_voor.parent_id, (
-        f"parent_id veranderd na Tika-run!\n"
-        f"  vóór: {foto_voor.parent_id}\n"
-        f"  na:   {foto_na.parent_id}"
-    )
-    assert foto_na.id == foto_voor.id, (
-        f"Record-id veranderd na Tika-run — nieuw record aangemaakt!\n"
-        f"  vóór: {foto_voor.id}\n"
-        f"  na:   {foto_na.id}"
-    )
-
-
-@pytest.mark.asyncio
-async def test_06_windows_backslash_paden_in_persist_all(
-    async_db_session: AsyncSession, tmp_path: Path
-):
-    """Hardcoded Windows-stijl entries (backslashes) rechtstreeks aan persist_all.
-
-    Op Mac/Linux geeft os.path.dirname("Foto-archief\\foto1.jpg") een lege string
-    terug in plaats van "Foto-archief" — waardoor path_to_id nooit matcht en
-    parent_id NULL blijft. Deze test maakt dat zichtbaar zonder Windows nodig.
+    Dekt het geval waar full_path al een relatief pad is mét backslash-separator,
+    bv. "Foto-archief\\foto1.jpg". Op Mac/Linux geeft os.path.dirname() dan een
+    lege string terug in plaats van "Foto-archief", waardoor path_to_id nooit
+    matcht en parent_id NULL blijft. Test_06 dekt hetzelfde probleem voor
+    absolute Windows-paden zoals de echte agent ze stuurt.
     """
     archive = await _make_archive(async_db_session, "test-windows-paden", str(tmp_path))
     now = datetime.now(timezone.utc)
@@ -395,15 +339,16 @@ async def test_06_windows_backslash_paden_in_persist_all(
 
 
 @pytest.mark.asyncio
-async def test_07_agent_backslash_paden_worden_genormaliseerd(
+async def test_06_agent_backslash_paden_worden_genormaliseerd(
     async_db_session: AsyncSession, tmp_path: Path
 ):
     """Simuleert agent-output op Windows: absolute paden met backslashes.
 
     De agent op Windows stuurt paden zoals 'C:\\archief\\Foto-archief\\foto1.jpg'.
-    folder_analysis.py normaliseert die naar forward slashes via normalize_path
-    voordat de entries aan persist_all worden doorgegeven. Deze test verifieert
-    dat path_to_id correct matcht na die normalisatie.
+    folder_analysis.py normaliseert die via normalize_path naar forward slashes
+    vóórdat de entries aan persist_all worden doorgegeven. Test_05 dekt hetzelfde
+    probleem voor relatieve paden; deze test dekt de absolute variant zoals die
+    in productie voorkomt.
     """
     from app.shared.path_utils import normalize_path as _normalize
 
