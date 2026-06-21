@@ -177,6 +177,23 @@ M1_EXOTIC_NAMES = [
 ]
 
 
+def create_groot_bestand() -> bytes:
+    """Herhalende Nederlandse tekst tot ~10MB voor grote-bestandstests.
+
+    Tika extraheert hieruit:
+      - mime_type: text/plain
+      - content: lange tekst met 'gemeentearchief' en 'testdocument'
+      - word_count: ruim boven 10.000
+    """
+    zin = (
+        "Dit is een testdocument van het gemeentearchief met Nederlandse tekst "
+        "voor de taaldetectie en verwerking van grote bestanden. "
+    )
+    doel_bytes = 10 * 1024 * 1024  # 10 MB
+    herhalingen = doel_bytes // len(zin.encode("utf-8")) + 1
+    return (zin * herhalingen).encode("utf-8")[:doel_bytes]
+
+
 if __name__ == "__main__":
     root = Path(__file__).parent
 
@@ -205,3 +222,7 @@ if __name__ == "__main__":
     docx_path = data_m2 / "normaal_document.docx"
     docx_path.write_bytes(create_normaal_docx())
     print(f"Aangemaakt: data_M2/{docx_path.name}")
+
+    groot_path = data_m2 / "groot_bestand.txt"
+    groot_path.write_bytes(create_groot_bestand())
+    print(f"Aangemaakt: data_M2/{groot_path.name} ({groot_path.stat().st_size // (1024*1024)}MB)")
