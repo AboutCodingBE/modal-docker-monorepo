@@ -1,19 +1,38 @@
 """M1 — create_archive: het scannen van een map en het opslaan van alle bestands-
 en mapmetadata in de database (app/create_new_archive/).
 
-M1.01 — exotische bestandsnamen worden exact bewaard.
+De module bestaat uit twee klassen:
+  - FolderAnalysis  — vraagt de agent om de mapinhoud en normaliseert de paden.
+  - FileRepository  — slaat de entries op in PostgreSQL, met parent-id resolutie.
+
+M1.01 — Exotische bestandsnamen worden exact bewaard.
 
 Story: "Worden bestandsnamen met accenten, spaties, haakjes, ampersands,
-unicode en andere bijzondere tekens  correct opgeslagen
-in de database? (dus geen autocorrecties)"
+unicode en andere bijzondere tekens correct opgeslagen in de database?
+Dus geen autocorrecties, geen encoding-omzettingen, geen afkappingen."
+
+Wat we testen:
+  De agent scant tests/testdata/data_M1/ — een map met gecommitte lege bestanden
+  waarvan de bestandsnaam het enige testgegeven is. We controleren dat elke naam
+  byte-voor-byte teruggevonden wordt in de database.
+  Dit bewaakt dat PostgreSQL, SQLAlchemy en de agent Unicode nergens aanpassen.
+
+Teststrategie:
+  ECHT: de agent (settings.agent_url) scant de echte testdata-map via /files?path=...
+  ECHT: FolderAnalysis verwerkt de agent-response en normaliseert paden.
+  ECHT: FileRepository slaat de entries op in PostgreSQL.
+
+  De testdata-bestanden zijn gecommit en gegenereerd via:
+      python tests/testdata/create_testdata.py
+
+Vereist:
+  - PostgreSQL bereikbaar (DATABASE_URL_SYNC in .env)
+  - Agent bereikbaar op AGENT_URL (zie .env); starten met:
+      python agent/agent.py --dev   (alleen de filesystem-bridge, zonder Docker)
 """
 
-import uuid  # genereert unieke IDs (UUID4) voor archive en root_path zodat parallelle testruns elkaar niet bijten
-from unittest.mock import (
-    AsyncMock,   # vervangt een async functie/methode door een nepaanroep (httpx client.get)
-    MagicMock,   # vervangt een synchroon object door een nep (httpx response + raise_for_status)
-    patch,       # swaps tijdelijk een naam in een module (httpx.AsyncClient) door een mock
-)
+import uuid
+from pathlib import Path
 
 import pytest
 from sqlalchemy import text
@@ -22,88 +41,66 @@ from app.create_new_archive.file_repository import FileRepository
 from app.create_new_archive.folder_analysis import FolderAnalysis
 
 
-EXOTIC_NAMES = [
-    "café résumé été.pdf",            # accenten
-    "rapport (versie 2) & bijlage.docx",  # haakjes en ampersand
-    "Müller & Söhne GmbH.xlsx",       # umlauts en ampersand
-    "factuur [2024] #1.txt",          # blokhaken en hekje
-    "bestand met spaties in naam.pdf",
-    "日本語ファイル.pdf",               # Japanse tekens
-    "ملف عربي.docx",                  # Arabisch
-    "файл_на_русском.txt",            # Cyrillisch
-    "∑∆π formules.xlsx",              # wiskundige symbolen
-    "emoji 🎉 bestand.pdf",           # emoji in naam (bewaard als-is)
-]
-
-
-def _agent_response(root_path: str, names: list[str]) -> dict:
-    return {
-        "root": root_path,
-        "total_files": len(names),
-        "files": [
-            {
-                "name": name,
-                "relative_path": name,
-                "absolute_path": f"{root_path}/{name}",
-                "parent_folder": ".",
-                "is_directory": False,
-                "size_bytes": 100,
-                "modified": 1700000000.0,
-            }
-            for name in names
-        ],
-    }
+# Map met gecommitte lege bestanden waarvan de naam het testgegeven is.
+# Gegenereerd via tests/testdata/create_testdata.py — dat is de enige
+# plaats waar de bestandsnamen gedefinieerd worden. De test leest ze van
+# schijf zodat een nieuw fixture-bestand automatisch meegenomen wordt.
+DATA_DIR = Path(__file__).parent.parent / "testdata" / "data_M1"
 
 
 @pytest.mark.asyncio
-async def test_exotische_bestandsnamen_worden_exact_bewaard(async_db_session):
-    """Stuurt EXOTIC_NAMES via de mock-agent door FolderAnalysis en FileRepository
-    (echte INSERT) en controleert dat elke naam ongewijzigd in de DB staat.
-    Bewaakt dat PostgreSQL + SQLAlchemy Unicode ergens aanpassen.
+async def test_exotische_bestandsnamen_worden_exact_bewaard(
+    async_db_session,
+    requires_agent,   # faalt de test als de agent niet bereikbaar is; geeft agent-URL terug
+):
+    """Laat de echte agent tests/testdata/data_M1/ scannen en controleert
+    dat elke exotische bestandsnaam ongewijzigd in de database staat.
     """
-    #genereer unieke archiefnaam
-    archive_id = uuid.uuid4()
-    root_path = f"/tmp/test-archief-{archive_id}"
+    agent_url = requires_agent
+    assert DATA_DIR.is_dir(), (
+        f"Testdata-map niet gevonden: {DATA_DIR} — "
+        f"draai eerst: python tests/testdata/create_testdata.py\n"
+        f"(agent bereikbaar op {agent_url})"
+    )
 
-    # maak een nieuw archief aan in postgres
+    archive_id = uuid.uuid4()
+
+    # Maak een archief-rij aan in de database.
+    # FileRepository vereist een bestaande archive_id als foreign key.
+    # flush() schrijft de rij naar de DB binnen de huidige transactie zonder
+    # te committen — de rollback aan het einde van async_db_session ruimt alles op.
     await async_db_session.execute(
         text("""
-            INSERT INTO archives (id, name, root_path, analysis_status, file_count, directory_count, total_size_bytes)
+            INSERT INTO archives (id, name, root_path, analysis_status,
+                                  file_count, directory_count, total_size_bytes)
             VALUES (:id, :name, :root_path, 'pending', 0, 0, 0)
         """),
-        {"id": str(archive_id), "name": "exotische-namen-test", "root_path": root_path},
+        {"id": str(archive_id), "name": "exotische-namen-test", "root_path": str(DATA_DIR)},
     )
     await async_db_session.flush()
 
-    # FolderAnalysis doet intern: (wij willen een mockclient draaien en overschrijven dus een aantal
-    # fucnties in de HTTP-laag, onze mock objecten geven vastgelegde data terug)
-    #   async with httpx.AsyncClient() as client: 
-    #       resp = await client.get(agent_url/files)
+    # FolderAnalysis roept de echte agent aan: GET settings.agent_url/files?path=DATA_DIR
+    # De agent scant de map recursief en geeft voor elk bestand de naam,
+    # het absolute pad en het relatieve pad terug.
+    entries = await FolderAnalysis().analyze(archive_id, str(DATA_DIR))
 
-    # mock_response  — het nep HTTP-antwoord dat de agent zou sturen.
-    mock_response = MagicMock()
-    mock_response.raise_for_status = MagicMock()
-    mock_response.json.return_value = _agent_response(root_path, EXOTIC_NAMES)
-
-    # mock_client  — de nep HTTP-client. client.get() geeft mock_response terug.
-    mock_client = AsyncMock()
-    mock_client.get = AsyncMock(return_value=mock_response)
-
-    # patch  — vervangt httpx.AsyncClient tijdelijk in de folder_analysis module.
-    with patch("app.create_new_archive.folder_analysis.httpx.AsyncClient") as MockAsyncClient:
-        MockAsyncClient.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-        MockAsyncClient.return_value.__aexit__ = AsyncMock(return_value=False)
-        entries = await FolderAnalysis().analyze(archive_id, root_path)
-
+    # FileRepository slaat alle entries op in PostgreSQL.
+    # flush() schrijft naar de DB binnen de transactie — nog geen commit.
     await FileRepository(async_db_session).persist_all(entries)
 
-    # haal alle opgeslagen bestandsnamen op uit de DB voor dit archief
     result = await async_db_session.execute(
-        text("SELECT name FROM files WHERE archive_id = :archive_id AND is_directory = false"),
+        text("""
+            SELECT name FROM files
+            WHERE archive_id = :archive_id AND is_directory = false
+        """),
         {"archive_id": str(archive_id)},
     )
     stored_names = {row.name for row in result}
 
-    # controleer dat elke exotische naam exact (byte-voor-byte) teruggevonden wordt
-    for name in EXOTIC_NAMES:
+    # Lees de verwachte namen van schijf — create_testdata.py is de enige
+    # bron van waarheid. Zo hoef je bij een nieuwe fixture-naam alleen dat
+    # script aan te passen; de test pikt het automatisch op.
+    expected_names = {f.name for f in DATA_DIR.iterdir() if f.is_file()}
+
+    for name in expected_names:
         assert name in stored_names, f"Naam niet exact bewaard: {name!r}"

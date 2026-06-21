@@ -20,7 +20,7 @@ tests/
 └── conftest.py         # gedeelde fixtures (DB-sessie, service-checks)
 ```
 
-Fixture-bestanden worden gegenereerd via `tests/testdata/make_fixtures.py`
+Fixture-bestanden worden gegenereerd via `tests/testdata/create_testdata.py`
 en worden mee gecommit zodat tests reproduceerbaar zijn zonder runtime-generatie.
 
 ---
@@ -98,7 +98,7 @@ altijd een commentaar bij dat uitlegt waarom dit bewust en veilig is in deze con
 ### 7. Testdata
 
 Fixture-bestanden (PDF, DOCX, afbeeldingen, ...) staan in `tests/testdata/data_M{n}/`.
-Genereer ze via `tests/testdata/make_fixtures.py` en commit ze mee.
+Genereer ze via `tests/testdata/create_testdata.py` en commit ze mee.
 
 ### 8. Code-kwaliteit in tests
 
