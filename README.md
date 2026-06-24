@@ -112,6 +112,7 @@ py -m venv .venv
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+py -m spacy download nl_core_news_lg
 $env:DATABASE_URL="postgresql+asyncpg://archiveuser:archivepass@127.0.0.1:5442/modaldb"
 uvicorn app.main:app --reload --port 8010
 ```
