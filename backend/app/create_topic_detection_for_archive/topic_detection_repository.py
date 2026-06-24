@@ -3,19 +3,19 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.models import Ner
+from app.shared.models import TopicDetection
 
 
-class NerRepository:
+class TopicDetectionRepository:
     def __init__(self, session: AsyncSession):
         self._session = session
 
     async def exists(self, analysis_id: uuid.UUID, file_id: uuid.UUID) -> bool:
-        """Returns True if a NER result already exists for this analysis + file (resumability check)."""
+        """Returns True if a TopicDetection result already exists for this analysis + file (resumability check)."""
         result = await self._session.execute(
-            select(Ner.id).where(
-                Ner.analysis_id == analysis_id,
-                Ner.file_id == file_id,
+            select(TopicDetection.id).where(
+                TopicDetection.analysis_id == analysis_id,
+                TopicDetection.file_id == file_id,
             )
         )
         return result.scalar_one_or_none() is not None
@@ -26,21 +26,15 @@ class NerRepository:
         archive_id: uuid.UUID,
         parent_folder_id: uuid.UUID | None,
         file_id: uuid.UUID,
-        ner_result: dict,
+        topic_detection_result: dict,
     ) -> None:
-        ner = Ner(
+        topic_detection = TopicDetection(
             analysis_id=analysis_id,
             archive_id=archive_id,
             parent_folder_id=parent_folder_id,
             file_id=file_id,
-            persons=ner_result["persons"],
-            persons_count=ner_result["persons_count"],
-            locations=ner_result["locations"],
-            locations_count=ner_result["locations_count"],
-            organisations=ner_result["organisations"],
-            organisations_count=ner_result["organisations_count"],
-            misc=ner_result["misc"],
-            misc_count=ner_result["misc_count"],
+            topics=topic_detection_result["topics"],
+            topics_count=topic_detection_result["topics_count"],
         )
-        self._session.add(ner)
+        self._session.add(topic_detection)
         await self._session.flush()
