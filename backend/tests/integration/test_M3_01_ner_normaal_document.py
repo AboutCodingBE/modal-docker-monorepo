@@ -39,19 +39,8 @@ from pathlib import Path
 import pytest
 from sqlalchemy import text
 
-try:
-    from app.create_ner_for_archive.ner_engine import run_ner
-    from app.create_ner_for_archive.ner_repository import NerRepository
-except ImportError as exc:
-    # Op Windows kan het laden van spaCy's .pyd-bestanden mislukken als
-    # Smart App Control ongesigneerde bestanden blokkeert. Dat is een
-    # omgevingsprobleem, geen codefout — we falen hier met skip zodat
-    # de rest van de testsuite kan draaien.
-    pytest.skip(
-        f"spaCy kon niet geladen worden ({exc}). "
-        "Zet Smart App Control op 'Evaluatie' of 'Uit' om dit te verhelpen.",
-        allow_module_level=True,
-    )
+from app.create_ner_for_archive.ner_engine import run_ner
+from app.create_ner_for_archive.ner_repository import NerRepository
 
 
 FIXTURE_DIR = Path(__file__).parent.parent / "testdata" / "data_M3"
