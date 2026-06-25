@@ -121,6 +121,9 @@ Tests zijn productiecode. De standaarden van een professioneel test engineer gel
 Niet andersom. Dus we maken geen test die de perceptie wekt dat de code werkt. We scannen dus de code enkel om ze correct te kunnen gebruiken in de tests niet om tests te creeren die succesvol zijn. De beste tests zijn net diegene die irregulariteiten in de code blootleggen!!!
 
 
+### 10. Volg best practices voor coding
+
+bv geen importants midden in de code, zet ze netjes bovenaan en groepeer de standard libraries en de custom en de eigen imports.
 
 ---
 
