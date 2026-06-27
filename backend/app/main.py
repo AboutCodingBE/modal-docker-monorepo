@@ -16,6 +16,7 @@ from app.analysis.start_router import router as analysis_start_router
 from app.archive_detail.router import router as archive_detail_router
 from app.cancel_all_analyses.router import router as cancel_all_analyses_router
 from app.calculate_generic_type.router import router as generic_type_router
+from app.get_ner_for_file.router import router as get_ner_for_file_router
 
 import asyncio
 import sys
@@ -39,6 +40,7 @@ app.include_router(analysis_start_router)
 app.include_router(archive_detail_router)
 app.include_router(cancel_all_analyses_router)
 app.include_router(generic_type_router)
+app.include_router(get_ner_for_file_router)
 
 @app.get("/api/health")
 async def health():
