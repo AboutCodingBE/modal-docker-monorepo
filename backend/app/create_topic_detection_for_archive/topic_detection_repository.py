@@ -26,15 +26,15 @@ class TopicDetectionRepository:
         archive_id: uuid.UUID,
         parent_folder_id: uuid.UUID | None,
         file_id: uuid.UUID,
-        topic_detection_result: dict,
+        topics: list[str],
     ) -> None:
         topic_detection = TopicDetection(
             analysis_id=analysis_id,
             archive_id=archive_id,
             parent_folder_id=parent_folder_id,
             file_id=file_id,
-            topics=topic_detection_result["topics"],
-            topics_count=topic_detection_result["topics_count"],
+            topics=topics,
+            topics_count=len(topics),
         )
         self._session.add(topic_detection)
         await self._session.flush()

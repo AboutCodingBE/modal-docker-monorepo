@@ -93,14 +93,11 @@ class CreateTopicDetectionForArchive:
                     
                     # Hard cap at 5 items max in Python for validation consistency
                     validated_topics = topics_list[:5]
-                    
-                    # Serialize back to string
-                    result = json.dumps({"topics": validated_topics})
 
                 except json.JSONDecodeError:
                     _logger.warning(f"{log_context(archive_id, file['name'])} Invalid JSON returned by Ollama. Falling back to empty list.")
-                    result = json.dumps({"topics": []})
-                    
+                    validated_topics = []
+
                 except OllamaUnavailableError:
                     _logger.error(f"{log_context(archive_id)}Ollama service unavailable — stopping topic detection")
                     await self._fail(task_id, archive_analysis_id)
@@ -118,7 +115,7 @@ class CreateTopicDetectionForArchive:
                 # Write the validated result to the database
                 async with self._session_factory() as session:
                     await TopicDetectionRepository(session).persist(
-                        archive_analysis_id, archive_id, file["parent_id"], file_id, result
+                        archive_analysis_id, archive_id, file["parent_id"], file_id, validated_topics
                     )
                     await session.commit()
 
