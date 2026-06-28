@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MODAL — Archive Browser Redesign</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        .app-layout {
+          display: flex;
+          height: 100vh;
+          overflow: hidden;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: #f0f2f5;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+          width: 160px;
+          min-width: 160px;
+          background: #1a2744;
+          display: flex;
+          flex-direction: column;
+          padding: 20px 0;
+          color: #fff;
+        }
+
+        .sidebar-logo {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 0 16px 24px;
+        }
+
+        .logo-badge {
+          width: 32px;
+          height: 32px;
+          background: #3b6ef5;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 14px;
+        }
+
+        .logo-text { font-weight: 700; font-size: 16px; letter-spacing: 0.05em; }
+
+        .sidebar-nav {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          padding: 0 8px;
+        }
+
+        .nav-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 9px 12px;
+          border-radius: 6px;
+          font-size: 13px;
+          color: rgba(255,255,255,0.65);
+          cursor: pointer;
+          transition: background 0.15s, color 0.15s;
+        }
+
+        .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .nav-item.active { background: #3b6ef5; color: #fff; }
+
+        .sidebar-spacer { flex: 1; }
+
+        .sidebar-bottom { padding: 0 8px; }
+
+        .sidebar-divider {
+          height: 1px;
+          background: rgba(255,255,255,0.1);
+          margin: 8px 4px 12px;
+        }
+
+        .btn-shutdown {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 9px 12px;
+          border-radius: 6px;
+          font-family: inherit;
+          font-size: 13px;
+          cursor: pointer;
+          transition: background 0.15s, color 0.15s, border-color 0.15s;
+          background: none;
+          border: 1px solid rgba(59,110,245,0.4);
+          color: rgba(255,255,255,0.65);
+        }
+
+        .btn-shutdown svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .btn-shutdown:hover { background: #3b6ef5; border-color: #3b6ef5; color: #fff; }
+
+        .sidebar-version {
+          padding: 12px 16px 0;
+          font-size: 10px;
+          color: rgba(255,255,255,0.3);
+          letter-spacing: 0.05em;
+        }
+
+        /* ── Main ── */
+        .main-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow-y: auto;
+          padding: 28px 32px;
+        }
+
+        /* ── Top bar ── */
+        .top-bar {
+          display: flex;
+          align-items: flex-start;
+          gap: 16px;
+          margin-bottom: 20px;
+        }
+
+        .btn-back {
+          font-family: inherit;
+          font-size: 13px;
+          font-weight: 500;
+          padding: 9px 14px;
+          background: #fff;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          cursor: pointer;
+          color: #374151;
+          white-space: nowrap;
+          transition: background 0.15s;
+          margin-top: 2px;
+        }
+
+        .btn-back:hover { background: #f9fafb; }
+
+        .archive-name {
+          font-size: 22px;
+          font-weight: 700;
+          color: #111827;
+          margin-bottom: 2px;
+        }
+
+        .archive-meta-line {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          font-size: 13px;
+          color: #6b7280;
+        }
+
+        .archive-meta-line strong { color: #374151; font-weight: 600; }
+
+        /* ── Panels ── */
+        .panel {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 20px 22px;
+          margin-bottom: 20px;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        .panel-title {
+          font-size: 15px;
+          font-weight: 700;
+          color: #111827;
+          margin-bottom: 14px;
+        }
+
+        /* ── Pane 1: Compact ── */
+        .pane1-compact {
+          display: flex;
+          align-items: flex-start;
+          gap: 22px;
+        }
+
+        .pane1-stats {
+          display: flex;
+          gap: 18px;
+          flex-shrink: 0;
+        }
+
+        .pane1-stat { text-align: center; }
+        .pane1-stat-value { font-size: 20px; font-weight: 700; color: #111827; }
+
+        .pane1-stat-label {
+          font-size: 9px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #6b7280;
+        }
+
+        .pane1-summary {
+          flex: 1;
+          font-size: 13px;
+          color: #374151;
+          line-height: 1.55;
+          border-left: 1px solid #e5e7eb;
+          padding-left: 18px;
+        }
+
+        .pane1-summary-label {
+          font-size: 9px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #6b7280;
+          margin-bottom: 4px;
+        }
+
+        .model-tag {
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          background: #e5e7eb;
+          border: 1px solid #d1d5db;
+          border-radius: 3px;
+          padding: 0px 5px;
+          font-size: 9px;
+          color: #374151;
+          text-transform: none;
+          letter-spacing: 0;
+        }
+
+        /* ── Side layout ── */
+        .side-layout {
+          display: flex;
+          gap: 16px;
+        }
+
+        .side-left { flex: 1; min-width: 0; }
+        .side-right { width: 320px; flex-shrink: 0; }
+
+        /* ── Pane 2: Browser ── */
+        .breadcrumb {
+          display: flex;
+          align-items: center;
+          gap: 3px;
+          font-size: 13px;
+          margin-bottom: 12px;
+        }
+
+        .breadcrumb span { color: #6b7280; padding: 3px 6px; }
+
+        .breadcrumb .current {
+          font-weight: 600;
+          color: #111827;
+          background: #f1f5f9;
+          border-radius: 4px;
+        }
+
+        .breadcrumb .sep { color: #9ca3af; }
+
+        .files-count-inline {
+          font-size: 13px;
+          font-weight: 500;
+          color: #6b7280;
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          padding: 8px 12px;
+          display: inline-block;
+          margin-bottom: 12px;
+        }
+
+        .subfolder-label {
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: #6b7280;
+          margin-bottom: 8px;
+        }
+
+        .folder-grid {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 14px;
+        }
+
+        .folder-chip {
+          background: #f8faff;
+          border: 1px solid #3b6ef5;
+          border-radius: 6px;
+          padding: 10px 16px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          color: #374151;
+          transition: background 0.15s, box-shadow 0.15s;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        .folder-chip:hover {
+          background: #eff6ff;
+          box-shadow: 0 2px 8px rgba(59,110,245,0.1);
+        }
+
+        .table-divider {
+          border: none;
+          border-top: 1px solid #f3f4f6;
+          margin: 12px 0;
+        }
+
+        .file-table-label {
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: #6b7280;
+          margin-bottom: 8px;
+        }
+
+        .mini-toolbar {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+
+        .mini-search {
+          font-family: inherit;
+          flex: 1;
+          padding: 7px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          font-size: 13px;
+          color: #111827;
+          outline: none;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .mini-search::placeholder { color: #9ca3af; }
+        .mini-search:focus { border-color: #3b6ef5; box-shadow: 0 0 0 3px rgba(59,110,245,0.12); }
+
+        .mini-filter {
+          font-family: inherit;
+          padding: 7px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          font-size: 13px;
+          color: #374151;
+          background: #fff;
+          cursor: pointer;
+          outline: none;
+        }
+
+        .mini-filter:focus { border-color: #3b6ef5; }
+
+        .table-scroll {
+          max-height: 220px;
+          overflow-y: auto;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+        }
+
+        .mini-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .mini-table thead th {
+          text-align: left;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: #6b7280;
+          padding: 8px 12px;
+          background: #f9fafb;
+          border-bottom: 1px solid #e5e7eb;
+          position: sticky;
+          top: 0;
+          z-index: 2;
+        }
+
+        .mini-table tbody tr {
+          border-bottom: 1px solid #f3f4f6;
+          cursor: pointer;
+          transition: background 0.1s;
+        }
+
+        .mini-table tbody tr:last-child { border-bottom: none; }
+        .mini-table tbody tr:hover { background: #f9fafb; }
+        .mini-table tbody tr.selected { background: #eff6ff; }
+        .mini-table tbody tr.selected .col-name { color: #1d4ed8; }
+
+        .mini-table td { padding: 8px 12px; font-size: 13px; }
+        .col-name { font-weight: 600; color: #111827; }
+        .col-cat { color: #6b7280; }
+        .col-size { color: #6b7280; text-align: right; }
+
+        /* ── Pane 3: Side panel ── */
+        .side-panel {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          overflow: hidden;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        .side-panel + .side-panel { margin-top: 16px; }
+
+        .side-panel-header {
+          padding: 14px 16px;
+          border-bottom: 1px solid #e5e7eb;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .side-panel-title {
+          font-size: 14px;
+          font-weight: 700;
+          color: #111827;
+        }
+
+        .side-panel-type {
+          font-size: 9px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #6b7280;
+          background: #f1f5f9;
+          padding: 3px 8px;
+          border-radius: 4px;
+        }
+
+        /* Tabs */
+        .tabs {
+          display: flex;
+          border-bottom: 1px solid #e5e7eb;
+          background: #f9fafb;
+        }
+
+        .tab {
+          padding: 9px 16px;
+          font-size: 12px;
+          font-weight: 500;
+          color: #6b7280;
+          cursor: pointer;
+          border-bottom: 2px solid transparent;
+          transition: color 0.15s;
+        }
+
+        .tab:hover { color: #111827; }
+
+        .tab.active {
+          color: #3b6ef5;
+          font-weight: 700;
+          border-bottom-color: #3b6ef5;
+        }
+
+        .tab-content {
+          padding: 16px;
+          font-size: 13px;
+          color: #374151;
+          line-height: 1.6;
+        }
+
+        .detail-stats-mini {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 14px;
+        }
+
+        .detail-stat-mini {
+          flex: 1;
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          padding: 12px;
+          text-align: center;
+        }
+
+        .detail-stat-mini-value { font-size: 22px; font-weight: 700; color: #111827; }
+
+        .detail-stat-mini-label {
+          font-size: 9px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #6b7280;
+        }
+
+        .label-sm {
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: #6b7280;
+          margin-bottom: 6px;
+        }
+
+        .type-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+        }
+
+        .type-chip {
+          font-size: 11px;
+          padding: 3px 9px;
+          background: #f1f5f9;
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
+          color: #374151;
+        }
+
+        .type-chip strong { color: #111827; font-weight: 700; }
+
+        .ner-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+        }
+
+        .ner-tag {
+          font-size: 11px;
+          padding: 3px 9px;
+          border-radius: 4px;
+          background: #fef3c7;
+          border: 1px solid #fde68a;
+          color: #92400e;
+        }
+
+        .ner-tag-count { font-weight: 700; color: #78350f; }
+
+        .summary-model-line {
+          font-size: 9px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #6b7280;
+          margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-layout">
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-badge">M</div>
+            <span class="logo-text">MODAL</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a class="nav-item active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                Archieven
+            </a>
+            <a class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                Zoeken
+            </a>
+            <a class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                Configuratie
+            </a>
+        </nav>
+        <div class="sidebar-spacer"></div>
+        <div class="sidebar-bottom">
+            <div class="sidebar-divider"></div>
+            <button class="btn-shutdown">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                Afsluiten
+            </button>
+        </div>
+        <div class="sidebar-version">MODAL V1.2.0</div>
+    </aside>
+
+    <!-- ── Main ── -->
+    <div class="main-content">
+
+        <!-- Top bar -->
+        <div class="top-bar">
+            <button class="btn-back">← Overzicht</button>
+            <div>
+                <div class="archive-name">NER-test</div>
+                <div class="archive-meta-line">
+                    <span>/Users/dragonfly/Downloads/test-archieven/ner-test</span>
+                    <span>Aangemaakt: <strong>2026-05-31</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANE 1: Compact archive summary -->
+        <div class="panel">
+            <div class="pane1-compact">
+                <div class="pane1-stats">
+                    <div class="pane1-stat">
+                        <div class="pane1-stat-value">80</div>
+                        <div class="pane1-stat-label">Bestanden</div>
+                    </div>
+                    <div class="pane1-stat">
+                        <div class="pane1-stat-value">3</div>
+                        <div class="pane1-stat-label">Types</div>
+                    </div>
+                    <div class="pane1-stat">
+                        <div class="pane1-stat-value">15</div>
+                        <div class="pane1-stat-label">Mappen</div>
+                    </div>
+                </div>
+                <div class="pane1-summary">
+                    <div class="pane1-summary-label">Archief samenvatting <span class="model-tag">gemma3:1b</span></div>
+                    Dit archief bevat documenten van de Volksunie, voornamelijk in WordPerfect-formaat. De collectie omvat correspondentie, verslagen en beleidsdocumenten uit de periode 1960-1990, verdeeld over persoonlijke archieven van leden.
+                </div>
+            </div>
+        </div>
+
+        <!-- Side-by-side: browser + detail panel -->
+        <div class="side-layout">
+
+            <!-- Left: Browser (pane 2) -->
+            <div class="side-left">
+                <div class="panel" style="margin-bottom:0;">
+                    <div class="panel-title">Archief browser</div>
+                    <div class="breadcrumb">
+                        <span class="current">📁 /</span>
+                    </div>
+                    <div class="files-count-inline">📄 3 bestanden direct in deze map</div>
+                    <div class="subfolder-label">2 submappen</div>
+                    <div class="folder-grid">
+                        <div class="folder-chip">📁 KARL</div>
+                        <div class="folder-chip">📁 KATE</div>
+                    </div>
+                    <hr class="table-divider">
+                    <div class="file-table-label">Bestanden in deze map (3 van 3)</div>
+                    <div class="mini-toolbar">
+                        <input class="mini-search" placeholder="Zoek op bestandsnaam...">
+                        <select class="mini-filter"><option>Alle types</option></select>
+                    </div>
+                    <div class="table-scroll">
+                        <table class="mini-table">
+                            <thead><tr><th>Bestandsnaam</th><th>Categorie</th><th style="text-align:right">Grootte</th></tr></thead>
+                            <tbody>
+                            <tr class="selected"><td class="col-name">MICHAEL</td><td class="col-cat">Document</td><td class="col-size">6.0 KB</td></tr>
+                            <tr><td class="col-name">PARLEM</td><td class="col-cat">Document</td><td class="col-size">2.8 KB</td></tr>
+                            <tr><td class="col-name">.DS_Store</td><td class="col-cat">Systeem</td><td class="col-size">6.0 KB</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Detail side panel (pane 3) -->
+            <div class="side-right">
+
+                <!-- File detail — only analysis tabs -->
+                <div class="side-panel">
+                    <div class="side-panel-header">
+                        <div class="side-panel-title">MICHAEL</div>
+                        <div class="side-panel-type">Bestand</div>
+                    </div>
+                    <div class="tabs">
+                        <div class="tab active">Samenvatting</div>
+                        <div class="tab">NER</div>
+                    </div>
+                    <div class="tab-content">
+                        <div class="summary-model-line">AI-gegenereerde samenvatting <span class="model-tag">gemma3:1b</span></div>
+                        <div>
+                            Dit WordPerfect-document bevat een brief van Michael Van Hees aan het partijbestuur van de Volksunie, gedateerd 12 maart 1978. De brief behandelt de regionale verkiezingsstrategie voor de provincie Antwerpen en doet aanbevelingen voor de kandidatenlijst.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Folder detail — with Overzicht tab -->
+                <div class="side-panel">
+                    <div class="side-panel-header">
+                        <div class="side-panel-title">📁 KARL</div>
+                        <div class="side-panel-type">Map</div>
+                    </div>
+                    <div class="tabs">
+                        <div class="tab active">Overzicht</div>
+                        <div class="tab">Samenvatting</div>
+                        <div class="tab">NER</div>
+                    </div>
+                    <div class="tab-content">
+                        <div class="detail-stats-mini">
+                            <div class="detail-stat-mini">
+                                <div class="detail-stat-mini-value">38</div>
+                                <div class="detail-stat-mini-label">Bestanden</div>
+                            </div>
+                            <div class="detail-stat-mini">
+                                <div class="detail-stat-mini-value">2</div>
+                                <div class="detail-stat-mini-label">Types</div>
+                            </div>
+                        </div>
+                        <div class="label-sm">Bestandscategorieën</div>
+                        <div class="type-chips" style="margin-bottom:14px;">
+                            <span class="type-chip">Document <strong>36</strong></span>
+                            <span class="type-chip">Systeem <strong>2</strong></span>
+                        </div>
+                        <div class="label-sm">Top NER resultaten</div>
+                        <div class="ner-tags">
+                            <span class="ner-tag">Volksunie <span class="ner-tag-count">12</span></span>
+                            <span class="ner-tag">Brussel <span class="ner-tag-count">8</span></span>
+                            <span class="ner-tag">W. Martens <span class="ner-tag-count">5</span></span>
+                            <span class="ner-tag">Vlaanderen <span class="ner-tag-count">4</span></span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>
