@@ -57,13 +57,19 @@ def upgrade() -> None:
     op.create_index("ix_topic_detection_analysis_id", "topic_detection", ["analysis_id"])
     op.create_index("ix_topic_detection_file_id", "topic_detection", ["file_id"])
 
+    # ALTER TYPE ADD VALUE cannot be used in the same transaction as statements
+    # that use the new value — autocommit_block commits first, then opens a new transaction.
+    with op.get_context().autocommit_block():
+        op.execute("ALTER TYPE analysis_type ADD VALUE IF NOT EXISTS 'TOPIC_DETECTION'")
+
+    # Seed: TOPIC_DETECTION → gemma3:1b
     op.execute(
         "INSERT INTO analysis_configuration (id, type, model) "
-        "VALUES (gen_random_uuid(), 'Topic Detection', 'BERTopic')"
+        "VALUES (gen_random_uuid(), 'TOPIC_DETECTION', 'gemma3:1b')"
     )
 
 def downgrade() -> None:
-    op.execute("DELETE FROM analysis_configuration WHERE type = 'Topic Detection'")
+    op.execute("DELETE FROM analysis_configuration WHERE type = 'TOPIC_DETECTION'")
     op.drop_index("ix_topic_detection_file_id", table_name="topic_detection")
     op.drop_index("ix_topic_detection_analysis_id", table_name="topic_detection")
     op.drop_index("ix_topic_detection_archive_id", table_name="topic_detection")
