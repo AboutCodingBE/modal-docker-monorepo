@@ -1,42 +1,60 @@
-<div class="panel-title">Inhoud huidige map</div>
+<div class="side-panel">
 
-@if (loading()) {
-  <div class="loading-msg">Laden...</div>
-} @else {
-  <div class="scope-indicator">
-    Resultaten voor: <span class="scope-path">{{ folderData().path }}</span>
+  <!-- Header -->
+  <div class="side-panel-header">
+    <div class="side-panel-title">📁 {{ folderName }}</div>
+    <span class="type-badge">Map</span>
   </div>
 
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-label">Bestanden in deze map</div>
-      <div class="stat-value">{{ folderData().direct_file_count.toLocaleString('nl-BE') }}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Bestandstypen</div>
-      <div class="stat-value">{{ folderData().mime_types.length }}</div>
-    </div>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab" [class.active]="activeTab() === 'overzicht'" (click)="switchTab('overzicht')">
+      Overzicht
+    </button>
+    <button class="tab" [class.active]="activeTab() === 'samenvatting'" (click)="switchTab('samenvatting')">
+      Samenvatting
+    </button>
   </div>
 
-  @if (folderData().mime_types.length > 0) {
-    <div class="filetype-detail-grid">
-      @for (mt of folderData().mime_types; track mt.mime_type) {
-        <div class="filetype-detail-card">
-          <div class="filetype-detail-name">{{ mt.mime_type }}</div>
-          <div class="filetype-detail-count">{{ mt.count }}</div>
+  <!-- Tab content -->
+  <div class="tab-content">
+
+    @if (activeTab() === 'overzicht') {
+      <div class="detail-stats">
+        <div class="detail-stat">
+          <div class="detail-stat-value">{{ folderData().direct_file_count }}</div>
+          <div class="detail-stat-label">Bestanden</div>
         </div>
-      }
-    </div>
-  } @else {
-    <div class="no-files-msg">Geen Tika-resultaten beschikbaar voor deze map</div>
-  }
+        <div class="detail-stat">
+          <div class="detail-stat-value">{{ (folderData().categories ?? []).length }}</div>
+          <div class="detail-stat-label">Types</div>
+        </div>
+      </div>
 
-  @if (folderId()) {
-    <hr class="section-divider" />
-    <app-analysis-summary
-      [archiveId]="archiveId()"
-      [fileId]="folderId()!"
-      label="AI-GEGENEREERDE SAMENVATTING VAN DEZE MAP"
-    />
-  }
-}
+      @if ((folderData().categories ?? []).length > 0) {
+        <div class="section-label">Bestandscategorieën</div>
+        <div class="type-chips">
+          @for (cat of (folderData().categories ?? []); track cat.category) {
+            <span class="type-chip">{{ cat.category }} <strong>{{ cat.count }}</strong></span>
+          }
+        </div>
+      } @else {
+        <div class="empty-msg">Geen categoriegegevens beschikbaar voor deze map.</div>
+      }
+    }
+
+    @if (activeTab() === 'samenvatting') {
+      @if (folderId()) {
+        <app-analysis-summary
+          [archiveId]="archiveId()"
+          [fileId]="folderId()!"
+          label="AI-gegenereerde samenvatting"
+        />
+      } @else {
+        <div class="empty-msg">Geen samenvatting beschikbaar voor de hoofdmap.</div>
+      }
+    }
+
+  </div>
+
+</div>

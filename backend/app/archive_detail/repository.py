@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.models import Archive, ArchiveAnalysis, File, Summary, TikaAnalysis
+from app.shared.models import Archive, ArchiveAnalysis, File, GenericType, Summary, TikaAnalysis
 
 
 class ArchiveDetailRepository:
@@ -133,8 +133,9 @@ class ArchiveDetailRepository:
             return None
 
         files_result = await self._session.execute(
-            select(File, TikaAnalysis.mime_type)
+            select(File, TikaAnalysis.mime_type, GenericType.generic_type)
             .outerjoin(TikaAnalysis, TikaAnalysis.file_id == File.id)
+            .outerjoin(GenericType, GenericType.file_id == File.id)
             .where(
                 and_(
                     File.archive_id == archive_id,
@@ -156,8 +157,9 @@ class ArchiveDetailRepository:
                     "extension": f.extension,
                     "size_bytes": f.size_bytes,
                     "mime_type": mime_type,
+                    "category": generic_type,
                 }
-                for f, mime_type in files_result.all()
+                for f, mime_type, generic_type in files_result.all()
             ],
         }
 
@@ -188,6 +190,7 @@ class ArchiveDetailRepository:
                 "direct_file_count": 0,
                 "subfolders": [],
                 "mime_types": [],
+                "categories": [],
             }
 
         parent_filter = File.parent_id == folder.id
@@ -233,6 +236,24 @@ class ArchiveDetailRepository:
                 for r in mime_result.all()
             ]
 
+        categories = []
+        if file_ids:
+            cat_result = await self._session.execute(
+                select(GenericType.generic_type, func.count().label("count"))
+                .where(
+                    and_(
+                        GenericType.file_id.in_(file_ids),
+                        GenericType.generic_type.isnot(None),
+                    )
+                )
+                .group_by(GenericType.generic_type)
+                .order_by(func.count().desc())
+            )
+            categories = [
+                {"category": r.generic_type, "count": r.count}
+                for r in cat_result.all()
+            ]
+
         display_path = f"/{prefix}" if prefix else "/"
 
         return {
@@ -241,4 +262,5 @@ class ArchiveDetailRepository:
             "direct_file_count": len(direct_files),
             "subfolders": subfolder_list,
             "mime_types": mime_types,
+            "categories": categories,
         }

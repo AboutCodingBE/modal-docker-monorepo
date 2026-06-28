@@ -5,10 +5,11 @@ import { ArchiveService, ArchiveStats, FolderData, FolderFile } from '../../../s
 import { FileTable } from './file-table/file-table';
 import { FolderDetail } from './folder-detail/folder-detail';
 import { FileDetail } from './file-detail/file-detail';
+import { AnalysisSummary } from './analysis-summary/analysis-summary';
 
 @Component({
   selector: 'app-archive-detail',
-  imports: [CommonModule, FileTable, FolderDetail, FileDetail],
+  imports: [CommonModule, FileTable, FolderDetail, FileDetail, AnalysisSummary],
   templateUrl: './archive-detail.html',
   styleUrl: './archive-detail.css',
 })
@@ -24,8 +25,7 @@ export class ArchiveDetail implements OnInit {
   loadingStats = signal(true);
   loadingFolder = signal(true);
   selectedFile = signal<FolderFile | null>(null);
-
-  currentFolderId = computed(() => this.folderData()?.folder_id ?? null);
+  rootFolderId = signal<string | null>(null);
 
   breadcrumbs = computed(() => {
     const path = this.currentPath();
@@ -73,6 +73,9 @@ export class ArchiveDetail implements OnInit {
     this.archiveService.getFolder(id, path).subscribe({
       next: (folder) => {
         this.folderData.set(folder);
+        if (path === '/' && folder.folder_id && !this.rootFolderId()) {
+          this.rootFolderId.set(folder.folder_id);
+        }
         this.loadingFolder.set(false);
       },
       error: () => this.loadingFolder.set(false),
