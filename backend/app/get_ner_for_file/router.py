@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.shared.database import get_db
 from app.get_ner_for_file.get_ner_for_file import GetNerForFile
 
 router = APIRouter(prefix="/api", tags=["ner"])

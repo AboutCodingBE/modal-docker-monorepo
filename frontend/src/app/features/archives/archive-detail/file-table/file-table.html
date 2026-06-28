@@ -34,7 +34,7 @@
           <thead>
             <tr>
               <th>Bestandsnaam</th>
-              <th>Type</th>
+              <th>Categorie</th>
               <th>Grootte</th>
             </tr>
           </thead>
@@ -46,7 +46,7 @@
                 (click)="selectFile(file)"
               >
                 <td class="file-name">{{ file.name }}</td>
-                <td class="file-type">{{ file.mime_type ?? '—' }}</td>
+                <td class="file-type">{{ file.category ?? '—' }}</td>
                 <td class="file-size">{{ formatSize(file.size_bytes) }}</td>
               </tr>
             }
