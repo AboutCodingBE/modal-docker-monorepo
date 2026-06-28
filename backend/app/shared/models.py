@@ -12,6 +12,7 @@ class AnalysisType(str, enum.Enum):
     STT = "STT"
     NER = "NER"
     SUMMARY = "SUMMARY"
+    TOPIC_DETECTION = "TOPIC_DETECTION"
 
 class ArchiveAnalysisStatus(str, enum.Enum):
     STARTED = "STARTED"
@@ -184,3 +185,15 @@ class Ner(Base):
     organisations_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     misc: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
     misc_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+class TopicDetection(Base):
+    __tablename__ = "topic_detection"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
+    analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archive_analysis.id", ondelete="CASCADE"), nullable=False)
+    parent_folder_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="SET NULL"), nullable=True)
+    file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
+
+    topics: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
+    topics_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
