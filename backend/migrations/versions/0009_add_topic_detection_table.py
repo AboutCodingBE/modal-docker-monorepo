@@ -11,8 +11,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects.postgresql import UUID
 
-revision: str = "0008"
-down_revision: str | None = "0007"
+revision: str = "0009"
+down_revision: str | None = "0008"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -50,7 +50,7 @@ def upgrade() -> None:
             nullable=False,
         ), 
         sa.Column("topics", sa.ARRAY(sa.Text()), nullable=True),
-        sa.Column("ptopics_count", sa.Integer(), nullable=True),
+        sa.Column("topics_count", sa.Integer(), nullable=True),
     )
     #indexes on all FK columns
     op.create_index("ix_topic_detection_archive_id", "topic_detection", ["archive_id"])
