@@ -1,9 +1,9 @@
 import { Component, effect, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ArchiveService, FolderFile, NerResult } from '../../../../services/archive.service';
+import { ArchiveService, FolderFile, NerResult, TopicsResult } from '../../../../services/archive.service';
 import { AnalysisSummary } from '../analysis-summary/analysis-summary';
 
-type Tab = 'samenvatting' | 'ner';
+type Tab = 'samenvatting' | 'ner' | 'topics';
 
 @Component({
   selector: 'app-file-detail',
@@ -24,6 +24,9 @@ export class FileDetail {
   nerData = signal<NerResult | null>(null);
   nerLoading = signal(false);
   nerLoaded = signal(false);
+  topicsData = signal<TopicsResult | null>(null);
+  topicsLoading = signal(false);
+  topicsLoaded = signal(false);
 
   constructor() {
     effect(
@@ -32,6 +35,8 @@ export class FileDetail {
         this.activeTab.set('samenvatting');
         this.nerData.set(null);
         this.nerLoaded.set(false);
+        this.topicsData.set(null);
+        this.topicsLoaded.set(false);
       },
       { allowSignalWrites: true },
     );
@@ -41,6 +46,9 @@ export class FileDetail {
     this.activeTab.set(tab);
     if (tab === 'ner' && !this.nerLoaded()) {
       this._loadNer();
+    }
+    if (tab === 'topics' && !this.topicsLoaded()) {
+      this._loadTopics();
     }
   }
 
@@ -56,6 +64,22 @@ export class FileDetail {
         this.nerData.set(null);
         this.nerLoading.set(false);
         this.nerLoaded.set(true);
+      },
+    });
+  }
+
+  private _loadTopics(): void {
+    this.topicsLoading.set(true);
+    this.archiveService.getTopicsForFile(this.archiveId(), this.file().id).subscribe({
+      next: (data) => {
+        this.topicsData.set(data);
+        this.topicsLoading.set(false);
+        this.topicsLoaded.set(true);
+      },
+      error: () => {
+        this.topicsData.set(null);
+        this.topicsLoading.set(false);
+        this.topicsLoaded.set(true);
       },
     });
   }

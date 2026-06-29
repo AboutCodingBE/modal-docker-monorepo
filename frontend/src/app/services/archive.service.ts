@@ -51,6 +51,13 @@ export interface NerResult {
   total_entities: number;
 }
 
+export interface TopicsResult {
+  file_id: string;
+  file_name: string;
+  topics: string[];
+  total_topics: number;
+}
+
 export interface FolderFilesData {
   folder_id: string;
   folder_name: string;
@@ -111,6 +118,10 @@ export class ArchiveService {
 
   getNerForFile(archiveId: string, fileId: string): Observable<NerResult> {
     return this.http.get<NerResult>(`/api/archives/${archiveId}/files/${fileId}/ner`);
+  }
+
+  getTopicsForFile(archiveId: string, fileId: string): Observable<TopicsResult> {
+    return this.http.get<TopicsResult>(`/api/archives/${archiveId}/files/${fileId}/topics`);
   }
 
   getAnalysisConfiguration(): Observable<AnalysisConfigEntry[]> {

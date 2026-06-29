@@ -11,6 +11,7 @@ from app.analysis import task_tracker
 from app.create_summaries_for_archive.archive_analysis_repository import ArchiveAnalysisRepository
 from app.create_summaries_for_archive.create_summaries_for_archive import CreateSummariesForArchive
 from app.create_ner_for_archive.create_ner_for_archive import CreateNerForArchive
+from app.create_topic_detection_for_archive.create_topic_detection_for_archive import CreateTopicDetectionForArchive
 from app.shared.database import _session_factory, get_db
 from app.shared.models import AnalysisConfiguration
 
@@ -18,7 +19,7 @@ _logger = logging.getLogger("app")
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
-_SUPPORTED_TYPES = {"summary", "ner"}
+_SUPPORTED_TYPES = {"summary", "ner", "topic_detection"}
 
 
 class AnalysisItem(BaseModel):
@@ -72,6 +73,8 @@ async def _run_sequential(
         try:
             if analysis_type.lower() == "ner":
                 runner = CreateNerForArchive(_session_factory)
+            elif analysis_type.lower() == "topic_detection":
+                runner = CreateTopicDetectionForArchive(_session_factory)
             else:
                 runner = CreateSummariesForArchive(_session_factory)
             await runner.execute(archive_id, archive_analysis_id, task_id, model)

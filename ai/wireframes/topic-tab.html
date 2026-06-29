@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MODAL — Topics Tab Inhoud</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: #f0f2f5;
+          padding: 40px;
+          display: flex;
+          gap: 24px;
+          align-items: flex-start;
+        }
+
+        .option-wrap {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .option-label {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #6b7280;
+          padding-bottom: 6px;
+          border-bottom: 1px solid #d1d5db;
+        }
+
+        /* ── Side panel ── */
+        .side-panel {
+          width: 320px;
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          overflow: hidden;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        .side-panel-header {
+          padding: 14px 16px;
+          border-bottom: 1px solid #e5e7eb;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .side-panel-title { font-size: 14px; font-weight: 700; color: #111827; }
+
+        .side-panel-type {
+          font-size: 9px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #6b7280;
+          background: #f1f5f9;
+          padding: 3px 8px;
+          border-radius: 4px;
+        }
+
+        .tabs {
+          display: flex;
+          border-bottom: 1px solid #e5e7eb;
+          background: #f9fafb;
+        }
+
+        .tab {
+          padding: 9px 16px;
+          font-size: 12px;
+          font-weight: 500;
+          color: #6b7280;
+          cursor: pointer;
+          border-bottom: 2px solid transparent;
+        }
+
+        .tab:hover { color: #111827; }
+
+        .tab.active {
+          color: #3b6ef5;
+          font-weight: 700;
+          border-bottom-color: #3b6ef5;
+        }
+
+        .tab-content {
+          padding: 16px;
+        }
+
+        /* ── Topic chips ── */
+        .topic-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .topic-tag {
+          font-size: 11px;
+          padding: 4px 10px;
+          border-radius: 5px;
+          background: #ecfdf5;
+          border: 1px solid #a7f3d0;
+          color: #065f46;
+          cursor: default;
+        }
+
+        .topic-tag-count {
+          font-weight: 700;
+          color: #047857;
+        }
+
+        .topic-total-line {
+          font-size: 11px;
+          color: #9ca3af;
+          margin-top: 14px;
+          padding-top: 10px;
+          border-top: 1px solid #f3f4f6;
+        }
+
+        .topic-total-line strong { color: #6b7280; }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════════
+     FILE — Topics tab
+     ══════════════════════ -->
+<div class="option-wrap">
+    <div class="option-label">Bestand — Topics tab</div>
+    <div class="side-panel">
+        <div class="side-panel-header">
+            <div class="side-panel-title">MICHAEL</div>
+            <div class="side-panel-type">Bestand</div>
+        </div>
+        <div class="tabs">
+            <div class="tab">Samenvatting</div>
+            <div class="tab">NER</div>
+            <div class="tab active">Topics</div>
+        </div>
+        <div class="tab-content">
+            <div class="topic-tags">
+                <span class="topic-tag">Verkiezingsstrategie</span>
+                <span class="topic-tag">Kandidatenlijst</span>
+                <span class="topic-tag">Partijorganisatie</span>
+                <span class="topic-tag">Vlaamse autonomie</span>
+                <span class="topic-tag">Provinciale politiek</span>
+                <span class="topic-tag">Coalitievorming</span>
+                <span class="topic-tag">Interne partijwerking</span>
+            </div>
+            <div class="topic-total-line"><strong>7</strong> topics gedetecteerd in dit bestand</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════
+     FOLDER — Topics tab
+     ══════════════════════ -->
+<div class="option-wrap">
+    <div class="option-label">Map — Topics tab (geaggregeerd)</div>
+    <div class="side-panel">
+        <div class="side-panel-header">
+            <div class="side-panel-title">📁 KARL</div>
+            <div class="side-panel-type">Map</div>
+        </div>
+        <div class="tabs">
+            <div class="tab">Overzicht</div>
+            <div class="tab">Samenvatting</div>
+            <div class="tab">NER</div>
+            <div class="tab active">Topics</div>
+        </div>
+        <div class="tab-content">
+            <div class="topic-tags">
+                <span class="topic-tag">Vlaamse autonomie <span class="topic-tag-count">28</span></span>
+                <span class="topic-tag">Verkiezingsstrategie <span class="topic-tag-count">24</span></span>
+                <span class="topic-tag">Partijorganisatie <span class="topic-tag-count">19</span></span>
+                <span class="topic-tag">Taalwetgeving <span class="topic-tag-count">16</span></span>
+                <span class="topic-tag">Coalitievorming <span class="topic-tag-count">14</span></span>
+                <span class="topic-tag">Federalisme <span class="topic-tag-count">12</span></span>
+                <span class="topic-tag">Gemeenschapsvorming <span class="topic-tag-count">11</span></span>
+                <span class="topic-tag">Grondwetsherziening <span class="topic-tag-count">9</span></span>
+                <span class="topic-tag">Kandidatenlijst <span class="topic-tag-count">8</span></span>
+                <span class="topic-tag">Provinciale politiek <span class="topic-tag-count">7</span></span>
+                <span class="topic-tag">Interne partijwerking <span class="topic-tag-count">6</span></span>
+                <span class="topic-tag">Brussel-Halle-Vilvoorde <span class="topic-tag-count">5</span></span>
+                <span class="topic-tag">Amnestie <span class="topic-tag-count">4</span></span>
+                <span class="topic-tag">Cultuurpolitiek <span class="topic-tag-count">4</span></span>
+                <span class="topic-tag">Economisch beleid <span class="topic-tag-count">3</span></span>
+                <span class="topic-tag">Onderwijs <span class="topic-tag-count">3</span></span>
+                <span class="topic-tag">Sociale zekerheid <span class="topic-tag-count">2</span></span>
+                <span class="topic-tag">Buitenlands beleid <span class="topic-tag-count">2</span></span>
+            </div>
+            <div class="topic-total-line"><strong>18</strong> topics gedetecteerd in 38 bestanden</div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
