@@ -2,9 +2,12 @@ import os
 import uuid
 from pathlib import Path
 
+import httpx
 import pytest
+import pytest_asyncio
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 # Load DATABASE_URL_SYNC from backend/.env (same as the other scripts)
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
@@ -12,6 +15,167 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 DATABASE_URL = os.environ.get("DATABASE_URL_SYNC")
 if not DATABASE_URL:
     raise EnvironmentError("DATABASE_URL_SYNC is not set in .env")
+
+
+# ---------------------------------------------------------------------------
+# Async DB-sessie — gebruikt door integration/e2e tests die FileRepository,
+# TikaRepository e.d. (async SQLAlchemy) rechtstreeks aanroepen.
+# ---------------------------------------------------------------------------
+_raw_async_url = os.environ.get("DATABASE_URL", "")
+if not _raw_async_url:
+    _raw_async_url = (
+        DATABASE_URL
+        .replace("postgresql+psycopg://", "postgresql+asyncpg://")
+        .replace("postgresql+psycopg2://", "postgresql+asyncpg://")
+    )
+ASYNC_DATABASE_URL = _raw_async_url
+
+
+# ---------------------------------------------------------------------------
+# Service-beschikbaarheid — faalt de test als een vereiste service niet
+# bereikbaar is, zodat het altijd duidelijk is waarom een test mislukt.
+#
+# Principe: gebruik pytest.fail() en nooit pytest.skip().
+# Een geskipte test geeft valse zekerheid — hij telt als "groen" terwijl
+# er niets getest is. Een FAIL dwingt de developer de stack op te starten.
+#
+# Patroon:
+#   1. *_available (scope="session") — doet de HTTP-check éénmalig per run.
+#   2. requires_* (scope="function") — roept pytest.fail() aan als de
+#      beschikbaarheidscheck False teruggaf.
+#
+# Gebruik in een test:
+#   async def test_foo(async_db_session, requires_tika):
+#       ...  # Tika is gegarandeerd beschikbaar als we hier komen
+# ---------------------------------------------------------------------------
+
+def _service_url(name: str) -> str:
+    """Leest een service-URL uit de app-settings."""
+    from app.config import settings
+    return {"tika": settings.tika_url, "agent": settings.agent_url}[name]
+
+
+@pytest.fixture(scope="session")
+def tika_available() -> bool:
+    """Controleert éénmalig per test-sessie of de Tika-server bereikbaar is."""
+    try:
+        resp = httpx.get(f"{_service_url('tika')}/tika", timeout=3.0)
+        return resp.status_code == 200
+    except Exception:
+        return False
+
+
+@pytest.fixture()
+def requires_tika(tika_available) -> str:
+    """Faalt de test als de Tika Docker container niet bereikbaar is.
+    Geeft de Tika-URL terug zodat de fixture als variabele gebruikt kan worden.
+    """
+    if not tika_available:
+        pytest.fail(
+            f"Tika niet bereikbaar op {_service_url('tika')} — "
+            "start de stack met: docker compose up"
+        )
+    return _service_url("tika")
+
+
+@pytest.fixture(scope="session")
+def agent_available() -> bool:
+    """Controleert éénmalig per test-sessie of de agent bereikbaar is."""
+    try:
+        resp = httpx.get(f"{_service_url('agent')}/health", timeout=3.0)
+        return resp.status_code == 200
+    except Exception:
+        return False
+
+
+@pytest.fixture()
+def requires_agent(agent_available) -> str:
+    """Faalt de test als de agent niet bereikbaar is.
+    Geeft de agent-URL terug zodat de fixture als variabele gebruikt kan worden.
+    """
+    if not agent_available:
+        pytest.fail(
+            f"Agent niet bereikbaar op {_service_url('agent')} — "
+            "start de stack met: docker compose up"
+        )
+    return _service_url("agent")
+
+
+@pytest.fixture(scope="session")
+def ollama_available() -> bool:
+    """Controleert éénmalig per test-sessie of Ollama bereikbaar is."""
+    try:
+        from app.config import settings
+        resp = httpx.get(f"{settings.ollama_url}/api/tags", timeout=3.0)
+        return resp.status_code == 200
+    except Exception:
+        return False
+
+
+@pytest.fixture()
+def requires_ollama(ollama_available) -> str:
+    """Faalt de test als Ollama niet bereikbaar is.
+    Geeft de Ollama-URL terug zodat de fixture als variabele gebruikt kan worden.
+    """
+    if not ollama_available:
+        from app.config import settings
+        pytest.fail(
+            f"Ollama niet bereikbaar op {settings.ollama_url} — "
+            "start de stack met: docker compose up"
+        )
+    from app.config import settings
+    return settings.ollama_url
+
+
+@pytest_asyncio.fixture()
+async def async_db_session():
+    engine = create_async_engine(ASYNC_DATABASE_URL, echo=False)
+    session = AsyncSession(engine, expire_on_commit=False)
+    try:
+        yield session
+    finally:
+        # FileRepository roept alleen flush() aan, nooit commit() — rollback()
+        # draait die flush terug zodat de DB na elke test weer leeg is.
+        await session.rollback()
+        await session.close()
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture()
+async def committing_db_session():
+    """Async DB-sessie voor tests die echte commits vereisen.
+
+    Gebruik wanneer de te testen code intern session.commit() aanroept
+    (bv. PerformTikaAnalysis.execute() voor voortgangsupdates). De rollback-
+    aanpak van async_db_session werkt dan niet meer.
+
+    Cleanup via expliciete DELETE-statements per archive_id na de test.
+
+    Gebruik in een test:
+        session, cleanup_ids = committing_db_session
+        archive_id = ...
+        cleanup_ids.append(archive_id)   # registreer voor cleanup
+        await session.commit()           # commit de setup zelf
+        await PerformTikaAnalysis(session).execute(archive_id, task_id)
+    """
+    engine = create_async_engine(ASYNC_DATABASE_URL, echo=False)
+    session = AsyncSession(engine, expire_on_commit=False)
+    archive_ids: list[uuid.UUID] = []
+    try:
+        yield session, archive_ids
+    finally:
+        for aid in archive_ids:
+            for stmt in [
+                "DELETE FROM tika_analyses WHERE file_id IN (SELECT id FROM files WHERE archive_id = :aid)",
+                "DELETE FROM ner WHERE file_id IN (SELECT id FROM files WHERE archive_id = :aid)",
+                "DELETE FROM analysis_tasks WHERE archive_id = :aid",
+                "DELETE FROM files WHERE archive_id = :aid",
+                "DELETE FROM archives WHERE id = :aid",
+            ]:
+                await session.execute(text(stmt), {"aid": str(aid)})
+        await session.commit()
+        await session.close()
+    await engine.dispose()
 
 
 # scope="session" means this engine is created once for the entire test run,
