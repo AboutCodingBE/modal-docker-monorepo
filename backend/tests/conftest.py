@@ -101,6 +101,32 @@ def requires_agent(agent_available) -> str:
     return _service_url("agent")
 
 
+@pytest.fixture(scope="session")
+def ollama_available() -> bool:
+    """Controleert éénmalig per test-sessie of Ollama bereikbaar is."""
+    try:
+        from app.config import settings
+        resp = httpx.get(f"{settings.ollama_url}/api/tags", timeout=3.0)
+        return resp.status_code == 200
+    except Exception:
+        return False
+
+
+@pytest.fixture()
+def requires_ollama(ollama_available) -> str:
+    """Faalt de test als Ollama niet bereikbaar is.
+    Geeft de Ollama-URL terug zodat de fixture als variabele gebruikt kan worden.
+    """
+    if not ollama_available:
+        from app.config import settings
+        pytest.fail(
+            f"Ollama niet bereikbaar op {settings.ollama_url} — "
+            "start de stack met: docker compose up"
+        )
+    from app.config import settings
+    return settings.ollama_url
+
+
 @pytest_asyncio.fixture()
 async def async_db_session():
     engine = create_async_engine(ASYNC_DATABASE_URL, echo=False)
