@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import httpx
 
 from app.config import settings
+from app.shared.path_utils import normalize_path
 
 
 class FolderAnalysis:
@@ -26,7 +27,7 @@ class FolderAnalysis:
             data = resp.json()
 
         discovered_at = datetime.now(timezone.utc)
-        normalized_path = folder_path.rstrip("/")
+        normalized_path = normalize_path(folder_path.rstrip("/"))
         entries = [
             {
                 "archive_id": archive_id,
@@ -52,13 +53,17 @@ class FolderAnalysis:
                 else None
             )
 
+            full_path     = normalize_path(f["absolute_path"])
+            parent_path   = full_path.rsplit("/", 1)[0]   # split ná normalisatie, niet ervóór
+            relative_path = normalize_path(f["relative_path"])
+
             if is_directory:
                 entry = {
                     "archive_id": archive_id,
-                    "_parent_path": os.path.dirname(f["absolute_path"]),
+                    "_parent_path": parent_path,
                     "name": f["name"],
-                    "full_path": f["absolute_path"],
-                    "relative_path": f["relative_path"],
+                    "full_path": full_path,
+                    "relative_path": relative_path,
                     "is_directory": True,
                     "extension": None,
                     "size_bytes": None,
@@ -71,10 +76,10 @@ class FolderAnalysis:
                 _, ext = os.path.splitext(f["name"])
                 entry = {
                     "archive_id": archive_id,
-                    "_parent_path": os.path.dirname(f["absolute_path"]),
+                    "_parent_path": parent_path,
                     "name": f["name"],
-                    "full_path": f["absolute_path"],
-                    "relative_path": f["relative_path"],
+                    "full_path": full_path,
+                    "relative_path": relative_path,
                     "is_directory": False,
                     "extension": ext.lower() if ext else None,
                     "size_bytes": f.get("size_bytes"),

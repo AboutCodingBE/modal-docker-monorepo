@@ -31,3 +31,6 @@ agent/build/
 venv/
 .venv/
 /frontend/.angular/
+
+# Claude Code
+.claude/
