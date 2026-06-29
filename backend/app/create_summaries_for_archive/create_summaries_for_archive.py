@@ -9,9 +9,9 @@ from app.shared.logging_config import log_context
 _logger = logging.getLogger("app.summary")
 
 from app.create_summaries_for_archive.archive_analysis_repository import ArchiveAnalysisRepository
-from app.create_summaries_for_archive.file_repository import FileRepository
 from app.create_summaries_for_archive.ollama_client import OllamaUnavailableError, generate
 from app.create_summaries_for_archive.summary_repository import SummaryRepository
+from app.shared.file_repository import FileRepository
 
 _MAX_CONSECUTIVE_FAILURES = 5
 

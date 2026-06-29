@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.analysis import task_tracker
 from app.create_ner_for_archive.archive_analysis_repository import ArchiveAnalysisRepository
-from app.create_ner_for_archive.file_repository import FileRepository
 from app.create_ner_for_archive.ner_engine import run_ner
 from app.create_ner_for_archive.ner_repository import NerRepository
+from app.shared.file_repository import FileRepository
 from app.shared.logging_config import log_context
 
 _logger = logging.getLogger("app")
