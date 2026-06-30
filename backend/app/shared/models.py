@@ -189,19 +189,10 @@ class Ner(Base):
     parent_folder_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="SET NULL"), nullable=True)
     file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
 
-    persons: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    persons_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    locations: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    locations_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    organisations: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    organisations_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    misc: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    misc_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-
-    persons_frequencies: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
-    locations_frequencies: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
-    organisations_frequencies: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
-    misc_frequencies: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    persons: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    locations: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    organisations: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    misc: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
 
 class TopicDetection(Base):
     __tablename__ = "topic_detection"
