@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MODAL — NER Tab Inhoud</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: #f0f2f5;
+          padding: 40px;
+          display: flex;
+          gap: 24px;
+          align-items: flex-start;
+        }
+
+        .option-wrap {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .option-label {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #6b7280;
+          padding-bottom: 6px;
+          border-bottom: 1px solid #d1d5db;
+        }
+
+        /* ── Side panel ── */
+        .side-panel {
+          width: 320px;
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          overflow: hidden;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        .side-panel-header {
+          padding: 14px 16px;
+          border-bottom: 1px solid #e5e7eb;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .side-panel-title { font-size: 14px; font-weight: 700; color: #111827; }
+
+        .side-panel-type {
+          font-size: 9px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #6b7280;
+          background: #f1f5f9;
+          padding: 3px 8px;
+          border-radius: 4px;
+        }
+
+        .tabs {
+          display: flex;
+          border-bottom: 1px solid #e5e7eb;
+          background: #f9fafb;
+        }
+
+        .tab {
+          padding: 9px 16px;
+          font-size: 12px;
+          font-weight: 500;
+          color: #6b7280;
+          cursor: pointer;
+          border-bottom: 2px solid transparent;
+        }
+
+        .tab:hover { color: #111827; }
+
+        .tab.active {
+          color: #3b6ef5;
+          font-weight: 700;
+          border-bottom-color: #3b6ef5;
+        }
+
+        .tab-content {
+          padding: 16px;
+          max-height: 480px;
+          overflow-y: auto;
+        }
+
+        /* ── NER content ── */
+        .ner-section-label {
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: #6b7280;
+          margin-bottom: 8px;
+          margin-top: 14px;
+        }
+
+        .ner-section-label:first-child { margin-top: 0; }
+
+        .ner-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+        }
+
+        .ner-tag {
+          font-size: 11px;
+          padding: 3px 9px;
+          border-radius: 4px;
+          cursor: default;
+        }
+
+        .ner-tag-count { font-weight: 700; }
+
+        /* Category colors */
+        .ner-person {
+          background: #dbeafe;
+          border: 1px solid #bfdbfe;
+          color: #1e40af;
+        }
+        .ner-person .ner-tag-count { color: #1d4ed8; }
+
+        .ner-location {
+          background: #dcfce7;
+          border: 1px solid #bbf7d0;
+          color: #166534;
+        }
+        .ner-location .ner-tag-count { color: #15803d; }
+
+        .ner-org {
+          background: #fef3c7;
+          border: 1px solid #fde68a;
+          color: #92400e;
+        }
+        .ner-org .ner-tag-count { color: #78350f; }
+
+        .ner-date {
+          background: #f3e8ff;
+          border: 1px solid #e9d5ff;
+          color: #6b21a8;
+        }
+        .ner-date .ner-tag-count { color: #7c3aed; }
+
+        .ner-misc {
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          color: #475569;
+        }
+        .ner-misc .ner-tag-count { color: #334155; }
+
+        .ner-total-line {
+          font-size: 11px;
+          color: #9ca3af;
+          margin-top: 14px;
+          padding-top: 10px;
+          border-top: 1px solid #f3f4f6;
+        }
+
+        .ner-total-line strong { color: #6b7280; }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════════
+     FILE — NER tab
+     ══════════════════════ -->
+<div class="option-wrap">
+    <div class="option-label">Bestand — NER tab</div>
+    <div class="side-panel">
+        <div class="side-panel-header">
+            <div class="side-panel-title">MICHAEL</div>
+            <div class="side-panel-type">Bestand</div>
+        </div>
+        <div class="tabs">
+            <div class="tab">Samenvatting</div>
+            <div class="tab active">NER</div>
+        </div>
+        <div class="tab-content">
+
+            <div class="ner-section-label">Personen</div>
+            <div class="ner-tags">
+                <span class="ner-tag ner-person">Michael Van Hees</span>
+                <span class="ner-tag ner-person">Wilfried Martens</span>
+                <span class="ner-tag ner-person">Hugo Schiltz</span>
+                <span class="ner-tag ner-person">Nelly Maes</span>
+                <span class="ner-tag ner-person">Frans Van der Elst</span>
+                <span class="ner-tag ner-person">Vic Anciaux</span>
+            </div>
+
+            <div class="ner-section-label">Locaties</div>
+            <div class="ner-tags">
+                <span class="ner-tag ner-location">Antwerpen</span>
+                <span class="ner-tag ner-location">Brussel</span>
+                <span class="ner-tag ner-location">Vlaanderen</span>
+                <span class="ner-tag ner-location">Leuven</span>
+                <span class="ner-tag ner-location">Gent</span>
+            </div>
+
+            <div class="ner-section-label">Organisaties</div>
+            <div class="ner-tags">
+                <span class="ner-tag ner-org">Volksunie</span>
+                <span class="ner-tag ner-org">Partijbestuur</span>
+                <span class="ner-tag ner-org">Kamer van Volksvertegenwoordigers</span>
+            </div>
+
+            <div class="ner-section-label">Overige</div>
+            <div class="ner-tags">
+                <span class="ner-tag ner-date">12 maart 1978</span>
+                <span class="ner-tag ner-date">1977</span>
+            </div>
+
+            <div class="ner-total-line"><strong>16</strong> entiteiten gevonden in dit bestand</div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════
+     FOLDER — NER tab
+     ══════════════════════ -->
+<div class="option-wrap">
+    <div class="option-label">Map — NER tab (geaggregeerd)</div>
+    <div class="side-panel">
+        <div class="side-panel-header">
+            <div class="side-panel-title">📁 KARL</div>
+            <div class="side-panel-type">Map</div>
+        </div>
+        <div class="tabs">
+            <div class="tab">Overzicht</div>
+            <div class="tab">Samenvatting</div>
+            <div class="tab active">NER</div>
+        </div>
+        <div class="tab-content">
+
+            <div class="ner-section-label">Personen</div>
+            <div class="ner-tags">
+                <span class="ner-tag ner-person">Wilfried Martens <span class="ner-tag-count">34</span></span>
+                <span class="ner-tag ner-person">Hugo Schiltz <span class="ner-tag-count">28</span></span>
+                <span class="ner-tag ner-person">Karl Van Hees <span class="ner-tag-count">24</span></span>
+                <span class="ner-tag ner-person">Nelly Maes <span class="ner-tag-count">19</span></span>
+                <span class="ner-tag ner-person">Vic Anciaux <span class="ner-tag-count">15</span></span>
+                <span class="ner-tag ner-person">Frans Van der Elst <span class="ner-tag-count">12</span></span>
+                <span class="ner-tag ner-person">Maurits Coppieters <span class="ner-tag-count">9</span></span>
+                <span class="ner-tag ner-person">Willy Kuijpers <span class="ner-tag-count">7</span></span>
+                <span class="ner-tag ner-person">Jan Verroken <span class="ner-tag-count">5</span></span>
+                <span class="ner-tag ner-person">Bert Anciaux <span class="ner-tag-count">4</span></span>
+                <span class="ner-tag ner-person">Jaak Vandemeulebroucke <span class="ner-tag-count">3</span></span>
+                <span class="ner-tag ner-person">Paul Van Grembergen <span class="ner-tag-count">2</span></span>
+            </div>
+
+            <div class="ner-section-label">Locaties</div>
+            <div class="ner-tags">
+                <span class="ner-tag ner-location">Brussel <span class="ner-tag-count">42</span></span>
+                <span class="ner-tag ner-location">Antwerpen <span class="ner-tag-count">31</span></span>
+                <span class="ner-tag ner-location">Vlaanderen <span class="ner-tag-count">28</span></span>
+                <span class="ner-tag ner-location">Gent <span class="ner-tag-count">14</span></span>
+                <span class="ner-tag ner-location">Leuven <span class="ner-tag-count">11</span></span>
+                <span class="ner-tag ner-location">België <span class="ner-tag-count">9</span></span>
+                <span class="ner-tag ner-location">Wallonië <span class="ner-tag-count">6</span></span>
+                <span class="ner-tag ner-location">Limburg <span class="ner-tag-count">4</span></span>
+                <span class="ner-tag ner-location">Mechelen <span class="ner-tag-count">3</span></span>
+                <span class="ner-tag ner-location">Brugge <span class="ner-tag-count">2</span></span>
+            </div>
+
+            <div class="ner-section-label">Organisaties</div>
+            <div class="ner-tags">
+                <span class="ner-tag ner-org">Volksunie <span class="ner-tag-count">56</span></span>
+                <span class="ner-tag ner-org">CVP <span class="ner-tag-count">18</span></span>
+                <span class="ner-tag ner-org">Partijbestuur <span class="ner-tag-count">14</span></span>
+                <span class="ner-tag ner-org">Kamer van Volksvertegenwoordigers <span class="ner-tag-count">11</span></span>
+                <span class="ner-tag ner-org">Vlaamse Raad <span class="ner-tag-count">8</span></span>
+                <span class="ner-tag ner-org">BSP <span class="ner-tag-count">5</span></span>
+                <span class="ner-tag ner-org">Senaat <span class="ner-tag-count">4</span></span>
+                <span class="ner-tag ner-org">PVV <span class="ner-tag-count">3</span></span>
+            </div>
+
+            <div class="ner-section-label">Overige</div>
+            <div class="ner-tags">
+                <span class="ner-tag ner-date">1978 <span class="ner-tag-count">8</span></span>
+                <span class="ner-tag ner-date">Egmontpact <span class="ner-tag-count">7</span></span>
+                <span class="ner-tag ner-date">1977 <span class="ner-tag-count">6</span></span>
+                <span class="ner-tag ner-date">Vlaamse Beweging <span class="ner-tag-count">4</span></span>
+                <span class="ner-tag ner-date">12 maart 1978 <span class="ner-tag-count">4</span></span>
+                <span class="ner-tag ner-date">1976 <span class="ner-tag-count">3</span></span>
+                <span class="ner-tag ner-date">17 december 1978 <span class="ner-tag-count">2</span></span>
+                <span class="ner-tag ner-date">1979 <span class="ner-tag-count">2</span></span>
+            </div>
+
+            <div class="ner-total-line"><strong>412</strong> entiteiten gevonden in 38 bestanden</div>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

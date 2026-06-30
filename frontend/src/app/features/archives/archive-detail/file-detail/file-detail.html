@@ -1,29 +1,122 @@
-<div class="detail-header">
-  <div class="panel-title">Bestandsdetails</div>
-  <button class="btn-back-file" (click)="back.emit()">← Terug naar map</button>
+<div class="side-panel">
+
+  <!-- Header -->
+  <div class="side-panel-header">
+    <div class="side-panel-title" title="{{ file().name }}">{{ file().name }}</div>
+    <div class="header-right">
+      <span class="type-badge">Bestand</span>
+      <button class="btn-close" (click)="back.emit()" title="Sluiten">×</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab" [class.active]="activeTab() === 'samenvatting'" (click)="switchTab('samenvatting')">
+      Samenvatting
+    </button>
+    <button class="tab" [class.active]="activeTab() === 'ner'" (click)="switchTab('ner')">
+      NER
+    </button>
+    <button class="tab" [class.active]="activeTab() === 'topics'" (click)="switchTab('topics')">
+      Topics
+    </button>
+  </div>
+
+  <!-- Tab content -->
+  <div class="tab-content">
+
+    @if (activeTab() === 'samenvatting') {
+      <app-analysis-summary
+        [archiveId]="archiveId()"
+        [fileId]="file().id"
+        label="AI-gegenereerde samenvatting"
+      />
+    }
+
+    @if (activeTab() === 'ner') {
+      @if (nerLoading()) {
+        <div class="ner-loading">NER resultaten laden...</div>
+      } @else if (nerData(); as ner) {
+        @if (ner.total_entities === 0) {
+          <div class="ner-empty">Geen NER resultaten beschikbaar voor dit bestand.</div>
+        } @else {
+
+          @if (ner.persons.length > 0) {
+            <div class="ner-section">
+              <div class="ner-section-label">Personen</div>
+              <div class="ner-tags">
+                @for (entity of ner.persons; track entity) {
+                  <span class="ner-tag ner-tag--persons">{{ entity }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          @if (ner.locations.length > 0) {
+            <div class="ner-section">
+              <div class="ner-section-label">Locaties</div>
+              <div class="ner-tags">
+                @for (entity of ner.locations; track entity) {
+                  <span class="ner-tag ner-tag--locations">{{ entity }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          @if (ner.organisations.length > 0) {
+            <div class="ner-section">
+              <div class="ner-section-label">Organisaties</div>
+              <div class="ner-tags">
+                @for (entity of ner.organisations; track entity) {
+                  <span class="ner-tag ner-tag--organisations">{{ entity }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          @if (ner.misc.length > 0) {
+            <div class="ner-section">
+              <div class="ner-section-label">Overige</div>
+              <div class="ner-tags">
+                @for (entity of ner.misc; track entity) {
+                  <span class="ner-tag ner-tag--misc">{{ entity }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="ner-total">
+            <strong>{{ ner.total_entities }}</strong> entiteiten gevonden in dit bestand
+          </div>
+
+        }
+      } @else {
+        <div class="ner-empty">Geen NER resultaten beschikbaar voor dit bestand.</div>
+      }
+    }
+
+
+    @if (activeTab() === 'topics') {
+      @if (topicsLoading()) {
+        <div class="ner-loading">Topics laden...</div>
+      } @else if (topicsData(); as td) {
+        @if (td.total_topics === 0) {
+          <div class="ner-empty">Geen topics beschikbaar voor dit bestand.</div>
+        } @else {
+          <div class="topic-tags">
+            @for (topic of td.topics; track topic) {
+              <span class="topic-tag">{{ topic }}</span>
+            }
+          </div>
+          <div class="topic-total">
+            <strong>{{ td.total_topics }}</strong> topics gedetecteerd in dit bestand
+          </div>
+        }
+      } @else {
+        <div class="ner-empty">Geen topics beschikbaar voor dit bestand.</div>
+      }
+    }
+
+  </div>
+
 </div>
-
-<div class="file-name-box">{{ file().name }}</div>
-
-<div class="meta-cards">
-  <div class="meta-card">
-    <div class="meta-label">Type</div>
-    <div class="meta-value mono">{{ file().mime_type ?? '—' }}</div>
-  </div>
-  <div class="meta-card">
-    <div class="meta-label">Grootte</div>
-    <div class="meta-value">{{ formatSize(file().size_bytes) }}</div>
-  </div>
-  <div class="meta-card">
-    <div class="meta-label">Map</div>
-    <div class="meta-value">{{ currentFolderPath() }}</div>
-  </div>
-</div>
-
-<hr class="section-divider" />
-
-<app-analysis-summary
-  [archiveId]="archiveId()"
-  [fileId]="file().id"
-  label="AI-GEGENEREERDE SAMENVATTING VAN DIT BESTAND"
-/>

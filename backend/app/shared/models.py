@@ -12,6 +12,7 @@ class AnalysisType(str, enum.Enum):
     STT = "STT"
     NER = "NER"
     SUMMARY = "SUMMARY"
+    TOPIC_DETECTION = "TOPIC_DETECTION"
 
 class ArchiveAnalysisStatus(str, enum.Enum):
     STARTED = "STARTED"
@@ -92,6 +93,7 @@ class File(Base):
     parent: Mapped["File | None"] = relationship("File", remote_side="File.id", back_populates="children")
     children: Mapped[list["File"]] = relationship("File", back_populates="parent", cascade="all, delete-orphan")
     tika_analysis: Mapped["TikaAnalysis | None"] = relationship("TikaAnalysis", back_populates="file", uselist=False)
+    generic_type: Mapped["GenericType | None"] = relationship("GenericType", back_populates="file", uselist=False)
 
 
 class AnalysisTask(Base):
@@ -131,6 +133,17 @@ class TikaAnalysis(Base):
     analyzed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     file: Mapped["File"] = relationship("File", back_populates="tika_analysis")
+
+class GenericType(Base):
+    __tablename__ = "generic_types"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False, unique=True)
+    archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
+    generic_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    analyzed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    file: Mapped["File"] = relationship("File", back_populates="generic_type")
 
 
 class AnalysisConfiguration(Base):
@@ -184,3 +197,15 @@ class Ner(Base):
     organisations_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     misc: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
     misc_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+class TopicDetection(Base):
+    __tablename__ = "topic_detection"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
+    analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archive_analysis.id", ondelete="CASCADE"), nullable=False)
+    parent_folder_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="SET NULL"), nullable=True)
+    file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
+
+    topics: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
+    topics_count: Mapped[int | None] = mapped_column(Integer, nullable=True)

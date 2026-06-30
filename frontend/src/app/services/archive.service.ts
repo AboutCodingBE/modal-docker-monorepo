@@ -17,12 +17,18 @@ export interface ArchiveStats {
   mime_types: MimeTypeCount[];
 }
 
+export interface CategoryCount {
+  category: string;
+  count: number;
+}
+
 export interface FolderData {
   path: string;
   folder_id: string | null;
   direct_file_count: number;
   subfolders: { name: string; path: string }[];
   mime_types: MimeTypeCount[];
+  categories: CategoryCount[];
 }
 
 export interface FolderFile {
@@ -32,6 +38,24 @@ export interface FolderFile {
   extension: string | null;
   size_bytes: number | null;
   mime_type: string | null;
+  category: string | null;
+}
+
+export interface NerResult {
+  file_id: string;
+  file_name: string;
+  persons: string[];
+  locations: string[];
+  organisations: string[];
+  misc: string[];
+  total_entities: number;
+}
+
+export interface TopicsResult {
+  file_id: string;
+  file_name: string;
+  topics: string[];
+  total_topics: number;
 }
 
 export interface FolderFilesData {
@@ -90,6 +114,14 @@ export class ArchiveService {
 
   getFileAnalysis(archiveId: string, fileId: string): Observable<FileAnalysis> {
     return this.http.get<FileAnalysis>(`/api/archives/${archiveId}/analysis/${fileId}`);
+  }
+
+  getNerForFile(archiveId: string, fileId: string): Observable<NerResult> {
+    return this.http.get<NerResult>(`/api/archives/${archiveId}/files/${fileId}/ner`);
+  }
+
+  getTopicsForFile(archiveId: string, fileId: string): Observable<TopicsResult> {
+    return this.http.get<TopicsResult>(`/api/archives/${archiveId}/files/${fileId}/topics`);
   }
 
   getAnalysisConfiguration(): Observable<AnalysisConfigEntry[]> {

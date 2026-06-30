@@ -29,14 +29,14 @@ export class FileTable {
     const term = this.searchTerm().toLowerCase();
     const type = this.typeFilter();
     if (term) list = list.filter((f) => f.name.toLowerCase().includes(term));
-    if (type) list = list.filter((f) => f.mime_type === type);
+    if (type) list = list.filter((f) => f.category === type);
     return list;
   });
 
   uniqueTypes = computed(() => {
     const types = new Set(
       this.files()
-        .map((f) => f.mime_type)
+        .map((f) => f.category)
         .filter((t): t is string => t !== null),
     );
     return [...types].sort();

@@ -20,6 +20,11 @@ const TYPE_DISPLAY: Record<string, { label: string; description: string; icon: s
     description: 'Detecteert personen, locaties en organisaties in de tekst.',
     icon: '🔍',
   },
+  topic_detection: {
+    label: 'Onderwerpdetectie',
+    description: 'Identificeert de belangrijkste onderwerpen per bestand.',
+    icon: '🏷️',
+  },
 };
 
 const DEFAULT_DISPLAY = { label: '', description: '', icon: '⚙️' };
