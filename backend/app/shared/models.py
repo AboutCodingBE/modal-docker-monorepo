@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum
+from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum, text
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -198,10 +198,10 @@ class Ner(Base):
     misc: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
     misc_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    persons_frequencies: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
-    locations_frequencies: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
-    organisations_frequencies: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
-    misc_frequencies: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
+    persons_frequencies: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    locations_frequencies: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    organisations_frequencies: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    misc_frequencies: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
 
 class TopicDetection(Base):
     __tablename__ = "topic_detection"
