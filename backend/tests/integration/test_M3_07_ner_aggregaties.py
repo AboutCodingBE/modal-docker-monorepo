@@ -58,10 +58,7 @@ FIXTURE_DIR = Path(__file__).parent.parent / "testdata" / "data_M3"
 def _ner(persons: list[str]) -> dict:
     """Hulpfunctie: maakt een minimaal NER-resultaat met opgegeven personen."""
     return {
-        "persons": persons, "persons_count": len(persons),
-        "locations": [], "locations_count": 0,
-        "organisations": [], "organisations_count": 0,
-        "misc": [], "misc_count": 0,
+        "persons": persons, "locations": [], "organisations": [], "misc": [],
     }
 
 
@@ -132,8 +129,9 @@ async def test_db_aggregeert_entities_per_map_op_frequentie(committing_db_sessio
 
     rijen = await session.execute(
         text("""
-            SELECT UNNEST(persons) AS entity, COUNT(*) AS frequency
+            SELECT elem->>'entity' AS entity, SUM((elem->>'count')::int) AS frequency
             FROM ner
+            CROSS JOIN LATERAL jsonb_array_elements(persons) elem
             WHERE parent_folder_id = :folder_id
               AND analysis_id = :analysis_id
             GROUP BY entity
@@ -166,24 +164,19 @@ async def test_db_aggregeert_entities_per_map_op_frequentie(committing_db_sessio
 
 @pytest.mark.asyncio
 async def test_applicatielaag_heeft_methode_voor_folder_entity_aggregatie(committing_db_session):
-    """Applicatielaag: NerRepository.get_folder_entities() moet bestaan.
-
-    Deze test is ROOD zolang de methode niet geïmplementeerd is.
-    Interface: get_folder_entities(analysis_id, folder_id) -> list[dict]
-    Verwacht resultaat: [{"entity": str, "frequency": int}, ...]  gesorteerd op frequency DESC.
-    """
+    """Applicatielaag: NerRepository.get_entities_for_folder() geeft gesorteerde entiteiten
+    terug per categorie als [{entity, count}]."""
     session, cleanup_ids = committing_db_session
     folder_id, analysis_id = await _setup_map_met_drie_bestanden(session, cleanup_ids)
 
-    # NerRepository.get_folder_entities() bestaat nog niet — test faalt hier.
-    resultaat = await NerRepository(session).get_folder_entities(
+    resultaat = await NerRepository(session).get_entities_for_folder(
         analysis_id=analysis_id,
         folder_id=folder_id,
-        category="persons",
     )
 
-    assert resultaat[0]["entity"] == "Jan Hendrickx"
-    assert resultaat[0]["frequency"] == 3
+    persons = resultaat["persons"]
+    assert persons[0]["entity"] == "Jan Hendrickx"
+    assert persons[0]["count"] == 3
 
 
 @pytest.mark.asyncio
@@ -255,10 +248,13 @@ async def test_ner_run_vult_db_zodat_folderniveau_entities_opvraagbaar_zijn(
     # Query op mapniveau — geen speciale functie, gewoon WHERE parent_folder_id
     rijen = await session.execute(
         text("""
-            SELECT file_id, persons_count, locations_count, organisations_count
+            SELECT file_id,
+                   jsonb_array_length(persons) AS persons_count,
+                   jsonb_array_length(locations) AS locations_count,
+                   jsonb_array_length(organisations) AS organisations_count
             FROM ner
             WHERE parent_folder_id = :folder_id AND analysis_id = :analysis_id
-            ORDER BY persons_count DESC
+            ORDER BY jsonb_array_length(persons) DESC
         """),
         {"folder_id": str(folder_id), "analysis_id": str(analysis_id)},
     )

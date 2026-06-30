@@ -3,21 +3,22 @@
 
 M3.08 — NerRepository.persist_folder(): opslag van folder-niveau aggregaties.
 
-Story: "Wordt een folder-NER-rij correct aangemaakt met namen, counts en
-frequency-dicts, en sluit top_n de juiste entiteiten in?"
+Story: "Wordt een folder-NER-rij correct aangemaakt met JSONB-entiteiten inclusief
+counts, en aggregeert get_entities_for_folder() correct over bestanden én submappen?"
 
-Wat we testen:
-  1. Folder met entiteiten in meerdere categorieën: persons + locations worden
-     correct opgesplitst in namen (ARRAY), counts (integer) en frequencies (JSONB).
-  2. Folder zonder NER-data (geen bestandsrijen): lege arrays worden opgeslagen,
-     geen NULLs.
-  3. top_n truncatie: van 5 personen worden enkel de top 2 opgeslagen, in
-     afdalende frequentievolgorde.
+Entiteiten worden opgeslagen als [{entity, count}]:
+  - Bestandsrijen: count=1 per entiteit (één bestand)
+  - Mappenrijen: count=som over alle directe kinderen (bestanden + submappen)
+
+Drie tests:
+  1. Multi-categorie: persons + locations correct in JSONB-formaat na persist_folder().
+  2. Lege folder: lege arrays opgeslagen, geen NULLs.
+  3. top_n truncatie + frequentievolgorde: van 5 personen enkel top 2 bewaard.
 
 Teststrategie:
-  - ECHT: NerRepository.persist() + persist_folder() + get_entities_for_folder()
+  - ECHT: NerRepository.persist() + get_entities_for_folder() + persist_folder()
     op echte PostgreSQL.
-  - Geen mocks van private methodes.
+  - Geen mocks.
   - Cleanup via committing_db_session.
 
 Vereist:
@@ -42,20 +43,15 @@ def _ner(
     organisations: list[str] = (),
     misc: list[str] = (),
 ) -> dict:
-    persons = list(persons)
-    locations = list(locations)
-    organisations = list(organisations)
-    misc = list(misc)
     return {
-        "persons": persons, "persons_count": len(persons),
-        "locations": locations, "locations_count": len(locations),
-        "organisations": organisations, "organisations_count": len(organisations),
-        "misc": misc, "misc_count": len(misc),
+        "persons": list(persons),
+        "locations": list(locations),
+        "organisations": list(organisations),
+        "misc": list(misc),
     }
 
 
 async def _setup_archief(session, cleanup_ids, naam: str, n_bestanden: int = 1):
-    """Maakt een archief met één map en n bestanden aan. Geeft IDs terug."""
     archive_id = uuid.uuid4()
     folder_id = uuid.uuid4()
     file_ids = [uuid.uuid4() for _ in range(n_bestanden)]
@@ -110,9 +106,9 @@ async def _setup_archief(session, cleanup_ids, naam: str, n_bestanden: int = 1):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
-async def test_persist_folder_slaat_namen_counts_en_frequencies_op(committing_db_session):
-    """persist_folder() slaat persons + locations correct op in alle drie kolom-types:
-    ARRAY met namen, integer count, en JSONB frequency-lijst."""
+async def test_persist_folder_slaat_jsonb_entiteiten_op_met_counts(committing_db_session):
+    """persist_folder() slaat persons + locations op als [{entity, count}] in JSONB.
+    file_id == folder_id is de folder-conventie."""
     session, cleanup_ids = committing_db_session
     archive_id, folder_id, file_ids, analysis_id = await _setup_archief(
         session, cleanup_ids, "ner-test-folder-persist-multi", n_bestanden=2
@@ -138,35 +134,30 @@ async def test_persist_folder_slaat_namen_counts_en_frequencies_op(committing_db
         {"fid": str(folder_id), "aid": str(analysis_id)},
     )).mappings().one()
 
-    print(f"\n[M3.08] Folder NER-rij: persons={rij['persons']}  "
-          f"persons_count={rij['persons_count']}  persons_frequencies={rij['persons_frequencies']}")
-    print(f"        locations={rij['locations']}  locations_count={rij['locations_count']}")
+    print(f"\n[M3.08] Folder NER-rij: persons={rij['persons']}  locations={rij['locations']}")
 
-    # file_id == folder_id is de folder-conventie
     assert str(rij["file_id"]) == str(folder_id)
 
-    # Persons: Jan 2x, Marie 1x (gesorteerd)
-    assert rij["persons"] == ["Jan Hendrickx", "Marie Claes"]
-    assert rij["persons_count"] == 2
-    assert rij["persons_frequencies"][0] == {"entity": "Jan Hendrickx", "count": 2}
-    assert rij["persons_frequencies"][1] == {"entity": "Marie Claes", "count": 1}
+    # persons: Jan 2x, Marie 1x
+    persons = rij["persons"]
+    assert len(persons) == 2
+    assert persons[0] == {"entity": "Jan Hendrickx", "count": 2}
+    assert persons[1] == {"entity": "Marie Claes", "count": 1}
 
-    # Locations: Gent 2x, Brussel 1x
-    assert rij["locations"] == ["Gent", "Brussel"]
-    assert rij["locations_count"] == 2
-    assert rij["locations_frequencies"][0] == {"entity": "Gent", "count": 2}
-    assert rij["locations_frequencies"][1] == {"entity": "Brussel", "count": 1}
+    # locations: Gent 2x, Brussel 1x
+    locations = rij["locations"]
+    assert len(locations) == 2
+    assert locations[0] == {"entity": "Gent", "count": 2}
+    assert locations[1] == {"entity": "Brussel", "count": 1}
 
-    # Lege categorieën: lege arrays, geen NULL
+    # Lege categorieën: lege arrays
     assert rij["organisations"] == []
-    assert rij["organisations_count"] == 0
-    assert rij["organisations_frequencies"] == []
+    assert rij["misc"] == []
 
 
 @pytest.mark.asyncio
 async def test_persist_folder_zonder_ner_data_slaat_lege_arrays_op(committing_db_session):
-    """Folder zonder bestandsniveau-NER-rijen: get_entities_for_folder geeft lege
-    lijsten, persist_folder slaat lege arrays op (geen NULLs)."""
+    """Folder zonder bestandsniveau-NER-rijen: lege arrays opgeslagen, geen NULLs."""
     session, cleanup_ids = committing_db_session
     archive_id, folder_id, _, analysis_id = await _setup_archief(
         session, cleanup_ids, "ner-test-folder-persist-leeg", n_bestanden=0
@@ -184,30 +175,20 @@ async def test_persist_folder_zonder_ner_data_slaat_lege_arrays_op(committing_db
 
     print(f"\n[M3.08] Lege folder NER-rij: {dict(rij)}")
 
-    assert rij["persons"] == [], "Verwacht lege array, niet NULL"
-    assert rij["persons_count"] == 0
-    assert rij["persons_frequencies"] == [], "Verwacht lege JSONB array, niet NULL"
-    assert rij["locations"] == []
-    assert rij["locations_count"] == 0
-    assert rij["organisations"] == []
-    assert rij["misc"] == []
+    for cat in ("persons", "locations", "organisations", "misc"):
+        assert rij[cat] == [], f"Verwacht lege array voor '{cat}', niet NULL"
 
 
 @pytest.mark.asyncio
 async def test_persist_folder_top_n_behoudt_enkel_meest_frequente_entiteiten(committing_db_session):
-    """top_n truncatie: van 5 personen worden enkel de top 2 bewaard, in
-    afdalende frequentievolgorde."""
+    """top_n=2: van 5 personen worden enkel de top 2 bewaard, in afdalende frequentievolgorde."""
     session, cleanup_ids = committing_db_session
     archive_id, folder_id, file_ids, analysis_id = await _setup_archief(
         session, cleanup_ids, "ner-test-folder-persist-topn", n_bestanden=5
     )
 
-    # Frequenties na UNNEST+GROUP BY:
-    #   Jan Hendrickx  5x  (staat in alle 5 bestanden)
-    #   Marie Claes    4x
-    #   Piet Janssen   3x
-    #   Kaat De Smedt  2x
-    #   Luc Vermeersch 1x
+    # Frequenties na aggregatie:
+    #   Jan Hendrickx  5x, Marie Claes 4x, Piet Janssen 3x, Kaat De Smedt 2x, Luc Vermeersch 1x
     ner_per_bestand = [
         ["Jan Hendrickx", "Marie Claes", "Piet Janssen", "Kaat De Smedt", "Luc Vermeersch"],
         ["Jan Hendrickx", "Marie Claes", "Piet Janssen", "Kaat De Smedt"],
@@ -226,30 +207,18 @@ async def test_persist_folder_top_n_behoudt_enkel_meest_frequente_entiteiten(com
     await session.commit()
 
     rij = (await session.execute(
-        text("SELECT persons, persons_count, persons_frequencies FROM ner "
-             "WHERE file_id = :fid AND analysis_id = :aid"),
+        text("SELECT persons FROM ner WHERE file_id = :fid AND analysis_id = :aid"),
         {"fid": str(folder_id), "aid": str(analysis_id)},
     )).mappings().one()
 
-    print(f"\n[M3.08] top_n=2: persons={rij['persons']}  "
-          f"frequencies={rij['persons_frequencies']}")
+    print(f"\n[M3.08] top_n=2: persons={rij['persons']}")
 
-    assert len(rij["persons"]) == 2, (
-        f"top_n=2 maar {len(rij['persons'])} personen opgeslagen: {rij['persons']}"
-    )
-    assert rij["persons"][0] == "Jan Hendrickx", "Meest frequente entiteit moet eerst staan"
-    assert rij["persons"][1] == "Marie Claes"
-    assert rij["persons_count"] == 2
+    persons = rij["persons"]
+    assert len(persons) == 2, f"top_n=2 maar {len(persons)} personen opgeslagen: {persons}"
+    assert persons[0] == {"entity": "Jan Hendrickx", "count": 5}
+    assert persons[1] == {"entity": "Marie Claes", "count": 4}
 
-    freqs = rij["persons_frequencies"]
-    assert len(freqs) == 2
-    assert freqs[0]["entity"] == "Jan Hendrickx"
-    assert freqs[0]["count"] == 5
-    assert freqs[1]["entity"] == "Marie Claes"
-    assert freqs[1]["count"] == 4
-
-    # Verify dat Piet Janssen (3x), Kaat (2x), Luc (1x) NIET opgeslagen zijn
-    opgeslagen_namen = rij["persons"]
+    opgeslagen_namen = [p["entity"] for p in persons]
     assert "Piet Janssen" not in opgeslagen_namen
     assert "Kaat De Smedt" not in opgeslagen_namen
     assert "Luc Vermeersch" not in opgeslagen_namen

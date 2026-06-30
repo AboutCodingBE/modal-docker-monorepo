@@ -45,10 +45,7 @@ from app.create_ner_for_archive.ner_repository import NerRepository
 # Een minimaal NER-resultaat — inhoud doet er niet toe, we testen
 # het persist/exists-gedrag, niet de entiteitsdetectie.
 _LEEG_NER_RESULTAAT = {
-    "persons": [], "persons_count": 0,
-    "locations": [], "locations_count": 0,
-    "organisations": [], "organisations_count": 0,
-    "misc": [], "misc_count": 0,
+    "persons": [], "locations": [], "organisations": [], "misc": [],
 }
 
 

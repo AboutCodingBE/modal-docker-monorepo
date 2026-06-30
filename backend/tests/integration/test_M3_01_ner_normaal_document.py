@@ -128,20 +128,20 @@ async def test_ner_vindt_personen_organisaties_en_locaties_in_normaal_document(
     )
     ner_rij = rij.mappings().one()
     print(f"[M3.01] DB-rij na persist:")
-    print(f"        persons       ({ner_rij['persons_count']}): {ner_rij['persons']}")
-    print(f"        locations     ({ner_rij['locations_count']}): {ner_rij['locations']}")
-    print(f"        organisations ({ner_rij['organisations_count']}): {ner_rij['organisations']}")
-    print(f"        misc          ({ner_rij['misc_count']}): {ner_rij['misc']}")
+    print(f"        persons       ({len(ner_rij['persons'])}): {ner_rij['persons']}")
+    print(f"        locations     ({len(ner_rij['locations'])}): {ner_rij['locations']}")
+    print(f"        organisations ({len(ner_rij['organisations'])}): {ner_rij['organisations']}")
+    print(f"        misc          ({len(ner_rij['misc'])}): {ner_rij['misc']}")
 
-    assert ner_rij["persons_count"] > 0, (
+    assert len(ner_rij["persons"]) > 0, (
         f"Verwacht minstens één persoon (Marie Claes, Pieter Janssens, Karel Vermeersch…) "
-        f"maar persons_count = {ner_rij['persons_count']}. "
+        f"maar persons is leeg. "
         f"misc-bucket bevat: {ner_rij['misc']!r}. "
         "Mogelijke oorzaak: _LABEL_MAP gebruikt 'PERSON' maar nl_core_news_lg "
         "labelt personen als 'PER' — controleer ner_engine.py:_LABEL_MAP."
     )
 
-    gent_gevonden = any("Gent" in loc for loc in (ner_rij["locations"] or []))
+    gent_gevonden = any("Gent" in item["entity"] for item in ner_rij["locations"])
     assert gent_gevonden, (
         f"Verwacht 'Gent' in locations (Gent staat expliciet in de tekst), "
         f"maar locations = {ner_rij['locations']!r}. "
@@ -150,19 +150,8 @@ async def test_ner_vindt_personen_organisaties_en_locaties_in_normaal_document(
         "en of _LABEL_MAP die labels correct afbeeldt."
     )
 
-    assert ner_rij["organisations_count"] > 0, (
+    assert len(ner_rij["organisations"]) > 0, (
         f"Verwacht minstens één organisatie (Amsab-ISG, Gemeentearchief Gent…) "
-        f"maar organisations_count = {ner_rij['organisations_count']}. "
+        f"maar organisations is leeg. "
         f"organisations = {ner_rij['organisations']!r}, misc = {ner_rij['misc']!r}."
-    )
-
-    # Tellersvelden moeten overeenkomen met de werkelijke lijstlengtes.
-    # Als dit faalt is er een bug in run_ner() zelf.
-    assert ner_rij["persons_count"] == len(ner_rij["persons"] or []), (
-        "persons_count stemt niet overeen met de lengte van de persons-lijst — "
-        f"count={ner_rij['persons_count']}, lijst={ner_rij['persons']!r}."
-    )
-    assert ner_rij["locations_count"] == len(ner_rij["locations"] or []), (
-        "locations_count stemt niet overeen met de lengte van de locations-lijst — "
-        f"count={ner_rij['locations_count']}, lijst={ner_rij['locations']!r}."
     )
