@@ -1,8 +1,9 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.shared.models import Ner
 
 
@@ -44,3 +45,27 @@ class NerRepository:
         )
         self._session.add(ner)
         await self._session.flush()
+
+    async def get_entities_for_folder(
+        self,
+        analysis_id: uuid.UUID,
+        folder_id: uuid.UUID,
+        top_n: int = settings.ner_folder_top_n,
+    ) -> dict:
+        result = {}
+        for category in ("persons", "locations", "organisations", "misc"):
+            rows = await self._session.execute(
+                text(
+                    f"SELECT UNNEST({category}) AS entity, COUNT(*) AS frequency "
+                    "FROM ner "
+                    "WHERE parent_folder_id = :folder_id AND analysis_id = :analysis_id "
+                    "GROUP BY entity "
+                    "ORDER BY frequency DESC "
+                    "LIMIT :top_n"
+                ),
+                {"folder_id": folder_id, "analysis_id": analysis_id, "top_n": top_n},
+            )
+            result[category] = [
+                {"entity": row.entity, "count": row.frequency} for row in rows
+            ]
+        return result
