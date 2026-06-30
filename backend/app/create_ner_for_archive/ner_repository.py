@@ -69,3 +69,37 @@ class NerRepository:
                 {"entity": row.entity, "count": row.frequency} for row in rows
             ]
         return result
+
+    async def persist_folder(
+        self,
+        analysis_id: uuid.UUID,
+        archive_id: uuid.UUID,
+        parent_folder_id: uuid.UUID | None,
+        folder_id: uuid.UUID,
+        entities: dict,
+    ) -> None:
+        persons = [e["entity"] for e in entities.get("persons", [])]
+        locations = [e["entity"] for e in entities.get("locations", [])]
+        organisations = [e["entity"] for e in entities.get("organisations", [])]
+        misc = [e["entity"] for e in entities.get("misc", [])]
+
+        ner = Ner(
+            analysis_id=analysis_id,
+            archive_id=archive_id,
+            parent_folder_id=parent_folder_id,
+            file_id=folder_id,
+            persons=persons,
+            persons_count=len(persons),
+            locations=locations,
+            locations_count=len(locations),
+            organisations=organisations,
+            organisations_count=len(organisations),
+            misc=misc,
+            misc_count=len(misc),
+            persons_frequencies=entities.get("persons", []),
+            locations_frequencies=entities.get("locations", []),
+            organisations_frequencies=entities.get("organisations", []),
+            misc_frequencies=entities.get("misc", []),
+        )
+        self._session.add(ner)
+        await self._session.flush()
