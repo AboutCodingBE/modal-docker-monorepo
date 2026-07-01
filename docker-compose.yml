@@ -68,6 +68,14 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    # Uncomment to enable NVIDIA GPU passthrough (requires RTX/CUDA GPU + Docker Desktop WSL2):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
 
 
 volumes:
