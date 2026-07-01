@@ -87,10 +87,10 @@ def test_ner_end_to_end(db_conn):
     result = run_ner(content)
 
     print(f"\n── NER results ──────────────────────────────────────────")
-    print(f"  Persons        ({result['persons_count']:>3}): {result['persons'][:5]}")
-    print(f"  Locations      ({result['locations_count']:>3}): {result['locations'][:5]}")
-    print(f"  Organisations  ({result['organisations_count']:>3}): {result['organisations'][:5]}")
-    print(f"  Misc           ({result['misc_count']:>3}): {result['misc'][:5]}")
+    print(f"  Persons        ({len(result['persons']):>3}): {result['persons'][:5]}")
+    print(f"  Locations      ({len(result['locations']):>3}): {result['locations'][:5]}")
+    print(f"  Organisations  ({len(result['organisations']):>3}): {result['organisations'][:5]}")
+    print(f"  Misc           ({len(result['misc']):>3}): {result['misc'][:5]}")
     print(f"─────────────────────────────────────────────────────────")
 
     # ── Step 4: write to DB ───────────────────────────────────────────────────
@@ -112,7 +112,8 @@ def test_ner_end_to_end(db_conn):
             persons, locations, organisations, misc
         ) VALUES (
             :id, :archive_id, :analysis_id, :parent_folder_id, :file_id,
-            :persons::jsonb, :locations::jsonb, :organisations::jsonb, :misc::jsonb
+            CAST(:persons AS jsonb), CAST(:locations AS jsonb),
+            CAST(:organisations AS jsonb), CAST(:misc AS jsonb)
         )
     """), {
         "id": str(ner_id),
@@ -139,8 +140,8 @@ def test_ner_end_to_end(db_conn):
           f"organisations: {len(saved['organisations'])}")
 
     # Minimal assertions — mainly checking the round-trip worked
-    assert len(saved["persons"]) == result["persons_count"]
-    assert len(saved["locations"]) == result["locations_count"]
-    assert len(saved["organisations"]) == result["organisations_count"]
+    assert len(saved["persons"]) == len(result["persons"])
+    assert len(saved["locations"]) == len(result["locations"])
+    assert len(saved["organisations"]) == len(result["organisations"])
 
     print("\n✔ All checks passed. Rolling back — no permanent changes made.")
