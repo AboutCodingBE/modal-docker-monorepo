@@ -51,6 +51,16 @@ export interface NerResult {
   total_entities: number;
 }
 
+export interface NerFolderResult {
+  folder_id: string;
+  folder_name: string;
+  persons: string[];
+  locations: string[];
+  organisations: string[];
+  misc: string[];
+  total_entities: number;
+}
+
 export interface TopicsResult {
   file_id: string;
   file_name: string;
@@ -118,6 +128,10 @@ export class ArchiveService {
 
   getNerForFile(archiveId: string, fileId: string): Observable<NerResult> {
     return this.http.get<NerResult>(`/api/archives/${archiveId}/files/${fileId}/ner`);
+  }
+
+  getNerForFolder(archiveId: string, folderId: string): Observable<NerFolderResult> {
+    return this.http.get<NerFolderResult>(`/api/archives/${archiveId}/folders/${folderId}/ner`);
   }
 
   getTopicsForFile(archiveId: string, fileId: string): Observable<TopicsResult> {
