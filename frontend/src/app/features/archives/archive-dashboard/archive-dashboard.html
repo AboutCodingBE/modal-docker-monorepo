@@ -66,11 +66,51 @@
             }
           </div>
         </div>
+        <div class="bar-chart-card">
+          <div class="treemap-title">Bestandsgrootte per bestand</div>
+          <div class="bar-chart-legend">
+            @for (legendItem of barChartLegendItems(); track legendItem.category) {
+              <div class="legend-item" title="{{ legendItem.category }}">
+                <span class="legend-swatch" [style.background]="legendItem.color"></span>
+                <span class="legend-label">{{ legendItem.category }}</span>
+              </div>
+            }
+          </div>
+          @if (barChartItems().length === 0) {
+            <div class="dashboard-empty small">Geen bestanden beschikbaar.</div>
+          } @else {
+            <div class="bar-chart-shell">
+              <svg class="bar-chart" role="img" aria-label="Staafgrafiek met bestandsgrootten per bestand"></svg>
+            </div>
+          }
+        </div>
+        <div class="heatmap-card">
+          <div class="treemap-title">Heatmap: top 10 topics vs top 10 organisaties</div>
+          <div class="heatmap-legend">
+            <span>Weinig</span>
+            <span class="heatmap-swatch" style="background: #7f1d1d"></span>
+            <span class="heatmap-swatch" style="background: #991b1b"></span>
+            <span class="heatmap-swatch" style="background: #ca3e47"></span>
+            <span class="heatmap-swatch" style="background: #fca5a5"></span>
+            <span>Veel</span>
+          </div>
+          <div class="heatmap-body">
+            <div class="heatmap-y-label">Topics</div>
+            <div class="heatmap-plot-shell">
+              <div class="heatmap-x-label-wrapper">
+                <div class="heatmap-x-label">Organisaties</div>
+              </div>
+              <div class="bar-chart-shell">
+                <svg class="heatmap" role="img" aria-label="Heatmap met topic en organisatie co-occurenties"></svg>
+              </div>
+            </div>
+          </div>
+        </div>
       }
   </div>
 
   @if (tooltipVisible()) {
-    <div class="treemap-tooltip" style="left: {{ tooltipX() }}px; top: {{ tooltipY() }}px;">
+    <div class="treemap-tooltip" [style.left.px]="tooltipX()" [style.top.px]="tooltipY()">
       {{ tooltipText() }}
     </div>
   }

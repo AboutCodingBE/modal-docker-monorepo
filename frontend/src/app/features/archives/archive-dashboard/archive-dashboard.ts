@@ -29,6 +29,19 @@ interface TreemapRect {
   height: number;
 }
 
+interface FileSizeBar {
+  name: string;
+  size: number;
+  category: string;
+  color: string;
+}
+
+interface HeatmapCell {
+  topic: string;
+  organization: string;
+  value: number;
+}
+
 @Component({
   selector: 'app-archive-dashboard',
   standalone: true,
@@ -65,6 +78,11 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
   personTreemapRects = signal<TreemapRect[]>([]);
   organizationTreemapRects = signal<TreemapRect[]>([]);
   topicTreemapRects = signal<TreemapRect[]>([]);
+  barChartItems = signal<FileSizeBar[]>([]);
+  barChartLegendItems = signal<{ category: string; color: string }[]>([]);
+  heatmapTopics = signal<string[]>([]);
+  heatmapOrganizations = signal<string[]>([]);
+  heatmapCells = signal<HeatmapCell[]>([]);
 
   tooltipText = signal('');
   tooltipX = signal(0);
@@ -91,7 +109,7 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this._renderAllTreemaps();
+    this._renderAllCharts();
   }
 
   goBack(): void {
@@ -162,6 +180,7 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
         this.personItems.set(this._buildItemsFromNer(ner, 'persons'));
         this.organizationItems.set(this._buildItemsFromNer(ner, 'organisations'));
         this.topicItems.set(this._buildItemsFromTopics(topics));
+        this.barChartItems.set([]);
         this._syncTreemapRects();
         this.loading.set(false);
       },
@@ -178,6 +197,7 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       this.personItems.set([]);
       this.organizationItems.set([]);
       this.topicItems.set([]);
+      this.barChartItems.set([]);
       this.loading.set(false);
       return;
     }
@@ -205,7 +225,18 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
         this.personItems.set(this._buildItemsFromMap(personCounts));
         this.organizationItems.set(this._buildItemsFromMap(organizationCounts));
         this.topicItems.set(this._buildItemsFromMap(topicCounts));
+        const barItems = this._buildBarChartItems(files);
+        this.barChartItems.set(barItems);
+        this.barChartLegendItems.set(this._buildBarChartLegend(barItems));
+
+        const topTopics = this._topKeysFromMap(topicCounts, 10);
+        const topOrganizations = this._topKeysFromMap(organizationCounts, 10);
+        this.heatmapTopics.set(topTopics);
+        this.heatmapOrganizations.set(topOrganizations);
+        this.heatmapCells.set(this._buildHeatmapCells(results, topTopics, topOrganizations));
+
         this._syncTreemapRects();
+        setTimeout(() => this._renderAllCharts());
         this.loading.set(false);
       },
       error: () => {
@@ -259,7 +290,7 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     this.personTreemapRects.set(this._computeTreemapRects(this.personItems()));
     this.organizationTreemapRects.set(this._computeTreemapRects(this.organizationItems()));
     this.topicTreemapRects.set(this._computeTreemapRects(this.topicItems()));
-    setTimeout(() => this._renderAllTreemaps());
+    setTimeout(() => this._renderAllCharts());
   }
 
   private _computeTreemapRects(items: TreemapItem[]): TreemapRect[] {
@@ -363,4 +394,266 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     });
   }
 
+  private _renderBarChart(): void {
+    const svg = this.elementRef.nativeElement.querySelector('svg.bar-chart') as SVGSVGElement | null;
+    if (!svg) return;
+
+    const data = this.barChartItems();
+    const width = 820;
+    const height = 360;
+    const margin = { top: 24, right: 18, bottom: 60, left: 120 };
+    const chartWidth = width - margin.left - margin.right;
+    const chartHeight = height - margin.top - margin.bottom;
+
+    d3.select<SVGSVGElement, FileSizeBar>(svg).selectAll('*').remove();
+
+    if (data.length === 0) {
+      d3.select<SVGSVGElement, FileSizeBar>(svg)
+        .attr('viewBox', `0 0 ${width} ${height}`)
+        .attr('preserveAspectRatio', 'xMidYMid meet')
+        .append('text')
+        .attr('x', width / 2)
+        .attr('y', height / 2)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#6b7280')
+        .attr('font-size', '13px')
+        .text('Geen bestanden beschikbaar voor size grafiek.');
+      return;
+    }
+
+    const xScale = d3.scaleLinear()
+      .domain([0, d3.max(data, (item) => item.size) ?? 0])
+      .nice()
+      .range([0, chartWidth]);
+
+    const yScale = d3.scaleBand<string>()
+      .domain(data.map((item) => item.name))
+      .range([0, chartHeight])
+      .padding(0.18);
+
+    const g = d3.select<SVGSVGElement, FileSizeBar>(svg)
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet')
+      .append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    g.append('g')
+      .call(d3.axisLeft(yScale).tickSize(0))
+      .selectAll('text')
+      .attr('font-size', '12px')
+      .attr('fill', '#1f2937')
+      .text((d) => {
+        const label = String(d);
+        return label.length > 24 ? `${label.slice(0, 21)}...` : label;
+      })
+      .append('title')
+      .text((d) => String(d));
+
+    g.append('g')
+      .attr('transform', `translate(0,${chartHeight})`)
+      .call(d3.axisBottom(xScale).ticks(5).tickFormat((value) => `${d3.format('~s')(value as number)}B`))
+      .selectAll('text')
+      .attr('font-size', '12px')
+      .attr('fill', '#6b7280');
+
+    const bars = g.selectAll('rect.bar')
+      .data(data)
+      .enter()
+      .append('rect')
+      .attr('class', 'bar')
+      .attr('x', 0)
+      .attr('y', (item) => yScale(item.name) ?? 0)
+      .attr('width', (item) => xScale(item.size))
+      .attr('height', yScale.bandwidth())
+      .attr('fill', (item) => item.color)
+      .attr('rx', 6);
+
+    bars.append('title')
+      .text((item) => `${item.name}: ${d3.format(',')(item.size)} bytes`);
+
+    g.selectAll('text.bar-value')
+      .data(data)
+      .enter()
+      .append('text')
+      .attr('class', 'bar-value')
+      .attr('x', (item) => xScale(item.size) + 8)
+      .attr('y', (item) => (yScale(item.name) ?? 0) + yScale.bandwidth() / 2 + 4)
+      .attr('font-size', '11px')
+      .attr('fill', '#111827')
+      .text((item) => `${d3.format(',')(item.size)} B`);
+  }
+
+  private _buildBarChartItems(files: FolderFile[]): FileSizeBar[] {
+    const categories = Array.from(new Set(files.map((file) => file.category ?? 'Unknown')));
+    const colorMap = new Map<string, string>(
+      categories.map((category, index) => [category, this._categoryColor(index)])
+    );
+
+    return [...files]
+      .filter((file) => file.size_bytes !== null)
+      .map((file) => {
+        const category = file.category ?? 'Unknown';
+        return {
+          name: file.name,
+          size: file.size_bytes ?? 0,
+          category,
+          color: colorMap.get(category) ?? this._categoryColor(0),
+        };
+      })
+      .sort((a, b) => b.size - a.size);
+  }
+
+  private _buildBarChartLegend(items: FileSizeBar[]): { category: string; color: string }[] {
+    const legendMap = new Map<string, string>();
+    items.forEach((item) => {
+      if (!legendMap.has(item.category)) {
+        legendMap.set(item.category, item.color);
+      }
+    });
+    return [...legendMap.entries()].map(([category, color]) => ({ category, color }));
+  }
+
+  private _topKeysFromMap(counts: Map<string, number>, limit: number): string[] {
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([key]) => key);
+  }
+
+  private _buildHeatmapCells(
+    results: Array<{ ner: any; topics: TopicsResult }>,
+    topTopics: string[],
+    topOrganizations: string[]
+  ): HeatmapCell[] {
+    const counts = new Map<string, number>();
+
+    results.forEach(({ ner, topics }) => {
+      const topicSet = new Set(topics.topics);
+      const orgSet = new Set(ner.organisations);
+      topTopics.forEach((topic) => {
+        if (!topicSet.has(topic)) return;
+        topOrganizations.forEach((organization) => {
+          if (!orgSet.has(organization)) return;
+          const key = `${topic}|||${organization}`;
+          counts.set(key, (counts.get(key) ?? 0) + 1);
+        });
+      });
+    });
+
+    const cells: HeatmapCell[] = [];
+    topTopics.forEach((topic) => {
+      topOrganizations.forEach((organization) => {
+        const key = `${topic}|||${organization}`;
+        cells.push({
+          topic,
+          organization,
+          value: counts.get(key) ?? 0,
+        });
+      });
+    });
+
+    return cells;
+  }
+
+  private _renderHeatmap(): void {
+    const svg = this.elementRef.nativeElement.querySelector('svg.heatmap') as SVGSVGElement | null;
+    if (!svg) return;
+
+    const topics = this.heatmapTopics();
+    const organizations = this.heatmapOrganizations();
+    const cells = this.heatmapCells();
+
+    const width = 820;
+    const height = 420;
+    const margin = { top: 60, right: 16, bottom: 80, left: 160 };
+    const chartWidth = width - margin.left - margin.right;
+    const chartHeight = height - margin.top - margin.bottom;
+
+    d3.select<SVGSVGElement, HeatmapCell>(svg).selectAll('*').remove();
+
+    if (topics.length === 0 || organizations.length === 0) {
+      d3.select<SVGSVGElement, HeatmapCell>(svg)
+        .attr('viewBox', `0 0 ${width} ${height}`)
+        .attr('preserveAspectRatio', 'xMidYMid meet')
+        .append('text')
+        .attr('x', width / 2)
+        .attr('y', height / 2)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#6b7280')
+        .attr('font-size', '13px')
+        .text('Geen heatmapgegevens beschikbaar.');
+      return;
+    }
+
+    const maxValue = d3.max(cells, (item) => item.value) ?? 0;
+    const colorScale = d3.scaleLinear<string>()
+      .domain([0, maxValue || 1])
+      .range(['#7f1d1d', '#fee2e2']);
+
+    const xScale = d3.scaleBand<string>()
+      .domain(organizations)
+      .range([0, chartWidth])
+      .padding(0.05);
+
+    const yScale = d3.scaleBand<string>()
+      .domain(topics)
+      .range([0, chartHeight])
+      .padding(0.05);
+
+    const g = d3.select<SVGSVGElement, HeatmapCell>(svg)
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet')
+      .append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    g.append('g')
+      .selectAll('rect')
+      .data(cells)
+      .enter()
+      .append('rect')
+      .attr('x', (item) => xScale(item.organization) ?? 0)
+      .attr('y', (item) => yScale(item.topic) ?? 0)
+      .attr('width', xScale.bandwidth())
+      .attr('height', yScale.bandwidth())
+      .attr('fill', (item) => colorScale(item.value))
+      .attr('stroke', '#ffffff')
+      .attr('stroke-width', 1)
+      .append('title')
+      .text((item) => `${item.topic} / ${item.organization}: ${item.value}`);
+
+    g.append('g')
+      .attr('transform', `translate(0,${chartHeight})`)
+      .call(d3.axisBottom(xScale).tickSize(0))
+      .selectAll('text')
+      .attr('font-size', '11px')
+      .attr('fill', '#111827')
+      .attr('text-anchor', 'end')
+      .attr('transform', 'rotate(-45)');
+
+    g.append('g')
+      .call(d3.axisLeft(yScale).tickSize(0))
+      .selectAll('text')
+      .attr('font-size', '12px')
+      .attr('fill', '#111827');
+
+    g.append('text')
+      .attr('x', chartWidth / 2)
+      .attr('y', -26)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#111827')
+      .attr('font-size', '13px')
+      .attr('font-weight', '600')
+      .text('Top 10 topics × top 10 organisaties');
+  }
+
+  private _renderAllCharts(): void {
+    this._renderAllTreemaps();
+    this._renderBarChart();
+    this._renderHeatmap();
+  }
+
+  private _categoryColor(index: number): string {
+    const palette = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#0f766e', '#be123c', '#6b7280', '#8b5cf6'];
+    return palette[index % palette.length];
+  }
 }
