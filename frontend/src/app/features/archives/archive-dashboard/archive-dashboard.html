@@ -1,0 +1,77 @@
+<div class="dashboard-wrapper">
+  <div class="dashboard-topbar">
+    <button class="btn-back" (click)="goBack()">← Terug naar archiefdetail</button>
+    <div>
+      <h1>Archive Dashboard</h1>
+      <p>Visualisatie van locaties voor {{ folderName() }}</p>
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="dashboard-card-header">
+      <div>
+        <h2>Dashboard</h2>
+        <p>Deze visualisaties tonen de belangrijkste inzichten voor {{ selectedFile()?.name ?? folderName() }}.</p>
+      </div>
+      <span class="dashboard-badge">{{ selectedFile() ? 'Bestand' : 'Map' }}</span>
+    </div>
+
+    @if (loading()) {
+      <div class="dashboard-empty">Gegevens laden...</div>
+    } @else if (error()) {
+      <div class="dashboard-empty error">{{ error() }}</div>
+    } @else {
+      <div class="treemap-grid">
+          <div class="treemap-card">
+            <div class="treemap-title">Locaties</div>
+            @if (locationTreemapRects().length === 0) {
+              <div class="dashboard-empty small">Geen locaties beschikbaar.</div>
+            } @else {
+              <div class="treemap-shell">
+                <svg data-treemap-key="locations" class="treemap" role="img" aria-label="Treemap met locaties"></svg>
+              </div>
+            }
+          </div>
+
+          <div class="treemap-card">
+            <div class="treemap-title">Personen</div>
+            @if (personTreemapRects().length === 0) {
+              <div class="dashboard-empty small">Geen personen beschikbaar.</div>
+            } @else {
+              <div class="treemap-shell">
+                <svg data-treemap-key="persons" class="treemap" role="img" aria-label="Treemap met personen"></svg>
+              </div>
+            }
+          </div>
+
+          <div class="treemap-card">
+            <div class="treemap-title">Organisaties</div>
+            @if (organizationTreemapRects().length === 0) {
+              <div class="dashboard-empty small">Geen organisaties beschikbaar.</div>
+            } @else {
+              <div class="treemap-shell">
+                <svg data-treemap-key="organisations" class="treemap" role="img" aria-label="Treemap met organisaties"></svg>
+              </div>
+            }
+          </div>
+
+          <div class="treemap-card">
+            <div class="treemap-title">Topics</div>
+            @if (topicTreemapRects().length === 0) {
+              <div class="dashboard-empty small">Geen topics beschikbaar.</div>
+            } @else {
+              <div class="treemap-shell">
+                <svg data-treemap-key="topics" class="treemap" role="img" aria-label="Treemap met topics"></svg>
+              </div>
+            }
+          </div>
+        </div>
+      }
+  </div>
+
+  @if (tooltipVisible()) {
+    <div class="treemap-tooltip" style="left: {{ tooltipX() }}px; top: {{ tooltipY() }}px;">
+      {{ tooltipText() }}
+    </div>
+  }
+</div>

@@ -219,6 +219,39 @@
   box-shadow: 0 2px 8px rgba(59, 110, 245, 0.1);
 }
 
+/* ── Detail panel actions ── */
+.detail-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.btn-dashboard {
+  font-family: inherit;
+  background: #2563eb;
+  color: #fff;
+  border: 1px solid #2563eb;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-dashboard:hover {
+  background: #1d4ed8;
+}
+
+.dashboard-fullscreen {
+  width: 100%;
+}
+
+.dashboard-panel-wrapper {
+  padding: 0;
+  overflow: hidden;
+}
+
 /* ── Detail placeholder ── */
 .detail-placeholder {
   min-height: 120px;
