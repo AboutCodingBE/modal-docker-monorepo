@@ -5,15 +5,14 @@ import json
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.analysis import task_tracker
-from app.shared.logging_config import log_context
-
-_logger = logging.getLogger("app.topic")
-
 from app.config import settings
 from app.create_topic_detection_for_archive.archive_analysis_repository import ArchiveAnalysisRepository
 from app.create_topic_detection_for_archive.ollama_client import OllamaUnavailableError, generate
 from app.create_topic_detection_for_archive.topic_detection_repository import TopicDetectionRepository
 from app.shared.file_repository import FileRepository
+from app.shared.logging_config import log_context
+
+_logger = logging.getLogger("app.topic")
 
 _MAX_CONSECUTIVE_FAILURES = 5
 

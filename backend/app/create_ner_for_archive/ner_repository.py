@@ -29,18 +29,15 @@ class NerRepository:
         file_id: uuid.UUID,
         ner_result: dict,
     ) -> None:
-        def _to_jsonb(strings: list[str]) -> list[dict]:
-            return [{"entity": s, "count": 1} for s in strings]
-
         ner = Ner(
             analysis_id=analysis_id,
             archive_id=archive_id,
             parent_folder_id=parent_folder_id,
             file_id=file_id,
-            persons=_to_jsonb(ner_result.get("persons", [])),
-            locations=_to_jsonb(ner_result.get("locations", [])),
-            organisations=_to_jsonb(ner_result.get("organisations", [])),
-            misc=_to_jsonb(ner_result.get("misc", [])),
+            persons=[{"entity": s, "count": 1} for s in ner_result.get("persons", [])],
+            locations=[{"entity": s, "count": 1} for s in ner_result.get("locations", [])],
+            organisations=[{"entity": s, "count": 1} for s in ner_result.get("organisations", [])],
+            misc=[{"entity": s, "count": 1} for s in ner_result.get("misc", [])],
         )
         self._session.add(ner)
         await self._session.flush()
