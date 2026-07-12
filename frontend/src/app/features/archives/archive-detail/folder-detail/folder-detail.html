@@ -17,6 +17,9 @@
     <button class="tab" [class.active]="activeTab() === 'ner'" (click)="switchTab('ner')">
       NER
     </button>
+    <button class="tab" [class.active]="activeTab() === 'topics'" (click)="switchTab('topics')">
+      Topics
+    </button>
   </div>
 
   <!-- Tab content -->
@@ -119,6 +122,29 @@
         }
       } @else {
         <div class="ner-empty">Geen NER resultaten beschikbaar voor deze map.</div>
+      }
+    }
+
+    @if (activeTab() === 'topics') {
+      @if (!folderId()) {
+        <div class="empty-msg">Geen topics beschikbaar voor de hoofdmap.</div>
+      } @else if (topicsLoading()) {
+        <div class="topics-loading">Topics laden...</div>
+      } @else if (topicsData(); as td) {
+        @if (td.total_topics === 0) {
+          <div class="topics-empty">Geen topics beschikbaar voor deze map.</div>
+        } @else {
+          <div class="topic-tags">
+            @for (topic of td.topics; track topic) {
+              <span class="topic-tag">{{ topic }}</span>
+            }
+          </div>
+          <div class="topic-total">
+            <strong>{{ td.total_topics }}</strong> topics gedetecteerd in deze map
+          </div>
+        }
+      } @else {
+        <div class="topics-empty">Geen topics beschikbaar voor deze map.</div>
       }
     }
 

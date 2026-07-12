@@ -213,3 +213,40 @@
   color: #111827;
   font-weight: 700;
 }
+
+/* ── Topics ── */
+.topics-loading,
+.topics-empty {
+  font-size: 13px;
+  color: #9ca3af;
+  font-style: italic;
+  padding: 4px 0;
+}
+
+.topic-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.topic-tag {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.topic-total {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.topic-total strong {
+  color: #6b7280;
+  font-weight: 700;
+}

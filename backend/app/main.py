@@ -19,6 +19,7 @@ from app.calculate_generic_type.router import router as generic_type_router
 from app.get_ner_for_file.router import router as get_ner_for_file_router
 from app.get_ner_for_folder.router import router as get_ner_for_folder_router
 from app.get_topics_for_file.router import router as get_topics_for_file_router
+from app.get_topics_for_folder.router import router as get_topics_for_folder_router
 
 import asyncio
 import sys
@@ -45,6 +46,7 @@ app.include_router(generic_type_router)
 app.include_router(get_ner_for_file_router)
 app.include_router(get_ner_for_folder_router)
 app.include_router(get_topics_for_file_router)
+app.include_router(get_topics_for_folder_router)
 
 @app.get("/api/health")
 async def health():

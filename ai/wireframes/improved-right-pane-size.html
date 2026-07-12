@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MODAL — Side Panel Breedte Referentie</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: #f0f2f5;
+          color: #111827;
+          padding: 40px;
+        }
+
+        .ref-label {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #6b7280;
+          padding-bottom: 6px;
+          border-bottom: 1px solid #d1d5db;
+          margin-bottom: 16px;
+        }
+
+        /* ── Side layout ── */
+        .side-layout {
+          display: flex;
+          gap: 16px;
+        }
+
+        .side-left { flex: 1; min-width: 0; }
+        .side-right { width: 340px; flex-shrink: 0; }
+
+        /* ── Panel ── */
+        .panel {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 20px 22px;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        .panel-title { font-size: 15px; font-weight: 700; color: #111827; margin-bottom: 14px; }
+
+        /* ── Browser ── */
+        .breadcrumb { font-size: 13px; color: #111827; font-weight: 600; margin-bottom: 12px; background: #f1f5f9; display: inline-block; padding: 3px 8px; border-radius: 4px; }
+
+        .files-count-inline {
+          font-size: 13px; font-weight: 500; color: #6b7280;
+          background: #f9fafb; border: 1px solid #e5e7eb;
+          border-radius: 6px; padding: 8px 12px;
+          display: inline-block; margin-bottom: 12px;
+        }
+
+        .subfolder-label {
+          font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+          text-transform: uppercase; color: #6b7280; margin-bottom: 8px;
+        }
+
+        .folder-grid { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+
+        .folder-chip {
+          background: #f8faff; border: 1px solid #3b6ef5;
+          border-radius: 6px; padding: 10px 16px;
+          font-size: 13px; font-weight: 500; color: #374151;
+        }
+
+        .table-divider { border: none; border-top: 1px solid #f3f4f6; margin: 12px 0; }
+
+        .file-table-label {
+          font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+          text-transform: uppercase; color: #6b7280; margin-bottom: 8px;
+        }
+
+        .mini-toolbar { display: flex; gap: 8px; margin-bottom: 8px; }
+
+        .mini-search {
+          font-family: inherit; flex: 1; padding: 7px 12px;
+          border: 1px solid #d1d5db; border-radius: 6px;
+          font-size: 13px; color: #111827; outline: none;
+        }
+
+        .mini-search::placeholder { color: #9ca3af; }
+
+        .mini-filter {
+          font-family: inherit; padding: 7px 12px;
+          border: 1px solid #d1d5db; border-radius: 6px;
+          font-size: 13px; color: #374151; background: #fff;
+        }
+
+        .table-scroll {
+          max-height: 180px; overflow-y: auto;
+          border: 1px solid #e5e7eb; border-radius: 8px;
+        }
+
+        .mini-table { width: 100%; border-collapse: collapse; }
+
+        .mini-table thead th {
+          text-align: left; font-size: 10px; font-weight: 700;
+          letter-spacing: 0.06em; text-transform: uppercase;
+          color: #6b7280; padding: 8px 12px; background: #f9fafb;
+          border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 2;
+        }
+
+        .mini-table tbody tr {
+          border-bottom: 1px solid #f3f4f6; cursor: pointer;
+        }
+
+        .mini-table tbody tr:last-child { border-bottom: none; }
+        .mini-table tbody tr:hover { background: #f9fafb; }
+        .mini-table tbody tr.selected { background: #eff6ff; }
+        .mini-table tbody tr.selected .col-name { color: #1d4ed8; }
+
+        .mini-table td { padding: 8px 12px; font-size: 13px; }
+        .col-name { font-weight: 600; color: #111827; }
+        .col-cat { color: #6b7280; }
+        .col-size { color: #6b7280; text-align: right; }
+
+        /* ── Side panel ── */
+        .side-panel {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          overflow: hidden;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        .side-panel-header {
+          padding: 14px 16px;
+          border-bottom: 1px solid #e5e7eb;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .side-panel-title { font-size: 14px; font-weight: 700; color: #111827; }
+
+        .side-panel-type {
+          font-size: 9px; font-weight: 600; text-transform: uppercase;
+          letter-spacing: 0.06em; color: #6b7280;
+          background: #f1f5f9; padding: 3px 8px; border-radius: 4px;
+        }
+
+        .tabs {
+          display: flex;
+          border-bottom: 1px solid #e5e7eb;
+          background: #f9fafb;
+        }
+
+        .tab {
+          padding: 9px 16px;
+          font-size: 12px;
+          font-weight: 500;
+          color: #6b7280;
+          cursor: pointer;
+          border-bottom: 2px solid transparent;
+          white-space: nowrap;
+        }
+
+        .tab:hover { color: #111827; }
+
+        .tab.active {
+          color: #3b6ef5;
+          font-weight: 700;
+          border-bottom-color: #3b6ef5;
+        }
+
+        .tab-content {
+          padding: 16px;
+          font-size: 13px;
+          color: #374151;
+          line-height: 1.6;
+        }
+
+        .label-sm {
+          font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+          text-transform: uppercase; color: #6b7280; margin-bottom: 6px;
+        }
+
+        .detail-stats-mini { display: flex; gap: 10px; margin-bottom: 14px; }
+
+        .detail-stat-mini {
+          flex: 1; background: #f9fafb; border: 1px solid #e5e7eb;
+          border-radius: 6px; padding: 12px; text-align: center;
+        }
+
+        .detail-stat-mini-value { font-size: 22px; font-weight: 700; color: #111827; }
+
+        .detail-stat-mini-label {
+          font-size: 9px; font-weight: 600; text-transform: uppercase;
+          letter-spacing: 0.06em; color: #6b7280;
+        }
+
+        .type-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+
+        .type-chip {
+          font-size: 11px; padding: 3px 9px;
+          background: #f1f5f9; border: 1px solid #e5e7eb;
+          border-radius: 4px; color: #374151;
+        }
+
+        .type-chip strong { color: #111827; font-weight: 700; }
+
+        /* ── Dimension indicator ── */
+        .dimension-bar {
+          display: flex;
+          gap: 16px;
+          margin-top: 20px;
+        }
+
+        .dim-left, .dim-right {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .dim-left { flex: 1; }
+        .dim-right { width: 340px; flex-shrink: 0; }
+
+        .dim-line {
+          height: 3px;
+          background: #3b6ef5;
+          border-radius: 2px;
+          width: 100%;
+        }
+
+        .dim-label {
+          font-size: 10px;
+          font-weight: 700;
+          color: #3b6ef5;
+          letter-spacing: 0.06em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="ref-label">Referentie: zijpaneel 340px breed — 4 tabs passen comfortabel</div>
+
+<div class="side-layout">
+
+    <!-- Left: Browser -->
+    <div class="side-left">
+        <div class="panel">
+            <div class="panel-title">Archief browser</div>
+            <div class="breadcrumb">📁 /</div>
+            <div class="files-count-inline">📄 1 bestand direct in deze map</div>
+            <div class="subfolder-label">5 submappen</div>
+            <div class="folder-grid">
+                <div class="folder-chip">📁 JOB</div>
+                <div class="folder-chip">📁 L&K</div>
+                <div class="folder-chip">📁 VARIA</div>
+                <div class="folder-chip">📁 VU</div>
+                <div class="folder-chip">📁 VUJO</div>
+            </div>
+            <hr class="table-divider">
+            <div class="file-table-label">Bestanden in deze map (1 van 1)</div>
+            <div class="mini-toolbar">
+                <input class="mini-search" placeholder="Zoek op bestandsnaam...">
+                <select class="mini-filter"><option>Alle types</option></select>
+            </div>
+            <div class="table-scroll">
+                <table class="mini-table">
+                    <thead><tr><th>Bestandsnaam</th><th>Categorie</th><th style="text-align:right">Grootte</th></tr></thead>
+                    <tbody>
+                    <tr class="selected"><td class="col-name">.DS_Store</td><td class="col-cat">andere</td><td class="col-size">6.0 KB</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Side panel (340px) -->
+    <div class="side-right">
+        <div class="side-panel">
+            <div class="side-panel-header">
+                <div class="side-panel-title">📁 .</div>
+                <div class="side-panel-type">Map</div>
+            </div>
+            <div class="tabs">
+                <div class="tab active">Overzicht</div>
+                <div class="tab">Samenvatting</div>
+                <div class="tab">NER</div>
+                <div class="tab">Topics</div>
+            </div>
+            <div class="tab-content">
+                <div class="detail-stats-mini">
+                    <div class="detail-stat-mini">
+                        <div class="detail-stat-mini-value">1</div>
+                        <div class="detail-stat-mini-label">Bestanden</div>
+                    </div>
+                    <div class="detail-stat-mini">
+                        <div class="detail-stat-mini-value">1</div>
+                        <div class="detail-stat-mini-label">Types</div>
+                    </div>
+                </div>
+                <div class="label-sm">Bestandscategorieën</div>
+                <div class="type-chips">
+                    <span class="type-chip">andere <strong>1</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Dimension indicators -->
+<div class="dimension-bar">
+    <div class="dim-left">
+        <div class="dim-line"></div>
+        <div class="dim-label">flex: 1 (krimpt 20-30px)</div>
+    </div>
+    <div class="dim-right">
+        <div class="dim-line"></div>
+        <div class="dim-label">340px (was ~300-320px)</div>
+    </div>
+</div>
+
+</body>
+</html>

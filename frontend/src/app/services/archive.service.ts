@@ -68,6 +68,13 @@ export interface TopicsResult {
   total_topics: number;
 }
 
+export interface TopicsFolderResult {
+  folder_id: string;
+  folder_name: string;
+  topics: string[];
+  total_topics: number;
+}
+
 export interface FolderFilesData {
   folder_id: string;
   folder_name: string;
@@ -136,6 +143,10 @@ export class ArchiveService {
 
   getTopicsForFile(archiveId: string, fileId: string): Observable<TopicsResult> {
     return this.http.get<TopicsResult>(`/api/archives/${archiveId}/files/${fileId}/topics`);
+  }
+
+  getTopicsForFolder(archiveId: string, folderId: string): Observable<TopicsFolderResult> {
+    return this.http.get<TopicsFolderResult>(`/api/archives/${archiveId}/folders/${folderId}/topics`);
   }
 
   getAnalysisConfiguration(): Observable<AnalysisConfigEntry[]> {
