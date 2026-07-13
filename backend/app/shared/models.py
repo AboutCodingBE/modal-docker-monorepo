@@ -1,8 +1,8 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -189,14 +189,10 @@ class Ner(Base):
     parent_folder_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="SET NULL"), nullable=True)
     file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
 
-    persons: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    persons_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    locations: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    locations_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    organisations: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    organisations_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    misc: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    misc_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    persons: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    locations: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    organisations: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    misc: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
 
 class TopicDetection(Base):
     __tablename__ = "topic_detection"
@@ -207,5 +203,4 @@ class TopicDetection(Base):
     parent_folder_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="SET NULL"), nullable=True)
     file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
 
-    topics: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    topics_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    topics: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))

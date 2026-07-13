@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.get_ner_for_file.repository import NerForFileRepository
+from app.get_ner_for_folder.repository import NerForFolderRepository
 
 
 def _extract_entities(jsonb_list: list | None) -> list[str]:
@@ -11,16 +11,16 @@ def _extract_entities(jsonb_list: list | None) -> list[str]:
     return [item["entity"] for item in jsonb_list if "entity" in item]
 
 
-class GetNerForFile:
+class GetNerForFolder:
     def __init__(self, session: AsyncSession):
-        self._repo = NerForFileRepository(session)
+        self._repo = NerForFolderRepository(session)
 
-    async def execute(self, archive_id: uuid.UUID, file_id: uuid.UUID) -> dict | None:
-        file = await self._repo.get_file(archive_id, file_id)
-        if file is None:
+    async def execute(self, archive_id: uuid.UUID, folder_id: uuid.UUID) -> dict | None:
+        folder = await self._repo.get_folder(archive_id, folder_id)
+        if folder is None:
             return None
 
-        ner = await self._repo.get_ner_for_file(file_id)
+        ner = await self._repo.get_ner_for_folder(folder_id)
 
         persons = _extract_entities(ner.persons) if ner else []
         locations = _extract_entities(ner.locations) if ner else []
@@ -28,8 +28,8 @@ class GetNerForFile:
         misc = _extract_entities(ner.misc) if ner else []
 
         return {
-            "file_id": str(file_id),
-            "file_name": file.name,
+            "folder_id": str(folder_id),
+            "folder_name": folder.name,
             "persons": persons,
             "locations": locations,
             "organisations": organisations,

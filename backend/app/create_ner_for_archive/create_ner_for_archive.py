@@ -5,10 +5,11 @@ import uuid
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.analysis import task_tracker
+from app.config import settings
 from app.create_ner_for_archive.archive_analysis_repository import ArchiveAnalysisRepository
-from app.create_ner_for_archive.file_repository import FileRepository
 from app.create_ner_for_archive.ner_engine import run_ner
 from app.create_ner_for_archive.ner_repository import NerRepository
+from app.shared.file_repository import FileRepository
 from app.shared.logging_config import log_context
 
 _logger = logging.getLogger("app")
@@ -38,8 +39,10 @@ class CreateNerForArchive:
             # ── Phase 0: start task and fetch file list ───────────────────────
             async with self._session_factory() as session:
                 await task_tracker.start_task(session, task_id)
-                files = await FileRepository(session).get_files_with_tika_content(archive_id)
-                await task_tracker.update_total_files(session, task_id, len(files))
+                file_repo = FileRepository(session)
+                files = await file_repo.get_files_with_tika_content(archive_id)
+                folders = await file_repo.get_all_folders(archive_id)
+                await task_tracker.update_total_files(session, task_id, len(files) + len(folders))
                 await session.commit()
 
             processed = 0
@@ -84,6 +87,38 @@ class CreateNerForArchive:
                 processed += 1
                 consecutive_failures = 0
 
+            # ── Phase 2: folder aggregation (bottom-up) ───────────────────────
+            folders_processed = 0
+            for folder in folders:
+                folder_id: uuid.UUID = folder["id"]
+
+                async with self._session_factory() as session:
+                    await task_tracker.update_progress(
+                        session, task_id, processed, failed_count, folder["relative_path"]
+                    )
+                    await session.commit()
+
+                try:
+                    async with self._session_factory() as session:
+                        entities = await NerRepository(session).get_entities_for_folder(
+                            archive_analysis_id, folder_id, settings.ner_folder_top_n
+                        )
+                        if all(not entities[cat] for cat in ("persons", "locations", "organisations", "misc")):
+                            processed += 1
+                            continue
+                        await NerRepository(session).persist_folder(
+                            archive_analysis_id, archive_id, folder["parent_id"], folder_id, entities
+                        )
+                        await session.commit()
+                except Exception as e:
+                    _logger.error(f"{log_context(archive_id, folder['name'])}Failed to aggregate NER for folder: {e}")
+                    failed_count += 1
+                    processed += 1
+                    continue
+
+                folders_processed += 1
+                processed += 1
+
             # ── Completion ────────────────────────────────────────────────────
             async with self._session_factory() as session:
                 await task_tracker.update_progress(session, task_id, processed, failed_count, None)
@@ -91,7 +126,12 @@ class CreateNerForArchive:
                 await ArchiveAnalysisRepository(session).update_status(archive_analysis_id, "COMPLETED")
                 await session.commit()
 
-            _logger.info(f"{log_context(archive_id)}NER complete. Processed: {processed}, failed: {failed_count}")
+            _logger.info(
+                f"{log_context(archive_id)}NER complete. "
+                f"Files processed: {processed - folders_processed}, "
+                f"folders aggregated: {folders_processed}, "
+                f"failed: {failed_count}"
+            )
 
         except Exception as e:
             _logger.error(f"{log_context(archive_id)}NER task failed unexpectedly: {e}")

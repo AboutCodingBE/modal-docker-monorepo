@@ -37,10 +37,7 @@ from app.create_ner_for_archive.ner_repository import NerRepository
 
 
 _LEEG_NER_RESULTAAT = {
-    "persons": [], "persons_count": 0,
-    "locations": [], "locations_count": 0,
-    "organisations": [], "organisations_count": 0,
-    "misc": [], "misc_count": 0,
+    "persons": [], "locations": [], "organisations": [], "misc": [],
 }
 
 

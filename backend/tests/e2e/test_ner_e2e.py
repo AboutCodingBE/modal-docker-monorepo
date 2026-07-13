@@ -18,6 +18,7 @@ Story: "Levert de volledige NER-pipeline (echte Tika-tekst → spaCy → DB)
 op een bestaand archief correcte, opvraagbare resultaten op?"
 """
 
+import json
 import uuid
 
 import pytest
@@ -86,10 +87,10 @@ def test_ner_end_to_end(db_conn):
     result = run_ner(content)
 
     print(f"\n── NER results ──────────────────────────────────────────")
-    print(f"  Persons        ({result['persons_count']:>3}): {result['persons'][:5]}")
-    print(f"  Locations      ({result['locations_count']:>3}): {result['locations'][:5]}")
-    print(f"  Organisations  ({result['organisations_count']:>3}): {result['organisations'][:5]}")
-    print(f"  Misc           ({result['misc_count']:>3}): {result['misc'][:5]}")
+    print(f"  Persons        ({len(result['persons']):>3}): {result['persons'][:5]}")
+    print(f"  Locations      ({len(result['locations']):>3}): {result['locations'][:5]}")
+    print(f"  Organisations  ({len(result['organisations']):>3}): {result['organisations'][:5]}")
+    print(f"  Misc           ({len(result['misc']):>3}): {result['misc'][:5]}")
     print(f"─────────────────────────────────────────────────────────")
 
     # ── Step 4: write to DB ───────────────────────────────────────────────────
@@ -102,19 +103,17 @@ def test_ner_end_to_end(db_conn):
         VALUES (:id, :archive_id, 'NER', 'nl_core_news_lg', 'STARTED')
     """), {"id": str(analysis_id), "archive_id": str(archive_id)})
 
+    def _to_jsonb(strings: list[str]) -> list[dict]:
+        return [{"entity": s, "count": 1} for s in strings]
+
     db_conn.execute(text("""
         INSERT INTO ner (
             id, archive_id, analysis_id, parent_folder_id, file_id,
-            persons, persons_count,
-            locations, locations_count,
-            organisations, organisations_count,
-            misc, misc_count
+            persons, locations, organisations, misc
         ) VALUES (
             :id, :archive_id, :analysis_id, :parent_folder_id, :file_id,
-            :persons, :persons_count,
-            :locations, :locations_count,
-            :organisations, :organisations_count,
-            :misc, :misc_count
+            CAST(:persons AS jsonb), CAST(:locations AS jsonb),
+            CAST(:organisations AS jsonb), CAST(:misc AS jsonb)
         )
     """), {
         "id": str(ner_id),
@@ -122,7 +121,10 @@ def test_ner_end_to_end(db_conn):
         "analysis_id": str(analysis_id),
         "parent_folder_id": str(parent_folder_id),
         "file_id": str(file_id),
-        **result,
+        "persons": json.dumps(_to_jsonb(result["persons"])),
+        "locations": json.dumps(_to_jsonb(result["locations"])),
+        "organisations": json.dumps(_to_jsonb(result["organisations"])),
+        "misc": json.dumps(_to_jsonb(result["misc"])),
     })
 
     print(f"\n✔ NER result written to DB (id: {ner_id})")
@@ -133,13 +135,13 @@ def test_ner_end_to_end(db_conn):
         {"id": str(ner_id)}
     ).mappings().one()
 
-    print(f"✔ Read back from DB — persons_count: {saved['persons_count']}, "
-          f"locations_count: {saved['locations_count']}, "
-          f"organisations_count: {saved['organisations_count']}")
+    print(f"✔ Read back from DB — persons: {len(saved['persons'])}, "
+          f"locations: {len(saved['locations'])}, "
+          f"organisations: {len(saved['organisations'])}")
 
     # Minimal assertions — mainly checking the round-trip worked
-    assert saved["persons_count"] == result["persons_count"]
-    assert saved["locations_count"] == result["locations_count"]
-    assert saved["organisations_count"] == result["organisations_count"]
+    assert len(saved["persons"]) == len(result["persons"])
+    assert len(saved["locations"]) == len(result["locations"])
+    assert len(saved["organisations"]) == len(result["organisations"])
 
     print("\n✔ All checks passed. Rolling back — no permanent changes made.")
