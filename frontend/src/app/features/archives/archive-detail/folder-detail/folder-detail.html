@@ -32,15 +32,15 @@
           <div class="detail-stat-label">Bestanden</div>
         </div>
         <div class="detail-stat">
-          <div class="detail-stat-value">{{ (folderData().categories ?? []).length }}</div>
+          <div class="detail-stat-value">{{ (folderData().categories).length }}</div>
           <div class="detail-stat-label">Types</div>
         </div>
       </div>
 
-      @if ((folderData().categories ?? []).length > 0) {
+      @if ((folderData().categories).length > 0) {
         <div class="section-label">Bestandscategorieën</div>
         <div class="type-chips">
-          @for (cat of (folderData().categories ?? []); track cat.category) {
+          @for (cat of (folderData().categories); track cat.category) {
             <span class="type-chip">{{ cat.category }} <strong>{{ cat.count }}</strong></span>
           }
         </div>
