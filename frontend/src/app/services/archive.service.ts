@@ -149,6 +149,10 @@ export class ArchiveService {
     return this.http.get<TopicsFolderResult>(`/api/archives/${archiveId}/folders/${folderId}/topics`);
   }
 
+  deleteArchive(archiveId: string): Observable<void> {
+    return this.http.delete<void>(`/api/archives/${archiveId}`);
+  }
+
   getAnalysisConfiguration(): Observable<AnalysisConfigEntry[]> {
     return this.http.get<AnalysisConfigEntry[]>('/api/analysis/configuration');
   }

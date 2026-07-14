@@ -18,6 +18,7 @@ export class ArchiveCard {
   archive = input.required<Archive>();
   cardClicked = output<string>();
   startAnalysisClicked = output<string>();
+  deleteClicked = output<string>();
 
   statusLabel = computed(() => {
     const labels: Record<string, string> = {

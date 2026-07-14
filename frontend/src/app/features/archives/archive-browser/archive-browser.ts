@@ -82,6 +82,16 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
 
   // ── Analysis modal ─────────────────────────────────────────────────────────
 
+  deleteArchive(archiveId: string): void {
+    if (!confirm('Weet u zeker dat u dit archief permanent wilt verwijderen?')) return;
+
+    this.archiveService.deleteArchive(archiveId).subscribe({
+      next: () => {
+        this.archives.update(list => list.filter(a => a.id !== archiveId));
+      },
+    });
+  }
+
   openAnalysisModal(archiveId: string): void {
     const archive = this.archives().find(a => a.id === archiveId);
     if (archive) this.analysisModalArchive.set(archive);
