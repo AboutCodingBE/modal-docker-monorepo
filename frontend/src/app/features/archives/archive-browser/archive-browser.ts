@@ -7,10 +7,11 @@ import { ActiveTask, TaskProgressService } from '../../../services/task-progress
 import { ArchiveCard } from '../archive-card/archive-card';
 import { NewArchiveModal } from '../new-archive-modal/new-archive-modal';
 import { AnalysisModal } from '../../analysis/analysis-modal/analysis-modal';
+import { DeleteArchiveModal } from '../delete-archive-modal/delete-archive-modal';
 
 @Component({
   selector: 'app-archive-browser',
-  imports: [ArchiveCard, NewArchiveModal, AnalysisModal],
+  imports: [ArchiveCard, NewArchiveModal, AnalysisModal, DeleteArchiveModal],
   templateUrl: './archive-browser.html',
   styleUrl: './archive-browser.css',
 })
@@ -22,6 +23,9 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
 
   // Analysis modal state
   analysisModalArchive = signal<Archive | null>(null);
+
+  // Delete modal state
+  archiveToDelete = signal<Archive | null>(null);
 
   // Track which task IDs belong to AI analysis (vs Tika ingestion)
   private analysisTaskIds = new Set<string>();
@@ -82,14 +86,25 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
 
   // ── Analysis modal ─────────────────────────────────────────────────────────
 
-  deleteArchive(archiveId: string): void {
-    if (!confirm('Weet u zeker dat u dit archief permanent wilt verwijderen?')) return;
+  openDeleteModal(archiveId: string): void {
+    const archive = this.archives().find(a => a.id === archiveId);
+    if (archive) this.archiveToDelete.set(archive);
+  }
 
-    this.archiveService.deleteArchive(archiveId).subscribe({
+  confirmDelete(): void {
+    const archive = this.archiveToDelete();
+    if (!archive) return;
+
+    this.archiveToDelete.set(null);
+    this.archiveService.deleteArchive(archive.id).subscribe({
       next: () => {
-        this.archives.update(list => list.filter(a => a.id !== archiveId));
+        this.archives.update(list => list.filter(a => a.id !== archive.id));
       },
     });
+  }
+
+  cancelDelete(): void {
+    this.archiveToDelete.set(null);
   }
 
   openAnalysisModal(archiveId: string): void {
