@@ -47,21 +47,36 @@ async def start_analysis(
     archive_id = body.archiveId
     analysis_repo = ArchiveAnalysisRepository(db)
 
-    jobs: list[tuple[uuid.UUID, uuid.UUID, uuid.UUID, str]] = []
+    blocking_types = await analysis_repo.get_blocking_types(archive_id)
+
+    jobs: list[tuple[uuid.UUID, uuid.UUID, uuid.UUID, str, str]] = []
 
     for item in body.analysis:
+        normalized_type = item.type.upper()
+
+        if normalized_type in blocking_types:
+            _logger.warning(
+                f"Skipped analysis type '{item.type}' for archive {archive_id}: "
+                f"already completed or currently running."
+            )
+            continue
+
         archive_analysis = await analysis_repo.create(archive_id, item.type, item.model)
         task = await task_tracker.create_task(db, archive_id, total_files=0)
         await db.flush()
         jobs.append((archive_id, archive_analysis.id, task.id, item.type, item.model))
+
+        # Prevent duplicate types within the same request from both being started
+        blocking_types.add(normalized_type)
 
     # Commit all records before handing off to background
     await db.commit()
 
     task_ids = [str(job[2]) for job in jobs]
 
-    # Run analyses sequentially in a single background task
-    asyncio.create_task(_run_sequential(jobs))
+    if jobs:
+        # Run analyses sequentially in a single background task
+        asyncio.create_task(_run_sequential(jobs))
 
     return {"task_ids": task_ids}
 

@@ -4,7 +4,7 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.models import ArchiveAnalysis
+from app.shared.models import ArchiveAnalysis, ArchiveAnalysisStatus
 
 
 class ArchiveAnalysisRepository:
@@ -37,3 +37,18 @@ class ArchiveAnalysisRepository:
         if analysis:
             analysis.status = status
             await self._session.flush()
+
+    async def get_blocking_types(self, archive_id: uuid.UUID) -> set[str]:
+        """Types with a STARTED or COMPLETED ArchiveAnalysis for this archive.
+
+        Values are uppercase (matching AnalysisType enum values), for
+        case-normalized comparison against incoming request types.
+        """
+        _BLOCKING_STATUSES = (ArchiveAnalysisStatus.STARTED, ArchiveAnalysisStatus.COMPLETED)
+        result = await self._session.execute(
+            select(ArchiveAnalysis.type).where(
+                ArchiveAnalysis.archive_id == archive_id,
+                ArchiveAnalysis.status.in_(_BLOCKING_STATUSES),
+            )
+        )
+        return {t.value for t in result.scalars().all()}
