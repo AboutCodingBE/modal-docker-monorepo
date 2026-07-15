@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MODAL — Archive Card States + Analyse Modal</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: #f0f2f5;
+          color: #111827;
+          padding: 40px;
+        }
+
+        h2 { font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 6px; }
+        .desc { font-size: 13px; color: #6b7280; margin-bottom: 24px; }
+
+        .states-row {
+          display: flex;
+          gap: 20px;
+          align-items: flex-start;
+          margin-bottom: 48px;
+          flex-wrap: wrap;
+        }
+
+        .state-wrap { display: flex; flex-direction: column; gap: 10px; }
+
+        .state-label {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #6b7280;
+          padding-bottom: 6px;
+          border-bottom: 1px solid #d1d5db;
+        }
+
+        /* ── Card ── */
+        .card {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 18px 18px 0;
+          width: 300px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+          transition: box-shadow 0.15s;
+        }
+
+        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+        .card-name { font-size: 15px; font-weight: 700; color: #111827; }
+
+        .card-meta { display: flex; flex-direction: column; gap: 5px; }
+
+        .meta-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          color: #6b7280;
+        }
+
+        .meta-item svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+        /* ── Analysis indicators ── */
+        .analysis-indicators {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+          padding-top: 2px;
+        }
+
+        .analysis-chip {
+          font-size: 10px;
+          font-weight: 600;
+          padding: 3px 8px;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .analysis-chip.done {
+          background: #dcfce7;
+          color: #166534;
+        }
+
+        .analysis-chip.done::before {
+          content: '✓';
+          font-size: 9px;
+          color: #15803d;
+        }
+
+        .analysis-chip.pending {
+          background: #f9fafb;
+          border: 1px dashed #d1d5db;
+          color: #9ca3af;
+        }
+
+        /* ── Card footer ── */
+        .card-footer {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          border-top: 1px solid #f3f4f6;
+          padding: 12px 0;
+          margin-top: auto;
+        }
+
+        .btn-explore {
+          flex: 1;
+          font-family: inherit;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          background: #eff6ff;
+          color: #1d4ed8;
+          border: none;
+          padding: 9px 12px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+
+        .btn-explore:hover { background: #dbeafe; }
+        .btn-explore svg { width: 13px; height: 13px; }
+
+        .btn-analyse-remaining {
+          flex: 1;
+          font-family: inherit;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          background: #111827;
+          color: #fff;
+          border: none;
+          padding: 9px 12px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+
+        .btn-analyse-remaining:hover { background: #1f2937; }
+        .btn-analyse-remaining svg { width: 12px; height: 12px; }
+
+        .btn-delete {
+          font-family: inherit;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          padding: 8px;
+          color: #9ca3af;
+          cursor: pointer;
+          transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+
+        .btn-delete:hover { color: #b91c1c; border-color: #fecaca; background: #fef2f2; }
+        .btn-delete svg { width: 14px; height: 14px; }
+
+        /* ── Divider ── */
+        .divider { border: none; border-top: 2px dashed #d1d5db; margin: 48px 0; }
+
+        /* ── Modal ── */
+        .modal-frame {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          width: 520px;
+          overflow: hidden;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .modal-header { padding: 24px 24px 12px; }
+
+        .modal-header h3 {
+          font-size: 18px;
+          font-weight: 700;
+          color: #111827;
+          margin-bottom: 4px;
+        }
+
+        .modal-body {
+          padding: 16px 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .modal-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 24px 20px;
+          border-top: 1px solid #f3f4f6;
+        }
+
+        .btn-ghost {
+          font-family: inherit;
+          font-size: 14px;
+          font-weight: 500;
+          background: none;
+          border: none;
+          color: #6b7280;
+          cursor: pointer;
+          padding: 9px 16px;
+          transition: color 0.15s;
+        }
+
+        .btn-ghost:hover { color: #111827; }
+
+        .btn-primary-lg {
+          font-family: inherit;
+          font-size: 14px;
+          font-weight: 700;
+          padding: 12px 28px;
+          background: #3b6ef5;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          transition: background 0.15s;
+        }
+
+        .btn-primary-lg:hover { background: #2d5ce0; }
+        .btn-primary-lg svg { width: 14px; height: 14px; }
+
+        /* ── Tool row ── */
+        .tool-row {
+          display: flex;
+          align-items: center;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 14px 16px;
+          gap: 12px;
+          transition: border-color 0.15s;
+        }
+
+        .tool-row:hover { border-color: #bfdbfe; }
+
+        .tool-checkbox {
+          width: 20px;
+          height: 20px;
+          accent-color: #3b6ef5;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+
+        .tool-icon {
+          width: 36px;
+          height: 36px;
+          background: #f9fafb;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 15px;
+          flex-shrink: 0;
+        }
+
+        .tool-info { flex: 1; min-width: 0; }
+        .tool-name { font-size: 14px; font-weight: 700; color: #111827; }
+        .tool-desc { font-size: 12px; color: #6b7280; margin-top: 2px; }
+
+        .tool-model-area {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .model-badge-wrap { text-align: right; }
+
+        .model-label-sm {
+          font-size: 8px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #9ca3af;
+          margin-bottom: 2px;
+        }
+
+        .model-badge {
+          font-size: 11px;
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          background: #f1f5f9;
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
+          padding: 2px 7px;
+          color: #374151;
+        }
+
+        /* ── Done section in modal ── */
+        .done-section { padding: 0 24px 16px; }
+
+        .done-label {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: #6b7280;
+          margin-bottom: 8px;
+        }
+
+        .done-chips { display: flex; gap: 6px; }
+
+        .done-chip {
+          font-size: 11px;
+          font-weight: 600;
+          padding: 4px 10px;
+          background: #dcfce7;
+          border-radius: 4px;
+          color: #166534;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .done-chip::before {
+          content: '✓';
+          font-size: 10px;
+          color: #15803d;
+        }
+
+        .modal-section-label {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: #6b7280;
+          padding: 0 24px;
+          margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Archief kaart statussen</h2>
+<div class="desc">Drie statussen: net ingested (geen analyses), gedeeltelijk geanalyseerd, volledig geanalyseerd.</div>
+
+<div class="states-row">
+
+    <div class="state-wrap">
+        <div class="state-label">Ingested — geen analyses</div>
+        <div class="card">
+            <div class="card-name">specific-test5</div>
+            <div class="card-meta">
+                <div class="meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>2026-06-30</span>
+                </div>
+                <div class="meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                    <span>5 bestanden</span>
+                </div>
+            </div>
+            <div class="analysis-indicators">
+                <span class="analysis-chip pending">Samenvatting</span>
+                <span class="analysis-chip pending">NER</span>
+                <span class="analysis-chip pending">Topics</span>
+            </div>
+            <div class="card-footer">
+                <button class="btn-explore">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Verkennen
+                </button>
+                <button class="btn-analyse-remaining">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                    Analyse
+                </button>
+                <button class="btn-delete">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="state-wrap">
+        <div class="state-label">Gedeeltelijk geanalyseerd</div>
+        <div class="card">
+            <div class="card-name">summary-test7</div>
+            <div class="card-meta">
+                <div class="meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>2026-07-06</span>
+                </div>
+                <div class="meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                    <span>90 bestanden</span>
+                </div>
+            </div>
+            <div class="analysis-indicators">
+                <span class="analysis-chip done">Samenvatting</span>
+                <span class="analysis-chip pending">NER</span>
+                <span class="analysis-chip pending">Topics</span>
+            </div>
+            <div class="card-footer">
+                <button class="btn-explore">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Verkennen
+                </button>
+                <button class="btn-analyse-remaining">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                    Analyse
+                </button>
+                <button class="btn-delete">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="state-wrap">
+        <div class="state-label">Volledig geanalyseerd</div>
+        <div class="card">
+            <div class="card-name">karltest3</div>
+            <div class="card-meta">
+                <div class="meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>2026-06-14</span>
+                </div>
+                <div class="meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                    <span>62 bestanden</span>
+                </div>
+            </div>
+            <div class="analysis-indicators">
+                <span class="analysis-chip done">Samenvatting</span>
+                <span class="analysis-chip done">NER</span>
+                <span class="analysis-chip done">Topics</span>
+            </div>
+            <div class="card-footer">
+                <button class="btn-explore">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Verkennen
+                </button>
+                <button class="btn-delete">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<hr class="divider">
+
+<h2>Analyse Configureren — alleen resterende analyses</h2>
+<div class="desc">Modal toont welke analyses al zijn uitgevoerd (niet aanpasbaar) en biedt alleen de resterende aan om te starten.</div>
+
+<div class="states-row">
+
+    <div class="state-wrap">
+        <div class="state-label">Vanuit Ingested — alles beschikbaar</div>
+        <div class="modal-frame">
+            <div class="modal-header">
+                <h3>Analyse Configureren</h3>
+            </div>
+            <div class="modal-body">
+                <div class="tool-row">
+                    <input type="checkbox" class="tool-checkbox" checked>
+                    <div class="tool-icon">📝</div>
+                    <div class="tool-info">
+                        <div class="tool-name">Samenvatting</div>
+                        <div class="tool-desc">AI-gegenereerde samenvattingen per bestand en map.</div>
+                    </div>
+                    <div class="tool-model-area">
+                        <div class="model-badge-wrap">
+                            <div class="model-label-sm">Model</div>
+                            <span class="model-badge">gemma3:1b</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-row">
+                    <input type="checkbox" class="tool-checkbox" checked>
+                    <div class="tool-icon">🔍</div>
+                    <div class="tool-info">
+                        <div class="tool-name">Entiteitsherkenning</div>
+                        <div class="tool-desc">Detecteert personen, locaties en organisaties.</div>
+                    </div>
+                    <div class="tool-model-area">
+                        <div class="model-badge-wrap">
+                            <div class="model-label-sm">Model</div>
+                            <span class="model-badge">nl_core_news_lg</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-row">
+                    <input type="checkbox" class="tool-checkbox" checked>
+                    <div class="tool-icon">🏷</div>
+                    <div class="tool-info">
+                        <div class="tool-name">Onderwerpdetectie</div>
+                        <div class="tool-desc">Identificeert de belangrijkste onderwerpen per bestand.</div>
+                    </div>
+                    <div class="tool-model-area">
+                        <div class="model-badge-wrap">
+                            <div class="model-label-sm">Model</div>
+                            <span class="model-badge">gemma3:1b</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost">Annuleren</button>
+                <button class="btn-primary-lg">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                    Start Analyse
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="state-wrap">
+        <div class="state-label">Vanuit Gedeeltelijk — alleen resterende</div>
+        <div class="modal-frame">
+            <div class="modal-header">
+                <h3>Analyse Configureren</h3>
+            </div>
+            <div class="done-section">
+                <div class="done-label">Reeds uitgevoerd</div>
+                <div class="done-chips">
+                    <span class="done-chip">Samenvatting</span>
+                </div>
+            </div>
+            <div class="modal-section-label">Beschikbare analyses</div>
+            <div class="modal-body">
+                <div class="tool-row">
+                    <input type="checkbox" class="tool-checkbox" checked>
+                    <div class="tool-icon">🔍</div>
+                    <div class="tool-info">
+                        <div class="tool-name">Entiteitsherkenning</div>
+                        <div class="tool-desc">Detecteert personen, locaties en organisaties.</div>
+                    </div>
+                    <div class="tool-model-area">
+                        <div class="model-badge-wrap">
+                            <div class="model-label-sm">Model</div>
+                            <span class="model-badge">nl_core_news_lg</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-row">
+                    <input type="checkbox" class="tool-checkbox" checked>
+                    <div class="tool-icon">🏷</div>
+                    <div class="tool-info">
+                        <div class="tool-name">Onderwerpdetectie</div>
+                        <div class="tool-desc">Identificeert de belangrijkste onderwerpen per bestand.</div>
+                    </div>
+                    <div class="tool-model-area">
+                        <div class="model-badge-wrap">
+                            <div class="model-label-sm">Model</div>
+                            <span class="model-badge">gemma3:1b</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost">Annuleren</button>
+                <button class="btn-primary-lg">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                    Analyse
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
