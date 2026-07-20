@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.analysis import task_tracker
 from app.config import settings
-from app.create_ner_for_archive.archive_analysis_repository import ArchiveAnalysisRepository
+from app.shared.archive_analysis_repository import ArchiveAnalysisRepository
 from app.create_ner_for_archive.ner_engine import run_ner
 from app.create_ner_for_archive.ner_repository import NerRepository
 from app.shared.file_repository import FileRepository
