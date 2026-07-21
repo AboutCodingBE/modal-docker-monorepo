@@ -42,6 +42,22 @@ interface HeatmapCell {
   value: number;
 }
 
+type ItemScope = 'files' | 'folders' | 'both';
+
+interface DashboardEntity {
+  id: string;
+  name: string;
+  relative_path: string;
+  size_bytes: number | null;
+  category: string | null;
+  is_directory: boolean;
+}
+
+interface ItemAnalytics {
+  ner: { organisations: string[]; persons: string[]; locations: string[]; misc: string[] };
+  topics: { topics: string[] };
+}
+
 @Component({
   selector: 'app-archive-dashboard',
   standalone: true,
@@ -88,6 +104,8 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
   tooltipX = signal(0);
   tooltipY = signal(0);
   tooltipVisible = signal(false);
+  itemScope = signal<ItemScope>('both');
+  allEntities = signal<DashboardEntity[]>([]);
 
   ngOnInit(): void {
     const routeArchiveId = this.route.snapshot.paramMap.get('archiveId') ?? '';
@@ -125,49 +143,7 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       return;
     }
 
-    if (!folderId || folderId === 'root') {
-      if (currentPath && currentPath !== '/') {
-        this.archiveService.getFolder(archiveId, currentPath).subscribe({
-          next: (folder) => {
-            this.folderName.set(folder.path || currentPath);
-            if (folder.folder_id) {
-              this.folderId.set(folder.folder_id);
-              this.archiveService.getFolderFiles(archiveId, folder.folder_id).subscribe({
-                next: (data) => this._loadLocationsForFiles(archiveId, data.files),
-                error: () => {
-                  this.loading.set(false);
-                  this.error.set('Kon de bestanden van deze map niet laden.');
-                },
-              });
-            } else {
-              this.locationItems.set([]);
-              this.loading.set(false);
-            }
-          },
-          error: () => {
-            this.loading.set(false);
-            this.error.set('Kon de huidige map niet laden.');
-          },
-        });
-      } else {
-        this.archiveService.getRootFiles(archiveId).subscribe({
-          next: (data) => this._loadLocationsForFiles(archiveId, data.files),
-          error: () => {
-            this.loading.set(false);
-            this.error.set('Kon de bestanden van de rootmap niet laden.');
-          },
-        });
-      }
-      return;
-    }
-
-    this.archiveService.getFolderFiles(archiveId, folderId).subscribe({
-      next: (data) => this._loadLocationsForFiles(archiveId, data.files),
-      error: () => {
-        this.loading.set(false);
-        this.error.set('Kon de bestanden van deze map niet laden.');
-      },
-    });
+    this._loadDashboardForFolderContext(archiveId, folderId, currentPath);
   }
 
   private _loadLocationsForFile(archiveId: string, fileId: string): void {
@@ -191,20 +167,124 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     });
   }
 
-  private _loadLocationsForFiles(archiveId: string, files: FolderFile[]): void {
-    if (files.length === 0) {
+  private _loadDashboardForFolderContext(archiveId: string, folderId: string | null, currentPath: string): void {
+    const folderPath = currentPath && currentPath !== '/' ? currentPath : '/';
+    this.archiveService.getFolder(archiveId, folderPath).subscribe({
+      next: (folderData) => {
+        this.folderName.set(folderData.path || folderPath);
+        const activeFolderId = folderId && folderId !== 'root' ? folderId : folderData.folder_id;
+        if (activeFolderId) {
+          this.folderId.set(activeFolderId);
+        }
+
+        const filesRequest = activeFolderId
+          ? this.archiveService.getFolderFiles(archiveId, activeFolderId)
+          : this.archiveService.getRootFiles(archiveId);
+
+        filesRequest.subscribe({
+          next: (data) => {
+            const fileEntities: DashboardEntity[] = data.files.map((file) => ({
+              id: file.id,
+              name: file.name,
+              relative_path: file.relative_path,
+              size_bytes: file.size_bytes,
+              category: file.category ?? null,
+              is_directory: false,
+            }));
+
+            if (folderData.subfolders.length === 0) {
+              this.allEntities.set(fileEntities);
+              this._loadLocationsForEntities(archiveId, this._entitiesForScope(fileEntities));
+              return;
+            }
+
+            const subfolderRequests = folderData.subfolders.map((subfolder) =>
+              this.archiveService.getFolder(archiveId, subfolder.path)
+            );
+
+            forkJoin(subfolderRequests).subscribe({
+              next: (subfolderDetails) => {
+                const folderEntities: DashboardEntity[] = subfolderDetails
+                  .map((detail, index): DashboardEntity | null => {
+                    if (!detail.folder_id) return null;
+                    return {
+                      id: detail.folder_id,
+                      name: folderData.subfolders[index]?.name ?? detail.path,
+                      relative_path: folderData.subfolders[index]?.path ?? detail.path,
+                      size_bytes: null,
+                      category: 'Folder',
+                      is_directory: true,
+                    };
+                  })
+                  .filter((entry): entry is DashboardEntity => entry !== null);
+
+                const entities = [...fileEntities, ...folderEntities];
+                this.allEntities.set(entities);
+                this._loadLocationsForEntities(archiveId, this._entitiesForScope(entities));
+              },
+              error: () => {
+                this.loading.set(false);
+                this.error.set('Kon de submappen van deze map niet laden.');
+              },
+            });
+          },
+          error: () => {
+            this.loading.set(false);
+            this.error.set('Kon de bestanden van deze map niet laden.');
+          },
+        });
+      },
+      error: () => {
+        this.loading.set(false);
+        this.error.set('Kon de huidige map niet laden.');
+      },
+    });
+  }
+
+  onScopeChange(scope: ItemScope): void {
+    if (this.itemScope() === scope) return;
+    this.itemScope.set(scope);
+
+    if (this.selectedFile()) {
+      return;
+    }
+
+    const scopedEntities = this._entitiesForScope(this.allEntities());
+    this.loading.set(true);
+    this.error.set(null);
+    this._loadLocationsForEntities(this.archiveId(), scopedEntities);
+  }
+
+  private _entitiesForScope(entities: DashboardEntity[]): DashboardEntity[] {
+    const scope = this.itemScope();
+    if (scope === 'files') return entities.filter((entry) => !entry.is_directory);
+    if (scope === 'folders') return entities.filter((entry) => entry.is_directory);
+    return entities;
+  }
+
+  private _loadLocationsForEntities(archiveId: string, entities: DashboardEntity[]): void {
+    if (entities.length === 0) {
       this.locationItems.set([]);
       this.personItems.set([]);
       this.organizationItems.set([]);
       this.topicItems.set([]);
       this.barChartItems.set([]);
+      this.barChartLegendItems.set([]);
+      this.heatmapTopics.set([]);
+      this.heatmapOrganizations.set([]);
+      this.heatmapCells.set([]);
+      this._syncTreemapRects();
       this.loading.set(false);
       return;
     }
 
-    const requests = files.map((file) => forkJoin({
-      ner: this.archiveService.getNerForFile(archiveId, file.id),
-      topics: this.archiveService.getTopicsForFile(archiveId, file.id),
+    const requests = entities.map((entry) => forkJoin({
+      ner: entry.is_directory
+        ? this.archiveService.getNerForFolder(archiveId, entry.id)
+        : this.archiveService.getNerForFile(archiveId, entry.id),
+      topics: entry.is_directory
+        ? this.archiveService.getTopicsForFolder(archiveId, entry.id)
+        : this.archiveService.getTopicsForFile(archiveId, entry.id),
     }));
 
     forkJoin(requests).subscribe({
@@ -225,7 +305,7 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
         this.personItems.set(this._buildItemsFromMap(personCounts));
         this.organizationItems.set(this._buildItemsFromMap(organizationCounts));
         this.topicItems.set(this._buildItemsFromMap(topicCounts));
-        const barItems = this._buildBarChartItems(files);
+        const barItems = this._buildBarChartItems(entities.filter((entry) => !entry.is_directory));
         this.barChartItems.set(barItems);
         this.barChartLegendItems.set(this._buildBarChartLegend(barItems));
 
@@ -233,7 +313,7 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
         const topOrganizations = this._topKeysFromMap(organizationCounts, 10);
         this.heatmapTopics.set(topTopics);
         this.heatmapOrganizations.set(topOrganizations);
-        this.heatmapCells.set(this._buildHeatmapCells(results, topTopics, topOrganizations));
+        this.heatmapCells.set(this._buildHeatmapCells(results as ItemAnalytics[], topTopics, topOrganizations));
 
         this._syncTreemapRects();
         setTimeout(() => this._renderAllCharts());
@@ -354,10 +434,11 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
         .attr('viewBox', `0 0 ${width} ${height}`)
         .attr('preserveAspectRatio', 'xMidYMid meet');
 
-      chart.selectAll('rect')
+      chart.selectAll('rect.treemap-cell')
         .data(items)
         .enter()
         .append('rect')
+        .attr('class', 'treemap-cell')
         .attr('x', (d: TreemapRect) => d.x)
         .attr('y', (d: TreemapRect) => d.y)
         .attr('width', (d: TreemapRect) => d.width)
@@ -386,12 +467,78 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
         .enter()
         .append('text')
         .attr('x', (d: TreemapRect) => d.x + 6)
-        .attr('y', (d: TreemapRect) => d.y + 16)
+        .attr('y', (d: TreemapRect) => d.y + 6)
+        .attr('dominant-baseline', 'hanging')
         .attr('font-size', '11px')
         .attr('fill', 'white')
         .attr('font-weight', '600')
-        .text((d: TreemapRect) => d.label.length > 15 ? `${d.label.slice(0, 12)}...` : d.label);
+        .text((d: TreemapRect) => d.label)
+        .each((d: TreemapRect, index: number, groups: SVGTextElement[] | ArrayLike<SVGTextElement>) => {
+          this._fitTreemapLabel(groups[index] as SVGTextElement, d);
+        });
     });
+  }
+
+  private _fitTreemapLabel(textNode: SVGTextElement, rect: TreemapRect): void {
+    const baseFontSize = 11;
+    const minFontSize = 6;
+    const maxWidth = Math.max(0, rect.width - 12);
+    const maxHeight = Math.max(0, rect.height - 8);
+
+    if (maxWidth === 0 || maxHeight === 0) {
+      textNode.textContent = '';
+      return;
+    }
+
+    textNode.textContent = rect.label;
+    textNode.setAttribute('font-size', `${baseFontSize}px`);
+
+    const fullWidth = textNode.getComputedTextLength();
+    const fullHeight = textNode.getBBox().height;
+    const widthScale = fullWidth > 0 ? maxWidth / fullWidth : 1;
+    const heightScale = fullHeight > 0 ? maxHeight / fullHeight : 1;
+    const scale = Math.min(1, widthScale, heightScale);
+    const scaledFontSize = baseFontSize * scale;
+
+    if (scaledFontSize >= minFontSize) {
+      textNode.setAttribute('font-size', `${scaledFontSize}px`);
+      return;
+    }
+
+    textNode.setAttribute('font-size', `${minFontSize}px`);
+    textNode.textContent = this._truncateTreemapLabel(textNode, rect.label, maxWidth, maxHeight);
+  }
+
+  private _truncateTreemapLabel(
+    textNode: SVGTextElement,
+    label: string,
+    maxWidth: number,
+    maxHeight: number,
+  ): string {
+    let low = 0;
+    let high = label.length;
+    let best = 0;
+
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      const candidate = label.slice(0, mid);
+      textNode.textContent = candidate;
+
+      if (this._treemapTextFits(textNode, maxWidth, maxHeight)) {
+        best = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+
+    return label.slice(0, best);
+  }
+
+  private _treemapTextFits(textNode: SVGTextElement, maxWidth: number, maxHeight: number): boolean {
+    const width = textNode.getComputedTextLength();
+    const height = textNode.getBBox().height;
+    return width <= maxWidth && height <= maxHeight;
   }
 
   private _renderBarChart(): void {
@@ -483,19 +630,16 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       .text((item) => `${d3.format(',')(item.size)} B`);
   }
 
-  private _buildBarChartItems(files: FolderFile[]): FileSizeBar[] {
-    const categories = Array.from(new Set(files.map((file) => file.category ?? 'Unknown')));
-    const colorMap = new Map<string, string>(
-      categories.map((category, index) => [category, this._categoryColor(index)])
-    );
+  private _buildBarChartItems(entities: DashboardEntity[]): FileSizeBar[] {
+    const colorMap = this._buildCategoryColorMap(entities);
 
-    return [...files]
-      .filter((file) => file.size_bytes !== null)
-      .map((file) => {
-        const category = file.category ?? 'Unknown';
+    return [...entities]
+      .filter((entry) => entry.size_bytes !== null)
+      .map((entry) => {
+        const category = entry.category ?? 'Unknown';
         return {
-          name: file.name,
-          size: file.size_bytes ?? 0,
+          name: entry.name,
+          size: entry.size_bytes ?? 0,
           category,
           color: colorMap.get(category) ?? this._categoryColor(0),
         };
@@ -513,6 +657,13 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     return [...legendMap.entries()].map(([category, color]) => ({ category, color }));
   }
 
+  private _buildCategoryColorMap(entities: DashboardEntity[]): Map<string, string> {
+    const categories = Array.from(new Set(entities.map((entry) => entry.category ?? 'Unknown')));
+    return new Map<string, string>(
+      categories.map((category, index) => [category, this._categoryColor(index)])
+    );
+  }
+
   private _topKeysFromMap(counts: Map<string, number>, limit: number): string[] {
     return [...counts.entries()]
       .sort((a, b) => b[1] - a[1])
@@ -521,7 +672,7 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
   }
 
   private _buildHeatmapCells(
-    results: Array<{ ner: any; topics: TopicsResult }>,
+    results: ItemAnalytics[],
     topTopics: string[],
     topOrganizations: string[]
   ): HeatmapCell[] {

@@ -16,6 +16,26 @@
       <span class="dashboard-badge">{{ selectedFile() ? 'Bestand' : 'Map' }}</span>
     </div>
 
+    @if (!selectedFile()) {
+      <div class="scope-toggle" role="group" aria-label="Selecteer welke items gebruikt worden in het dashboard">
+        <button
+          class="scope-toggle-btn"
+          [class.active]="itemScope() === 'files'"
+          (click)="onScopeChange('files')"
+        >Bestanden</button>
+        <button
+          class="scope-toggle-btn"
+          [class.active]="itemScope() === 'folders'"
+          (click)="onScopeChange('folders')"
+        >Mappen</button>
+        <button
+          class="scope-toggle-btn"
+          [class.active]="itemScope() === 'both'"
+          (click)="onScopeChange('both')"
+        >Beide</button>
+      </div>
+    }
+
     @if (loading()) {
       <div class="dashboard-empty">Gegevens laden...</div>
     } @else if (error()) {
