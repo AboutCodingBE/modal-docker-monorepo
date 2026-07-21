@@ -28,7 +28,8 @@ def TIKA_text_extract(file_content: bytes):
             requestOptions={'timeout': 300},
         )
 
-        text = parsed.get('content', '')
+        raw_content = parsed.get('content')
+        text = raw_content if raw_content is not None else ''
         metadata = parsed.get('metadata', {})
         _logger.debug(f"Tika parsed result: status={parsed.get('status')}, content_length={len(text)}, metadata_keys={list(parsed.get('metadata', {}).keys())}")
 

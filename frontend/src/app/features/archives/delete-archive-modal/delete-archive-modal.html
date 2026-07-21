@@ -1,0 +1,15 @@
+<div class="modal-overlay" (click)="onBackdropClick($event)">
+  <div class="modal">
+    <div class="modal-body">
+      <div class="modal-title">Archief verwijderen</div>
+      <div class="modal-message">
+        Weet u zeker dat u <span class="archive-name-highlight">{{ archive().name }}</span> permanent wilt verwijderen?
+        Lopende analyses worden geannuleerd. Dit kan niet ongedaan worden gemaakt.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="cancelled.emit()">Annuleren</button>
+      <button class="btn-delete" (click)="confirmed.emit()">Verwijderen</button>
+    </div>
+  </div>
+</div>

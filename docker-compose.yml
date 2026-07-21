@@ -39,7 +39,9 @@ services:
     ports:
       - "7777:9998"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9998/tika"]
+      #FAILED: test: ["CMD", "curl", "-f", "http://localhost:9998/tika"]
+      #spider == request w/o download; tries=1 is per interval, so still 5 retries
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9998/tika"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -66,6 +68,14 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    # Uncomment to enable NVIDIA GPU passthrough (requires RTX/CUDA GPU + Docker Desktop WSL2):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
 
 
 volumes:

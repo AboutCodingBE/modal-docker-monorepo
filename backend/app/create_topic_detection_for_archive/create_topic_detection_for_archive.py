@@ -5,14 +5,14 @@ import json
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.analysis import task_tracker
+from app.config import settings
+from app.create_topic_detection_for_archive.archive_analysis_repository import ArchiveAnalysisRepository
+from app.create_topic_detection_for_archive.ollama_client import OllamaUnavailableError, generate
+from app.create_topic_detection_for_archive.topic_detection_repository import TopicDetectionRepository
+from app.shared.file_repository import FileRepository
 from app.shared.logging_config import log_context
 
 _logger = logging.getLogger("app.topic")
-
-from app.create_topic_detection_for_archive.archive_analysis_repository import ArchiveAnalysisRepository
-from app.create_topic_detection_for_archive.file_repository import FileRepository
-from app.create_topic_detection_for_archive.ollama_client import OllamaUnavailableError, generate
-from app.create_topic_detection_for_archive.topic_detection_repository import TopicDetectionRepository
 
 _MAX_CONSECUTIVE_FAILURES = 5
 
@@ -50,14 +50,13 @@ class CreateTopicDetectionForArchive:
         model: str,
     ) -> None:
         try:
-            # ── Phase 0: start task and fetch ONLY files ───────────────────────
+            # ── Phase 0: start task and fetch file + folder list ──────────────
             async with self._session_factory() as session:
                 await task_tracker.start_task(session, task_id)
                 file_repo = FileRepository(session)
-                
                 files = await file_repo.get_files_with_tika_content(archive_id)
-                
-                await task_tracker.update_total_files(session, task_id, len(files))
+                folders = await file_repo.get_all_folders(archive_id)
+                await task_tracker.update_total_files(session, task_id, len(files) + len(folders))
                 await session.commit()
 
             processed = 0
@@ -122,6 +121,41 @@ class CreateTopicDetectionForArchive:
                 processed += 1
                 consecutive_failures = 0
 
+            # ── Phase 2: folder aggregation (bottom-up) ───────────────────────
+            folders_processed = 0
+            for folder in folders:
+                folder_id: uuid.UUID = folder["id"]
+
+                async with self._session_factory() as session:
+                    await task_tracker.update_progress(
+                        session, task_id, processed, failed_count, folder["relative_path"]
+                    )
+                    await session.commit()
+
+                try:
+                    async with self._session_factory() as session:
+                        topics = await TopicDetectionRepository(session).get_topics_for_folder(
+                            archive_analysis_id, folder_id, settings.topic_folder_top_n
+                        )
+                        if not topics:
+                            processed += 1
+                            continue
+                        await TopicDetectionRepository(session).persist_folder(
+                            archive_analysis_id, archive_id, folder["parent_id"], folder_id, topics
+                        )
+                        await session.commit()
+                except Exception as e:
+                    _logger.error(
+                        f"{log_context(archive_id, folder['name'])}"
+                        f"Failed to aggregate topics for folder: {e}"
+                    )
+                    failed_count += 1
+                    processed += 1
+                    continue
+
+                folders_processed += 1
+                processed += 1
+
             # ── Completion ────────────────────────────────────────────────────
             async with self._session_factory() as session:
                 await task_tracker.update_progress(session, task_id, processed, failed_count, None)
@@ -129,7 +163,12 @@ class CreateTopicDetectionForArchive:
                 await ArchiveAnalysisRepository(session).update_status(archive_analysis_id, "COMPLETED")
                 await session.commit()
 
-            _logger.info(f"{log_context(archive_id)}Topic detection complete. Processed: {processed}, failed: {failed_count}")
+            _logger.info(
+                f"{log_context(archive_id)}Topic detection complete. "
+                f"Files processed: {processed - folders_processed}, "
+                f"folders aggregated: {folders_processed}, "
+                f"failed: {failed_count}"
+            )
 
         except Exception as e:
             _logger.error(f"{log_context(archive_id)}Topic detection task failed unexpectedly: {e}")

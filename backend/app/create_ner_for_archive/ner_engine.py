@@ -4,10 +4,10 @@ _CHUNK_SIZE = 100_000
 
 # Maps spaCy entity labels to our output categories
 _LABEL_MAP = {
-    "PER":  "persons",
-    "ORG":  "organisations",
-    "LOC":  "locations",
-    "GPE":  "locations",
+    "PERSON": "persons",
+    "ORG":     "organisations",
+    "LOC":     "locations",
+    "GPE":     "locations",
 }
 
 _nlp: spacy.language.Language | None = None
