@@ -1,11 +1,15 @@
-import { Component, input, output, computed } from '@angular/core';
+import { Component, input, output, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Archive } from '../../../models/archive.model';
+import { ArchiveService, AnalysisConfigEntry } from '../../../services/archive.service';
 import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
 import { AnalysisPipeline } from '../../analysis/analysis-pipeline/analysis-pipeline';
+import { ANALYSIS_TYPE_META, splitAnalysisTypes } from '../../../shared/analysis-type.util';
 
 const TYPE_LABELS: Record<string, string> = {
   summary: 'Samenvatting',
   ner: 'Entiteitsherkenning',
+  topic_detection: 'Onderwerpdetectie',
 };
 
 @Component({
@@ -19,6 +23,17 @@ export class ArchiveCard {
   cardClicked = output<string>();
   startAnalysisClicked = output<string>();
   deleteClicked = output<string>();
+
+  private archiveService = inject(ArchiveService);
+  private configuration = toSignal(this.archiveService.getAnalysisConfiguration(), {
+    initialValue: [] as AnalysisConfigEntry[],
+  });
+
+  configuredTypes = computed(() => this.configuration());
+
+  analysisSplit = computed(() =>
+    splitAnalysisTypes(this.configuration(), this.archive().completed_analysis_types),
+  );
 
   statusLabel = computed(() => {
     const labels: Record<string, string> = {
@@ -48,4 +63,12 @@ export class ArchiveCard {
     const type = this.archive().analysisEvent?.type;
     return type ? (TYPE_LABELS[type] ?? type) : 'Analyse';
   });
+
+  isDone(type: string): boolean {
+    return this.archive().completed_analysis_types.includes(type);
+  }
+
+  analysisTypeLabel(type: string): string {
+    return ANALYSIS_TYPE_META[type]?.label ?? type;
+  }
 }

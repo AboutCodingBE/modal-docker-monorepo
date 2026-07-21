@@ -1,6 +1,7 @@
 import { Component, input, output, signal, computed, OnInit } from '@angular/core';
 import { Archive } from '../../../models/archive.model';
 import { ArchiveService, AnalysisConfigEntry } from '../../../services/archive.service';
+import { ANALYSIS_TYPE_META } from '../../../shared/analysis-type.util';
 
 interface AnalysisType {
   type: string;
@@ -42,6 +43,7 @@ export class AnalysisModal implements OnInit {
 
   types = signal<AnalysisType[]>([]);
   modelOptions = signal<Record<string, string[]>>({});
+  doneTypeLabels = signal<string[]>([]);
 
   selected = signal<Set<string>>(new Set());
   models = signal<Record<string, string>>({});
@@ -56,14 +58,20 @@ export class AnalysisModal implements OnInit {
   ngOnInit(): void {
     this.archiveService.getAnalysisConfiguration().subscribe({
       next: (configs: AnalysisConfigEntry[]) => {
-        const analysisTypes: AnalysisType[] = configs.map(c => ({
+        const completedSet = new Set(this.archive().completed_analysis_types);
+        const pendingConfigs = configs.filter(c => !completedSet.has(c.type));
+        const doneConfigs = configs.filter(c => completedSet.has(c.type));
+
+        this.doneTypeLabels.set(doneConfigs.map(c => ANALYSIS_TYPE_META[c.type]?.label ?? c.type));
+
+        const analysisTypes: AnalysisType[] = pendingConfigs.map(c => ({
           type: c.type.toLowerCase(),
           ...(TYPE_DISPLAY[c.type.toLowerCase()] ?? { ...DEFAULT_DISPLAY, label: c.type }),
         }));
 
         const options: Record<string, string[]> = {};
         const defaultModels: Record<string, string> = {};
-        for (const c of configs) {
+        for (const c of pendingConfigs) {
           const key = c.type.toLowerCase();
           options[key] = [c.model];
           defaultModels[key] = c.model;

@@ -80,6 +80,34 @@
   flex-shrink: 0;
 }
 
+.analysis-indicators {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.analysis-chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.analysis-chip.done {
+  background: #dcfce7;
+  color: #166534;
+}
+
+
+.analysis-chip.pending {
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  color: #9ca3af;
+}
+
 .card-progress {
   padding-top: 4px;
 }
@@ -104,6 +132,27 @@
   padding: 12px 0;
   margin-top: auto;
 }
+
+.btn-card-explore {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: none;
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.btn-card-explore svg { width: 13px; height: 13px; }
+.btn-card-explore:hover { background: #dbeafe; }
 
 .btn-card-result {
   flex: 1;
@@ -132,7 +181,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: #111827;
+  background: #1a2744;
   color: #fff;
   border: none;
   padding: 9px 12px;
@@ -144,7 +193,7 @@
   transition: background 0.15s;
 }
 
-.btn-card-analyse:hover:not(:disabled) { background: #1f2937; }
+.btn-card-analyse:hover:not(:disabled) { background: #243461; }
 .btn-card-analyse:disabled { opacity: 0.6; cursor: wait; }
 .btn-card-analyse svg { width: 12px; height: 12px; }
 
