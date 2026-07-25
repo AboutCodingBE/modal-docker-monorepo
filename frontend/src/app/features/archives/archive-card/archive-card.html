@@ -1,10 +1,4 @@
 <div class="archive-card" (click)="cardClicked.emit(archive().id)">
-  @if (archive().status !== 'ingested') {
-    <div class="card-top">
-      <span class="status-badge" [class]="statusClass()">{{ statusLabel() }}</span>
-    </div>
-  }
-
   <h3 class="card-name">{{ archive().name }}</h3>
 
   <div class="card-meta">
@@ -48,17 +42,7 @@
       </svg>
       Verkennen
     </button>
-    @if (archive().status === 'analysed') {
-      <button class="btn-card-result" (click)="$event.stopPropagation()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect width="7" height="9" x="3" y="3" rx="1"/>
-          <rect width="7" height="5" x="14" y="3" rx="1"/>
-          <rect width="7" height="9" x="14" y="12" rx="1"/>
-          <rect width="7" height="5" x="3" y="16" rx="1"/>
-        </svg>
-        <span>Resultaten</span>
-      </button>
-    } @else if (showPipeline()) {
+    @if (showPipeline()) {
       <span class="analysis-running-hint">Analyse bezig...</span>
     } @else if (archive().status === 'in_progress') {
       <button class="btn-card-analyse" disabled>
