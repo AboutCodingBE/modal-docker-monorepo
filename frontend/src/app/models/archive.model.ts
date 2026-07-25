@@ -17,6 +17,7 @@ export interface Archive {
   date: string;
   files: number;
   status: ArchiveStatus;
+  completed_analysis_types: string[];
   progress?: number;
   tika_task_id?: string;
   analysisEvent?: AnalysisProgressEvent | null;

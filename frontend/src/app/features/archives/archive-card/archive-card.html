@@ -1,15 +1,4 @@
 <div class="archive-card" (click)="cardClicked.emit(archive().id)">
-  <div class="card-top">
-    <div class="card-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <ellipse cx="12" cy="5" rx="9" ry="3"/>
-        <path d="M3 5V19A9 3 0 0 0 21 19V5"/>
-        <path d="M3 12A9 3 0 0 0 21 12"/>
-      </svg>
-    </div>
-    <span class="status-badge" [class]="statusClass()">{{ statusLabel() }}</span>
-  </div>
-
   <h3 class="card-name">{{ archive().name }}</h3>
 
   <div class="card-meta">
@@ -28,6 +17,14 @@
     </div>
   </div>
 
+  <div class="analysis-indicators">
+    @for (config of configuredTypes(); track config.type) {
+      <span class="analysis-chip" [class.done]="isDone(config.type)" [class.pending]="!isDone(config.type)">
+        {{ analysisTypeLabel(config.type) }}
+      </span>
+    }
+  </div>
+
   @if (showPipeline()) {
     <div class="card-pipeline">
       <app-analysis-pipeline [event]="archive().analysisEvent!" [stepName]="stepName()" />
@@ -39,17 +36,13 @@
   }
 
   <div class="card-footer">
-    @if (archive().status === 'analysed') {
-      <button class="btn-card-result" (click)="$event.stopPropagation()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect width="7" height="9" x="3" y="3" rx="1"/>
-          <rect width="7" height="5" x="14" y="3" rx="1"/>
-          <rect width="7" height="9" x="14" y="12" rx="1"/>
-          <rect width="7" height="5" x="3" y="16" rx="1"/>
-        </svg>
-        <span>Resultaten</span>
-      </button>
-    } @else if (showPipeline()) {
+    <button class="btn-card-explore" (click)="$event.stopPropagation(); cardClicked.emit(archive().id)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+      Verkennen
+    </button>
+    @if (showPipeline()) {
       <span class="analysis-running-hint">Analyse bezig...</span>
     } @else if (archive().status === 'in_progress') {
       <button class="btn-card-analyse" disabled>
@@ -63,12 +56,12 @@
         </svg>
         <span>Opnieuw proberen</span>
       </button>
-    } @else {
+    } @else if (!analysisSplit().allCompleted) {
       <button class="btn-card-analyse" (click)="$event.stopPropagation(); startAnalysisClicked.emit(archive().id)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="6 3 20 12 6 21 6 3"/>
         </svg>
-        <span>Analyse Starten</span>
+        <span>Analyse</span>
       </button>
     }
     <button class="btn-card-delete" (click)="$event.stopPropagation(); deleteClicked.emit(archive().id)" title="Archief verwijderen">

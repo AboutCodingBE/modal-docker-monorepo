@@ -59,6 +59,53 @@
 .btn-close svg { width: 18px; height: 18px; }
 .btn-close:hover { color: #374151; background: #f3f4f6; }
 
+/* ── Done section ── */
+.done-section {
+  padding: 12px 28px 4px;
+}
+
+.done-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.done-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.done-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  background: #dcfce7;
+  border-radius: 4px;
+  color: #166534;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.done-chip::before {
+  content: '✓';
+  font-size: 10px;
+  color: #15803d;
+}
+
+.modal-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+  padding: 8px 28px 0;
+}
+
 /* ── Body ── */
 .modal-body {
   padding: 20px 28px;

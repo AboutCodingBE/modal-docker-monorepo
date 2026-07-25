@@ -29,6 +29,7 @@ def _to_response(archive: Archive, task_id: uuid.UUID) -> dict:
         "date": archive.created_at.date().isoformat() if archive.created_at else "",
         "files": archive.file_count,
         "status": status_map.get(archive.analysis_status, "ingested"),
+        "completed_analysis_types": [],
         "tika_task_id": str(task_id),
         "progress": 0,
     }
