@@ -7,7 +7,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from app.analysis import task_tracker
 from app.config import settings
 from app.shared.archive_analysis_repository import ArchiveAnalysisRepository
+from app.shared.analysis_engine_registry import classify_ner_engine, get_llm_provider
+from app.shared.llm.provider import LlmProviderUnavailableError
 from app.create_ner_for_archive.ner_engine import run_ner
+from app.create_ner_for_archive.ner_llm_engine import run_ner_llm
 from app.create_ner_for_archive.ner_repository import NerRepository
 from app.shared.file_repository import FileRepository
 from app.shared.logging_config import log_context
@@ -49,6 +52,9 @@ class CreateNerForArchive:
             failed_count = 0
             consecutive_failures = 0
 
+            engine_kind = classify_ner_engine(model)
+            llm_provider = get_llm_provider(engine_kind) if engine_kind != "spacy" else None
+
             # ── File NER loop ─────────────────────────────────────────────────
             for file in files:
                 file_id: uuid.UUID = file["id"]
@@ -64,10 +70,19 @@ class CreateNerForArchive:
                     )
                     await session.commit()
 
-                # No DB connection held during the spaCy call.
+                # No DB connection held during the NER call.
                 try:
                     text = file["content"] or ""
-                    ner_result = await asyncio.to_thread(run_ner, text, model)
+                    if engine_kind == "spacy":
+                        ner_result = await asyncio.to_thread(run_ner, text, model)
+                    else:
+                        ner_result = await run_ner_llm(
+                            text[:settings.ner_llm_char_limit], model, llm_provider
+                        )
+                except LlmProviderUnavailableError:
+                    _logger.error(f"{log_context(archive_id)}LLM provider unavailable — stopping NER")
+                    await self._fail(task_id, archive_analysis_id)
+                    return
                 except Exception as e:
                     _logger.error(f"{log_context(archive_id, file['name'])}Failed to run NER: {e}")
                     failed_count += 1

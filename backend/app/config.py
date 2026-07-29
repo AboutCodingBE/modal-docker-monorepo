@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     agent_url: str = "http://host.docker.internal:9090"
     ollama_url: str = "http://ollama:11434"
     ner_folder_top_n: int = 25
+    ner_llm_char_limit: int = 8000
     topic_folder_top_n: int = 25
 
 

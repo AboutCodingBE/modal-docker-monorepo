@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from app.analysis import task_tracker
 from app.config import settings
 from app.shared.archive_analysis_repository import ArchiveAnalysisRepository
-from app.create_topic_detection_for_archive.ollama_client import OllamaUnavailableError, generate
+from app.shared.analysis_engine_registry import classify_llm_engine, get_llm_provider
+from app.shared.llm.provider import LlmProviderUnavailableError
 from app.create_topic_detection_for_archive.topic_detection_repository import TopicDetectionRepository
 from app.shared.file_repository import FileRepository
 from app.shared.logging_config import log_context
@@ -63,6 +64,8 @@ class CreateTopicDetectionForArchive:
             failed_count = 0
             consecutive_failures = 0
 
+            provider = get_llm_provider(classify_llm_engine(model))
+
             # ── Phase 1: file topic extraction ──────────────────────────────────
             for file in files:
                 file_id: uuid.UUID = file["id"]
@@ -77,28 +80,20 @@ class CreateTopicDetectionForArchive:
                     )
                     await session.commit()
 
-                # No DB connection held during the Ollama HTTP call.
+                # No DB connection held during the LLM HTTP call.
                 try:
                     text = (file["content"] or "")[:1000]
-                    
-                    # Add format="json" to enforce constrained decoding in Ollama
-                    raw_response = await generate(model, _topic_prompt(text), format="json")
-                    
-                    # Validate and parse the response into a native Python dict
+                    raw_response = await provider.generate(model, _topic_prompt(text), format="json")
                     response_data = json.loads(raw_response)
-                    
-                    # Fallback mechanism in case the model misspells the key or leaves it out
                     topics_list = response_data.get("topics", [])
-                    
-                    # Hard cap at 5 items max in Python for validation consistency
                     validated_topics = topics_list[:5]
 
                 except json.JSONDecodeError:
-                    _logger.warning(f"{log_context(archive_id, file['name'])} Invalid JSON returned by Ollama. Falling back to empty list.")
+                    _logger.warning(f"{log_context(archive_id, file['name'])} Invalid JSON returned by LLM. Falling back to empty list.")
                     validated_topics = []
 
-                except OllamaUnavailableError:
-                    _logger.error(f"{log_context(archive_id)}Ollama service unavailable — stopping topic detection")
+                except LlmProviderUnavailableError:
+                    _logger.error(f"{log_context(archive_id)}LLM provider unavailable — stopping topic detection")
                     await self._fail(task_id, archive_analysis_id)
                     return
                 except Exception as e:

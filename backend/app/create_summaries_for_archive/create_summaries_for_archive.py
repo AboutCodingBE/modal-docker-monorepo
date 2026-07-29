@@ -9,7 +9,8 @@ from app.shared.logging_config import log_context
 _logger = logging.getLogger("app.summary")
 
 from app.shared.archive_analysis_repository import ArchiveAnalysisRepository
-from app.create_summaries_for_archive.ollama_client import OllamaUnavailableError, generate
+from app.shared.analysis_engine_registry import classify_llm_engine, get_llm_provider
+from app.shared.llm.provider import LlmProviderUnavailableError
 from app.create_summaries_for_archive.summary_repository import SummaryRepository
 from app.shared.file_repository import FileRepository
 
@@ -67,6 +68,8 @@ class CreateSummariesForArchive:
             failed_count = 0
             consecutive_failures = 0
 
+            provider = get_llm_provider(classify_llm_engine(model))
+
             # ── Phase 1: file summaries ───────────────────────────────────────
             for file in files:
                 file_id: uuid.UUID = file["id"]
@@ -82,12 +85,12 @@ class CreateSummariesForArchive:
                     )
                     await session.commit()
 
-                # No DB connection held during the Ollama HTTP call.
+                # No DB connection held during the LLM HTTP call.
                 try:
                     text = (file["content"] or "")[:1000]
-                    result = await generate(model, _file_prompt(text))
-                except OllamaUnavailableError:
-                    _logger.error(f"{log_context(archive_id)}Ollama service unavailable — stopping summarization")
+                    result = await provider.generate(model, _file_prompt(text))
+                except LlmProviderUnavailableError:
+                    _logger.error(f"{log_context(archive_id)}LLM provider unavailable — stopping summarization")
                     await self._fail(task_id, archive_analysis_id)
                     return
                 except Exception as e:
@@ -128,12 +131,12 @@ class CreateSummariesForArchive:
                     processed += 1
                     continue
 
-                # No DB connection held during the Ollama HTTP call.
+                # No DB connection held during the LLM HTTP call.
                 try:
                     concatenated = "\n".join(folder_summaries)
-                    result = await generate(model, _folder_prompt(concatenated))
-                except OllamaUnavailableError:
-                    _logger.error(f"{log_context(archive_id)}Ollama service unavailable — stopping summarization")
+                    result = await provider.generate(model, _folder_prompt(concatenated))
+                except LlmProviderUnavailableError:
+                    _logger.error(f"{log_context(archive_id)}LLM provider unavailable — stopping summarization")
                     await self._fail(task_id, archive_analysis_id)
                     return
                 except Exception as e:
