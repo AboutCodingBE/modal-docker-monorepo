@@ -1,4 +1,6 @@
-from sqlalchemy import select
+import uuid
+
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.models import AnalysisConfiguration, AnalysisType
@@ -28,3 +30,23 @@ class AnalysisConfigurationRepository:
         for row in result.scalars().all():
             grouped.setdefault(row.type, []).append(row)
         return grouped
+
+    async def get_by_id(self, config_id: uuid.UUID) -> AnalysisConfiguration | None:
+        return await self._session.get(AnalysisConfiguration, config_id)
+
+    async def set_defaults(self, rows: list[AnalysisConfiguration]) -> None:
+        """Sets each given row as default for its type, clearing any other
+        default(s) sharing that type. Caller is responsible for having
+        already validated that no two rows share a type. Does not commit.
+        """
+        for row in rows:
+            await self._session.execute(
+                update(AnalysisConfiguration)
+                .where(
+                    AnalysisConfiguration.type == row.type,
+                    AnalysisConfiguration.id != row.id,
+                )
+                .values(is_default=False)
+            )
+            row.is_default = True
+        await self._session.flush()
