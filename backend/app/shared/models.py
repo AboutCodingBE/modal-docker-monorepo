@@ -150,8 +150,9 @@ class AnalysisConfiguration(Base):
     __tablename__ = "analysis_configuration"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    type: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    type: Mapped[str] = mapped_column(String(50), nullable=False)  # unique=True removed — multiple rows per type allowed
     model: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class ArchiveAnalysis(Base):

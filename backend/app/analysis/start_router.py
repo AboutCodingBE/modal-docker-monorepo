@@ -36,7 +36,7 @@ class StartAnalysisRequest(BaseModel):
 async def get_configuration(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(AnalysisConfiguration))
     configs = result.scalars().all()
-    return [{"type": c.type, "model": c.model} for c in configs]
+    return [{"type": c.type, "model": c.model, "is_default": c.is_default} for c in configs]
 
 
 @router.post("/start")
