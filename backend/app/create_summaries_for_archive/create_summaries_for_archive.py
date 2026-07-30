@@ -76,14 +76,17 @@ class CreateSummariesForArchive:
 
                 # Check if already summarised and update progress — short session,
                 # released before the Ollama call below.
+                already_processed = False
                 async with self._session_factory() as session:
-                    if await SummaryRepository(session).exists(archive_analysis_id, file_id):
-                        processed += 1
-                        continue
-                    await task_tracker.update_progress(
-                        session, task_id, processed, failed_count, file["relative_path"]
-                    )
-                    await session.commit()
+                    already_processed = await SummaryRepository(session).exists(archive_analysis_id, file_id)
+                    if not already_processed:
+                        await task_tracker.update_progress(
+                            session, task_id, processed, failed_count, file["relative_path"]
+                        )
+                        await session.commit()
+                if already_processed:
+                    processed += 1
+                    continue
 
                 # No DB connection held during the LLM HTTP call.
                 try:

@@ -71,14 +71,17 @@ class CreateTopicDetectionForArchive:
                 file_id: uuid.UUID = file["id"]
 
                 # Check if topics have already been generated for this file
+                already_processed = False
                 async with self._session_factory() as session:
-                    if await TopicDetectionRepository(session).exists(archive_analysis_id, file_id):
-                        processed += 1
-                        continue
-                    await task_tracker.update_progress(
-                        session, task_id, processed, failed_count, file["relative_path"]
-                    )
-                    await session.commit()
+                    already_processed = await TopicDetectionRepository(session).exists(archive_analysis_id, file_id)
+                    if not already_processed:
+                        await task_tracker.update_progress(
+                            session, task_id, processed, failed_count, file["relative_path"]
+                        )
+                        await session.commit()
+                if already_processed:
+                    processed += 1
+                    continue
 
                 # No DB connection held during the LLM HTTP call.
                 try:
@@ -128,17 +131,21 @@ class CreateTopicDetectionForArchive:
                     await session.commit()
 
                 try:
+                    skip_folder = False
                     async with self._session_factory() as session:
                         topics = await TopicDetectionRepository(session).get_topics_for_folder(
                             archive_analysis_id, folder_id, settings.topic_folder_top_n
                         )
                         if not topics:
-                            processed += 1
-                            continue
-                        await TopicDetectionRepository(session).persist_folder(
-                            archive_analysis_id, archive_id, folder["parent_id"], folder_id, topics
-                        )
-                        await session.commit()
+                            skip_folder = True
+                        else:
+                            await TopicDetectionRepository(session).persist_folder(
+                                archive_analysis_id, archive_id, folder["parent_id"], folder_id, topics
+                            )
+                            await session.commit()
+                    if skip_folder:
+                        processed += 1
+                        continue
                 except Exception as e:
                     _logger.error(
                         f"{log_context(archive_id, folder['name'])}"

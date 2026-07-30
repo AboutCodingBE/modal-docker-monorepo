@@ -61,14 +61,17 @@ class CreateNerForArchive:
 
                 # Check if already processed and update progress — short session,
                 # released before the NER call below.
+                already_processed = False
                 async with self._session_factory() as session:
-                    if await NerRepository(session).exists(archive_analysis_id, file_id):
-                        processed += 1
-                        continue
-                    await task_tracker.update_progress(
-                        session, task_id, processed, failed_count, file["relative_path"]
-                    )
-                    await session.commit()
+                    already_processed = await NerRepository(session).exists(archive_analysis_id, file_id)
+                    if not already_processed:
+                        await task_tracker.update_progress(
+                            session, task_id, processed, failed_count, file["relative_path"]
+                        )
+                        await session.commit()
+                if already_processed:
+                    processed += 1
+                    continue
 
                 # No DB connection held during the NER call.
                 try:
@@ -114,17 +117,21 @@ class CreateNerForArchive:
                     await session.commit()
 
                 try:
+                    skip_folder = False
                     async with self._session_factory() as session:
                         entities = await NerRepository(session).get_entities_for_folder(
                             archive_analysis_id, folder_id, settings.ner_folder_top_n
                         )
                         if all(not entities[cat] for cat in ("persons", "locations", "organisations", "misc")):
-                            processed += 1
-                            continue
-                        await NerRepository(session).persist_folder(
-                            archive_analysis_id, archive_id, folder["parent_id"], folder_id, entities
-                        )
-                        await session.commit()
+                            skip_folder = True
+                        else:
+                            await NerRepository(session).persist_folder(
+                                archive_analysis_id, archive_id, folder["parent_id"], folder_id, entities
+                            )
+                            await session.commit()
+                    if skip_folder:
+                        processed += 1
+                        continue
                 except Exception as e:
                     _logger.error(f"{log_context(archive_id, folder['name'])}Failed to aggregate NER for folder: {e}")
                     failed_count += 1
