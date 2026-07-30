@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MODAL — Configuratie</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        .app-layout {
+          display: flex;
+          height: 100vh;
+          overflow: hidden;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: #f0f2f5;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+          width: 160px;
+          min-width: 160px;
+          background: #1a2744;
+          display: flex;
+          flex-direction: column;
+          padding: 20px 0;
+          color: #fff;
+        }
+
+        .sidebar-logo {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 0 16px 24px;
+        }
+
+        .logo-badge {
+          width: 32px; height: 32px; background: #3b6ef5; border-radius: 6px;
+          display: flex; align-items: center; justify-content: center;
+          font-weight: 700; font-size: 14px;
+        }
+
+        .logo-text { font-weight: 700; font-size: 16px; letter-spacing: 0.05em; }
+
+        .sidebar-nav { display: flex; flex-direction: column; gap: 4px; padding: 0 8px; }
+
+        .nav-item {
+          display: flex; align-items: center; gap: 10px;
+          padding: 9px 12px; border-radius: 6px; font-size: 13px;
+          color: rgba(255,255,255,0.65); cursor: pointer;
+          transition: background 0.15s, color 0.15s;
+        }
+
+        .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .nav-item.active { background: #3b6ef5; color: #fff; }
+
+        .sidebar-spacer { flex: 1; }
+
+        .sidebar-bottom { padding: 0 8px; }
+
+        .sidebar-divider {
+          height: 1px; background: rgba(255,255,255,0.1); margin: 8px 4px 12px;
+        }
+
+        .btn-shutdown {
+          display: flex; align-items: center; gap: 10px; width: 100%;
+          padding: 9px 12px; border-radius: 6px; font-family: inherit;
+          font-size: 13px; cursor: pointer; background: none;
+          border: 1px solid rgba(59,110,245,0.4); color: rgba(255,255,255,0.65);
+          transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+
+        .btn-shutdown svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .btn-shutdown:hover { background: #3b6ef5; border-color: #3b6ef5; color: #fff; }
+
+        .sidebar-version {
+          padding: 12px 16px 0; font-size: 10px;
+          color: rgba(255,255,255,0.3); letter-spacing: 0.05em;
+        }
+
+        /* ── Main ── */
+        .main-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow-y: auto;
+          padding: 28px 32px;
+        }
+
+        .main-inner { max-width: 780px; }
+
+        .page-title { font-size: 22px; font-weight: 700; color: #111827; margin-bottom: 4px; }
+        .page-subtitle { font-size: 13px; color: #6b7280; margin-bottom: 28px; }
+
+        /* ── Sections ── */
+        .section {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 22px 24px;
+          margin-bottom: 20px;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        .section-header {
+          display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+        }
+
+        .section-title { font-size: 15px; font-weight: 700; color: #111827; }
+
+        .section-desc {
+          font-size: 13px; color: #6b7280; margin-bottom: 18px; line-height: 1.5;
+        }
+
+        /* ── Form elements ── */
+        .form-group {
+          display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px;
+        }
+
+        .form-group:last-child { margin-bottom: 0; }
+
+        .form-label {
+          font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+          text-transform: uppercase; color: #6b7280;
+        }
+
+        .form-input {
+          font-family: inherit; padding: 9px 12px;
+          border: 1px solid #d1d5db; border-radius: 6px;
+          font-size: 13px; color: #111827; outline: none; width: 100%;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .form-input::placeholder { color: #9ca3af; }
+
+        .form-input:focus {
+          border-color: #3b6ef5;
+          box-shadow: 0 0 0 3px rgba(59,110,245,0.12);
+        }
+
+        .form-input-number {
+          font-family: inherit; padding: 9px 12px;
+          border: 1px solid #d1d5db; border-radius: 6px;
+          font-size: 13px; color: #111827; outline: none; width: 120px;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .form-input-number:focus {
+          border-color: #3b6ef5;
+          box-shadow: 0 0 0 3px rgba(59,110,245,0.12);
+        }
+
+        .form-select {
+          font-family: inherit; padding: 9px 12px;
+          border: 1px solid #d1d5db; border-radius: 6px;
+          font-size: 13px; color: #111827; background: #fff;
+          cursor: pointer; outline: none; width: 100%;
+          transition: border-color 0.15s;
+        }
+
+        .form-select:focus { border-color: #3b6ef5; }
+
+        .form-row {
+          display: flex; align-items: flex-end; gap: 10px;
+        }
+
+        .form-row .form-group { flex: 1; margin-bottom: 0; }
+
+        /* ── Buttons ── */
+        .btn-primary {
+          font-family: inherit; font-size: 13px; font-weight: 600;
+          padding: 9px 18px; background: #3b6ef5; color: #fff;
+          border: none; border-radius: 6px; cursor: pointer;
+          transition: background 0.15s; white-space: nowrap;
+        }
+
+        .btn-primary:hover { background: #2d5ce0; }
+
+        .btn-save {
+          font-family: inherit; font-size: 13px; font-weight: 600;
+          padding: 9px 20px; background: #3b6ef5; color: #fff;
+          border: none; border-radius: 6px; cursor: pointer;
+          transition: background 0.15s;
+        }
+
+        .btn-save:hover { background: #2d5ce0; }
+
+        .section-footer {
+          display: flex; justify-content: flex-end;
+          padding-top: 16px; border-top: 1px solid #f3f4f6; margin-top: 18px;
+        }
+
+        /* ── Download progress ── */
+        .download-area { margin-top: 14px; }
+
+        .download-active {
+          background: #f9fafb; border: 1px solid #e5e7eb;
+          border-radius: 8px; padding: 14px 16px;
+        }
+
+        .download-header {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 8px;
+        }
+
+        .download-model-name { font-size: 13px; font-weight: 700; color: #111827; }
+
+        .download-pct { font-size: 12px; font-weight: 700; color: #3b6ef5; }
+
+        .download-bar-track {
+          height: 6px; background: #e5e7eb; border-radius: 3px;
+          overflow: hidden; margin-bottom: 6px;
+        }
+
+        .download-bar-fill {
+          height: 100%; width: 63%; background: #3b6ef5;
+          border-radius: 3px; transition: width 0.3s;
+        }
+
+        .download-details {
+          display: flex; align-items: center; justify-content: space-between;
+        }
+
+        .download-bytes {
+          font-size: 11px; color: #6b7280;
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+
+        .download-status { font-size: 11px; color: #9ca3af; font-style: italic; }
+
+        /* ── Error ── */
+        .error-box {
+          background: #fef2f2; border: 1px solid #fecaca;
+          border-radius: 6px; padding: 10px 14px; margin-top: 14px;
+          font-size: 12px; color: #991b1b; line-height: 1.5;
+        }
+
+        /* ── Model config row ── */
+        .model-config-row {
+          display: flex; align-items: center; gap: 14px;
+          padding: 12px 0; border-bottom: 1px solid #f3f4f6;
+        }
+
+        .model-config-row:last-child { border-bottom: none; }
+
+        .model-config-label { width: 140px; flex-shrink: 0; }
+
+        .model-config-name { font-size: 13px; font-weight: 700; color: #111827; }
+
+        .model-config-desc { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+
+        .model-config-select { flex: 1; }
+
+        /* ── Processing settings ── */
+        .setting-row {
+          display: flex; align-items: center; gap: 16px;
+          padding: 12px 0; border-bottom: 1px solid #f3f4f6;
+        }
+
+        .setting-row:last-child { border-bottom: none; }
+
+        .setting-info { flex: 1; min-width: 0; }
+
+        .setting-name { font-size: 13px; font-weight: 600; color: #111827; }
+
+        .setting-desc {
+          font-size: 11px; color: #9ca3af; margin-top: 2px; line-height: 1.4;
+        }
+
+        .setting-input { flex-shrink: 0; }
+    </style>
+</head>
+<body>
+
+<div class="app-layout">
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-badge">M</div>
+            <span class="logo-text">MODAL</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                Archieven
+            </a>
+            <a class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                Zoeken
+            </a>
+            <a class="nav-item active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                Configuratie
+            </a>
+        </nav>
+        <div class="sidebar-spacer"></div>
+        <div class="sidebar-bottom">
+            <div class="sidebar-divider"></div>
+            <button class="btn-shutdown">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                Afsluiten
+            </button>
+        </div>
+        <div class="sidebar-version">MODAL V1.2.0</div>
+    </aside>
+
+    <!-- ── Main ── -->
+    <div class="main-content">
+        <div class="main-inner">
+
+            <div class="page-title">Configuratie</div>
+            <div class="page-subtitle">Beheer modellen en verwerkingsinstellingen</div>
+
+            <!-- Section 1: Model downloaden -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">Model downloaden</div>
+                </div>
+                <div class="section-desc">Download een nieuw AI-model door de modelnaam in te voeren. Het model wordt beschikbaar voor alle analysetypes.</div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Modelnaam</label>
+                        <input class="form-input" type="text" placeholder="Bijv. gemma3:4b, llama3:8b, deepseek-v3" value="gemma3:4b">
+                    </div>
+                    <button class="btn-primary">Downloaden</button>
+                </div>
+
+                <div class="download-area">
+                    <div class="download-active">
+                        <div class="download-header">
+                            <div class="download-model-name">gemma3:4b</div>
+                            <div class="download-pct">63%</div>
+                        </div>
+                        <div class="download-bar-track">
+                            <div class="download-bar-fill"></div>
+                        </div>
+                        <div class="download-details">
+                            <div class="download-bytes">1.62 GB / 2.57 GB</div>
+                            <div class="download-status">Laag 3 downloaden...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="error-box">
+                    ✕ Model "nonexistent-model" kon niet gevonden worden. Controleer de modelnaam en probeer opnieuw.
+                </div>
+            </div>
+
+            <!-- Section 2: Standaard modellen -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">Standaard modellen</div>
+                </div>
+                <div class="section-desc">Stel het standaardmodel in per analysetype. Dit model wordt gebruikt bij het starten van een nieuwe analyse.</div>
+
+                <div class="model-config-row">
+                    <div class="model-config-label">
+                        <div class="model-config-name">Samenvatting</div>
+                        <div class="model-config-desc">AI samenvattingen</div>
+                    </div>
+                    <div class="model-config-select">
+                        <select class="form-select">
+                            <option selected>gemma3:1b</option>
+                            <option>gemma3:4b</option>
+                            <option>llama3:8b</option>
+                            <option>deepseek-v3</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="model-config-row">
+                    <div class="model-config-label">
+                        <div class="model-config-name">NER</div>
+                        <div class="model-config-desc">Entiteitsherkenning</div>
+                    </div>
+                    <div class="model-config-select">
+                        <select class="form-select">
+                            <option>gemma3:1b</option>
+                            <option selected>nl_core_news_lg</option>
+                            <option>gemma3:4b</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="model-config-row">
+                    <div class="model-config-label">
+                        <div class="model-config-name">Topics</div>
+                        <div class="model-config-desc">Onderwerpdetectie</div>
+                    </div>
+                    <div class="model-config-select">
+                        <select class="form-select">
+                            <option selected>gemma3:1b</option>
+                            <option>gemma3:4b</option>
+                            <option>llama3:8b</option>
+                            <option>deepseek-v3</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section-footer">
+                    <button class="btn-save">Opslaan</button>
+                </div>
+            </div>
+
+            <!-- Section 3: Verwerkingsinstellingen -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">Verwerkingsinstellingen</div>
+                </div>
+                <div class="section-desc">Stel de parameters in voor de tekstverwerking bij analyses.</div>
+
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-name">Minimale verwerkingslengte</div>
+                        <div class="setting-desc">Bestanden met minder tekens dan dit minimum worden overgeslagen bij de analyse.</div>
+                    </div>
+                    <div class="setting-input">
+                        <input class="form-input-number" type="number" value="50" min="0">
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-name">Tekens voor Samenvatting &amp; Topics</div>
+                        <div class="setting-desc">Het maximaal aantal tekens dat wordt meegestuurd naar het model voor samenvatting en onderwerpdetectie.</div>
+                    </div>
+                    <div class="setting-input">
+                        <input class="form-input-number" type="number" value="4096" min="100" step="100">
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-name">Tekens voor NER</div>
+                        <div class="setting-desc">Het maximaal aantal tekens dat wordt meegestuurd naar het model voor entiteitsherkenning.</div>
+                    </div>
+                    <div class="setting-input">
+                        <input class="form-input-number" type="number" value="8192" min="100" step="100">
+                    </div>
+                </div>
+
+                <div class="section-footer">
+                    <button class="btn-save">Opslaan</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
