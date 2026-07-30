@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.add_ollama_model import download_progress
-from app.add_ollama_model.analysis_configuration_repository import AnalysisConfigurationRepository
+from app.shared.analysis_configuration_repository import AnalysisConfigurationRepository
 from app.add_ollama_model.ollama_pull_client import OllamaPullError, pull_model
 from app.shared.models import AnalysisType
 

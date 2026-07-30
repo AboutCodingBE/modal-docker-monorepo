@@ -22,6 +22,7 @@ from app.get_topics_for_file.router import router as get_topics_for_file_router
 from app.get_topics_for_folder.router import router as get_topics_for_folder_router
 from app.delete_archive.router import router as delete_archive_router
 from app.add_ollama_model.router import router as add_ollama_model_router
+from app.list_analysis_models.router import router as list_analysis_models_router
 
 import asyncio
 import sys
@@ -51,6 +52,7 @@ app.include_router(get_topics_for_file_router)
 app.include_router(delete_archive_router)
 app.include_router(get_topics_for_folder_router)
 app.include_router(add_ollama_model_router)
+app.include_router(list_analysis_models_router)
 
 @app.get("/api/health")
 async def health():
