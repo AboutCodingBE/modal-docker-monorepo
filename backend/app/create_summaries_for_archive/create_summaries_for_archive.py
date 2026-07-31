@@ -13,6 +13,7 @@ from app.shared.analysis_engine_registry import classify_llm_engine, get_llm_pro
 from app.shared.llm.provider import LlmProviderUnavailableError
 from app.create_summaries_for_archive.summary_repository import SummaryRepository
 from app.shared.file_repository import FileRepository
+from app.shared.processing_settings_repository import ProcessingSettingsRepository
 
 _MAX_CONSECUTIVE_FAILURES = 5
 
@@ -70,6 +71,9 @@ class CreateSummariesForArchive:
 
             provider = get_llm_provider(classify_llm_engine(model))
 
+            async with self._session_factory() as session:
+                processing_settings = await ProcessingSettingsRepository(session).get()
+
             # ── Phase 1: file summaries ───────────────────────────────────────
             for file in files:
                 file_id: uuid.UUID = file["id"]
@@ -90,7 +94,7 @@ class CreateSummariesForArchive:
 
                 # No DB connection held during the LLM HTTP call.
                 try:
-                    text = (file["content"] or "")[:1000]
+                    text = (file["content"] or "")[:processing_settings.summary_char_limit]
                     result = await provider.generate(model, _file_prompt(text))
                 except LlmProviderUnavailableError:
                     _logger.error(f"{log_context(archive_id)}LLM provider unavailable — stopping summarization")

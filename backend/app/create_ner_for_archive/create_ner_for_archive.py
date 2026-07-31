@@ -14,6 +14,7 @@ from app.create_ner_for_archive.ner_llm_engine import run_ner_llm
 from app.create_ner_for_archive.ner_repository import NerRepository
 from app.shared.file_repository import FileRepository
 from app.shared.logging_config import log_context
+from app.shared.processing_settings_repository import ProcessingSettingsRepository
 
 _logger = logging.getLogger("app")
 
@@ -55,6 +56,9 @@ class CreateNerForArchive:
             engine_kind = classify_ner_engine(model)
             llm_provider = get_llm_provider(engine_kind) if engine_kind != "spacy" else None
 
+            async with self._session_factory() as session:
+                processing_settings = await ProcessingSettingsRepository(session).get()
+
             # ── File NER loop ─────────────────────────────────────────────────
             for file in files:
                 file_id: uuid.UUID = file["id"]
@@ -80,7 +84,7 @@ class CreateNerForArchive:
                         ner_result = await asyncio.to_thread(run_ner, text, model)
                     else:
                         ner_result = await run_ner_llm(
-                            text[:settings.ner_llm_char_limit], model, llm_provider
+                            text[:processing_settings.ner_llm_char_limit], model, llm_provider
                         )
                 except LlmProviderUnavailableError:
                     _logger.error(f"{log_context(archive_id)}LLM provider unavailable — stopping NER")

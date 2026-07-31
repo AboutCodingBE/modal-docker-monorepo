@@ -12,6 +12,7 @@ from app.shared.llm.provider import LlmProviderUnavailableError
 from app.create_topic_detection_for_archive.topic_detection_repository import TopicDetectionRepository
 from app.shared.file_repository import FileRepository
 from app.shared.logging_config import log_context
+from app.shared.processing_settings_repository import ProcessingSettingsRepository
 
 _logger = logging.getLogger("app.topic")
 
@@ -66,6 +67,9 @@ class CreateTopicDetectionForArchive:
 
             provider = get_llm_provider(classify_llm_engine(model))
 
+            async with self._session_factory() as session:
+                processing_settings = await ProcessingSettingsRepository(session).get()
+
             # ── Phase 1: file topic extraction ──────────────────────────────────
             for file in files:
                 file_id: uuid.UUID = file["id"]
@@ -85,7 +89,7 @@ class CreateTopicDetectionForArchive:
 
                 # No DB connection held during the LLM HTTP call.
                 try:
-                    text = (file["content"] or "")[:1000]
+                    text = (file["content"] or "")[:processing_settings.topic_char_limit]
                     raw_response = await provider.generate(model, _topic_prompt(text), format="json")
                     response_data = json.loads(raw_response)
                     topics_list = response_data.get("topics", [])

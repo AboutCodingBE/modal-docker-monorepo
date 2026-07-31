@@ -146,6 +146,15 @@ class GenericType(Base):
     file: Mapped["File"] = relationship("File", back_populates="generic_type")
 
 
+class ProcessingSettings(Base):
+    __tablename__ = "processing_settings"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    summary_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=1000)
+    topic_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=1000)
+    ner_llm_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=6000)
+
+
 class AnalysisConfiguration(Base):
     __tablename__ = "analysis_configuration"
 
