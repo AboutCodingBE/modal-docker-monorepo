@@ -21,10 +21,12 @@ class ProcessingSettingsRepository:
         summary_char_limit: int,
         topic_char_limit: int,
         ner_llm_char_limit: int,
+        minimum_text_length: int,
     ) -> ProcessingSettings:
         settings_row = await self.get()
         settings_row.summary_char_limit = summary_char_limit
         settings_row.topic_char_limit = topic_char_limit
         settings_row.ner_llm_char_limit = ner_llm_char_limit
+        settings_row.minimum_text_length = minimum_text_length
         await self._session.flush()
         return settings_row

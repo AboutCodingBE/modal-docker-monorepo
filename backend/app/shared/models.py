@@ -153,6 +153,7 @@ class ProcessingSettings(Base):
     summary_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=1000)
     topic_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=1000)
     ner_llm_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=6000)
+    minimum_text_length: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
 class AnalysisConfiguration(Base):

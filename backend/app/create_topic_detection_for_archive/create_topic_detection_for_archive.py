@@ -55,9 +55,18 @@ class CreateTopicDetectionForArchive:
             # ── Phase 0: start task and fetch file + folder list ──────────────
             async with self._session_factory() as session:
                 await task_tracker.start_task(session, task_id)
+                processing_settings = await ProcessingSettingsRepository(session).get()
+
                 file_repo = FileRepository(session)
                 files = await file_repo.get_files_with_tika_content(archive_id)
                 folders = await file_repo.get_all_folders(archive_id)
+
+                if processing_settings.minimum_text_length > 0:
+                    files = [
+                        f for f in files
+                        if len(f["content"] or "") >= processing_settings.minimum_text_length
+                    ]
+
                 await task_tracker.update_total_files(session, task_id, len(files) + len(folders))
                 await session.commit()
 
@@ -66,9 +75,6 @@ class CreateTopicDetectionForArchive:
             consecutive_failures = 0
 
             provider = get_llm_provider(classify_llm_engine(model))
-
-            async with self._session_factory() as session:
-                processing_settings = await ProcessingSettingsRepository(session).get()
 
             # ── Phase 1: file topic extraction ──────────────────────────────────
             for file in files:
