@@ -17,7 +17,7 @@ class AnalysisConfigurationRepository:
         return result.scalar_one_or_none() is not None
 
     async def create(self, analysis_type: AnalysisType, model: str, is_default: bool) -> None:
-        config = AnalysisConfiguration(type=analysis_type.value, model=model, is_default=is_default)
+        config = AnalysisConfiguration(type=analysis_type, model=model, is_default=is_default)
         self._session.add(config)
         await self._session.flush()
 
