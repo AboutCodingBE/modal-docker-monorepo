@@ -74,7 +74,22 @@ Press `Ctrl+C` to stop everything.
 
 For development, we need a virtual environment. The agent should be starting up everything for our users, but that is 
 not something we want while developing. Therefore, we need to start the agent manually, with a development flag --dev. In order
-to not interfere with anything python related on our personal computers, we use venv. Here is the setup for 
+to not interfere with anything python related on our personal computers, we use venv.
+
+Make sure that the folder modal-docker-monorepo\backend contains an .env file with the following content
+```
+DATABASE_URL=postgresql+asyncpg://archiveuser:archivepass@localhost:5442/modaldb
+AGENT_URL=http://localhost:9090
+TIKA_URL=http://localhost:7777
+OLLAMA_URL=http://localhost:11434
+```
+
+First start all docker containers except backend and frontend from the main directory.
+```bash
+docker compose up -d db tika ollama ollama-init
+```
+
+Here is the setup for 
 From the agent directory:
 
 ```bash
