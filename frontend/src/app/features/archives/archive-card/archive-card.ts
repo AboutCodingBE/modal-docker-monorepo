@@ -1,7 +1,7 @@
 import { Component, input, output, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Archive } from '../../../models/archive.model';
-import { ArchiveService, AnalysisConfigEntry } from '../../../services/archive.service';
+import { ConfigurationService } from '../../../services/configuration.service';
 import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
 import { AnalysisPipeline } from '../../analysis/analysis-pipeline/analysis-pipeline';
 import { ANALYSIS_TYPE_META, splitAnalysisTypes } from '../../../shared/analysis-type.util';
@@ -24,10 +24,15 @@ export class ArchiveCard {
   startAnalysisClicked = output<string>();
   deleteClicked = output<string>();
 
-  private archiveService = inject(ArchiveService);
-  private configuration = toSignal(this.archiveService.getAnalysisConfiguration(), {
-    initialValue: [] as AnalysisConfigEntry[],
-  });
+  private configService = inject(ConfigurationService);
+  private modelsByType = toSignal(this.configService.getModels(), { initialValue: {} as Record<string, { id: string; model: string; is_default: boolean }[]> });
+
+  private configuration = computed(() =>
+    Object.entries(this.modelsByType()).map(([type, entries]) => ({
+      type,
+      model: entries.find(e => e.is_default)?.model ?? entries[0]?.model ?? '',
+    }))
+  );
 
   configuredTypes = computed(() => this.configuration());
 

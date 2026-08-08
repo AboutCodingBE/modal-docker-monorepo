@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, shareReplay } from 'rxjs';
+import { Observable } from 'rxjs';
 import { Archive } from '../models/archive.model';
 
 export interface MimeTypeCount {
@@ -94,15 +94,8 @@ export interface FileAnalysis {
   summaries: AnalysisSummaryEntry[];
 }
 
-export interface AnalysisConfigEntry {
-  type: string;
-  model: string;
-}
-
 @Injectable({ providedIn: 'root' })
 export class ArchiveService {
-  private configuration$?: Observable<AnalysisConfigEntry[]>;
-
   constructor(private http: HttpClient) {}
 
   getAll(): Observable<Archive[]> {
@@ -153,15 +146,6 @@ export class ArchiveService {
 
   deleteArchive(archiveId: string): Observable<void> {
     return this.http.delete<void>(`/api/archives/${archiveId}`);
-  }
-
-  getAnalysisConfiguration(): Observable<AnalysisConfigEntry[]> {
-    if (!this.configuration$) {
-      this.configuration$ = this.http
-        .get<AnalysisConfigEntry[]>('/api/analysis/configuration')
-        .pipe(shareReplay(1));
-    }
-    return this.configuration$;
   }
 
   startAnalysis(
