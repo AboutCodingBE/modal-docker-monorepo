@@ -20,7 +20,8 @@ class GetNerForFile:
         if file is None:
             return None
 
-        ner = await self._repo.get_ner_for_file(file_id)
+        row = await self._repo.get_ner_for_file(file_id)
+        ner, model = row if row else (None, None)
 
         persons = _extract_entities(ner.persons) if ner else []
         locations = _extract_entities(ner.locations) if ner else []
@@ -30,6 +31,7 @@ class GetNerForFile:
         return {
             "file_id": str(file_id),
             "file_name": file.name,
+            "model": model,
             "persons": persons,
             "locations": locations,
             "organisations": organisations,

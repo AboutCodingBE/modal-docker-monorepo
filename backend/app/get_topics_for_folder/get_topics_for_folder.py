@@ -20,13 +20,15 @@ class GetTopicsForFolder:
         if folder is None:
             return None
 
-        topic_detection = await self._repo.get_topics_for_folder(folder_id)
+        row = await self._repo.get_topics_for_folder(folder_id)
+        topic_detection, model = row if row else (None, None)
 
         topics = _extract_topics(topic_detection.topics) if topic_detection else []
 
         return {
             "folder_id": str(folder_id),
             "folder_name": folder.name,
+            "model": model,
             "topics": topics,
             "total_topics": len(topics),
         }

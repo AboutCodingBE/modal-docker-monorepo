@@ -20,7 +20,8 @@ class GetNerForFolder:
         if folder is None:
             return None
 
-        ner = await self._repo.get_ner_for_folder(folder_id)
+        row = await self._repo.get_ner_for_folder(folder_id)
+        ner, model = row if row else (None, None)
 
         persons = _extract_entities(ner.persons) if ner else []
         locations = _extract_entities(ner.locations) if ner else []
@@ -30,6 +31,7 @@ class GetNerForFolder:
         return {
             "folder_id": str(folder_id),
             "folder_name": folder.name,
+            "model": model,
             "persons": persons,
             "locations": locations,
             "organisations": organisations,

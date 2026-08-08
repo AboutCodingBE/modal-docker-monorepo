@@ -22,12 +22,12 @@ class NerForFolderRepository:
         )
         return result.scalar_one_or_none()
 
-    async def get_ner_for_folder(self, folder_id: uuid.UUID) -> Ner | None:
+    async def get_ner_for_folder(self, folder_id: uuid.UUID) -> tuple[Ner, str] | None:
         result = await self._session.execute(
-            select(Ner)
+            select(Ner, ArchiveAnalysis.model)
             .join(ArchiveAnalysis, ArchiveAnalysis.id == Ner.analysis_id)
             .where(Ner.file_id == folder_id)
             .order_by(ArchiveAnalysis.date.desc())
             .limit(1)
         )
-        return result.scalar_one_or_none()
+        return result.first()
