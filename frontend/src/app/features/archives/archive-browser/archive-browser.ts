@@ -7,10 +7,11 @@ import { ActiveTask, TaskProgressService } from '../../../services/task-progress
 import { ArchiveCard } from '../archive-card/archive-card';
 import { NewArchiveModal } from '../new-archive-modal/new-archive-modal';
 import { AnalysisModal } from '../../analysis/analysis-modal/analysis-modal';
+import { DeleteArchiveModal } from '../delete-archive-modal/delete-archive-modal';
 
 @Component({
   selector: 'app-archive-browser',
-  imports: [ArchiveCard, NewArchiveModal, AnalysisModal],
+  imports: [ArchiveCard, NewArchiveModal, AnalysisModal, DeleteArchiveModal],
   templateUrl: './archive-browser.html',
   styleUrl: './archive-browser.css',
 })
@@ -22,6 +23,9 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
 
   // Analysis modal state
   analysisModalArchive = signal<Archive | null>(null);
+
+  // Delete modal state
+  archiveToDelete = signal<Archive | null>(null);
 
   // Track which task IDs belong to AI analysis (vs Tika ingestion)
   private analysisTaskIds = new Set<string>();
@@ -82,6 +86,27 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
 
   // ── Analysis modal ─────────────────────────────────────────────────────────
 
+  openDeleteModal(archiveId: string): void {
+    const archive = this.archives().find(a => a.id === archiveId);
+    if (archive) this.archiveToDelete.set(archive);
+  }
+
+  confirmDelete(): void {
+    const archive = this.archiveToDelete();
+    if (!archive) return;
+
+    this.archiveToDelete.set(null);
+    this.archiveService.deleteArchive(archive.id).subscribe({
+      next: () => {
+        this.archives.update(list => list.filter(a => a.id !== archive.id));
+      },
+    });
+  }
+
+  cancelDelete(): void {
+    this.archiveToDelete.set(null);
+  }
+
   openAnalysisModal(archiveId: string): void {
     const archive = this.archives().find(a => a.id === archiveId);
     if (archive) this.analysisModalArchive.set(archive);
@@ -132,10 +157,19 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
               ...update.event,
               type: this.taskTypes.get(update.event.task_id),
             };
+            const completedTypes = isCompleted
+              ? (() => {
+                  const type = this.taskTypes.get(update.event.task_id)?.toUpperCase();
+                  return type && !a.completed_analysis_types.includes(type)
+                    ? [...a.completed_analysis_types, type]
+                    : a.completed_analysis_types;
+                })()
+              : a.completed_analysis_types;
             return {
               ...a,
               status: completedStatus,
               analysisEvent: enrichedEvent,
+              completed_analysis_types: completedTypes,
             };
           } else {
             // Tika ingestion: completed → 'ingested', active → progress bar

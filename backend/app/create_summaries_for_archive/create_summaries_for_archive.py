@@ -8,10 +8,12 @@ from app.shared.logging_config import log_context
 
 _logger = logging.getLogger("app.summary")
 
-from app.create_summaries_for_archive.archive_analysis_repository import ArchiveAnalysisRepository
-from app.create_summaries_for_archive.file_repository import FileRepository
-from app.create_summaries_for_archive.ollama_client import OllamaUnavailableError, generate
+from app.shared.archive_analysis_repository import ArchiveAnalysisRepository
+from app.shared.analysis_engine_registry import classify_llm_engine, get_llm_provider
+from app.shared.llm.provider import LlmProviderUnavailableError
 from app.create_summaries_for_archive.summary_repository import SummaryRepository
+from app.shared.file_repository import FileRepository
+from app.shared.processing_settings_repository import ProcessingSettingsRepository
 
 _MAX_CONSECUTIVE_FAILURES = 5
 
@@ -57,9 +59,18 @@ class CreateSummariesForArchive:
             # ── Phase 0: start task and fetch file list ───────────────────────
             async with self._session_factory() as session:
                 await task_tracker.start_task(session, task_id)
+                processing_settings = await ProcessingSettingsRepository(session).get()
+
                 file_repo = FileRepository(session)
                 files = await file_repo.get_files_with_tika_content(archive_id)
                 folders = await file_repo.get_all_folders(archive_id)
+
+                if processing_settings.minimum_text_length > 0:
+                    files = [
+                        f for f in files
+                        if len(f["content"] or "") >= processing_settings.minimum_text_length
+                    ]
+
                 await task_tracker.update_total_files(session, task_id, len(files) + len(folders))
                 await session.commit()
 
@@ -67,27 +78,32 @@ class CreateSummariesForArchive:
             failed_count = 0
             consecutive_failures = 0
 
+            provider = get_llm_provider(classify_llm_engine(model))
+
             # ── Phase 1: file summaries ───────────────────────────────────────
             for file in files:
                 file_id: uuid.UUID = file["id"]
 
                 # Check if already summarised and update progress — short session,
                 # released before the Ollama call below.
+                already_processed = False
                 async with self._session_factory() as session:
-                    if await SummaryRepository(session).exists(archive_analysis_id, file_id):
-                        processed += 1
-                        continue
-                    await task_tracker.update_progress(
-                        session, task_id, processed, failed_count, file["relative_path"]
-                    )
-                    await session.commit()
+                    already_processed = await SummaryRepository(session).exists(archive_analysis_id, file_id)
+                    if not already_processed:
+                        await task_tracker.update_progress(
+                            session, task_id, processed, failed_count, file["relative_path"]
+                        )
+                        await session.commit()
+                if already_processed:
+                    processed += 1
+                    continue
 
-                # No DB connection held during the Ollama HTTP call.
+                # No DB connection held during the LLM HTTP call.
                 try:
-                    text = (file["content"] or "")[:1000]
-                    result = await generate(model, _file_prompt(text))
-                except OllamaUnavailableError:
-                    _logger.error(f"{log_context(archive_id)}Ollama service unavailable — stopping summarization")
+                    text = (file["content"] or "")[:processing_settings.summary_char_limit]
+                    result = await provider.generate(model, _file_prompt(text))
+                except LlmProviderUnavailableError:
+                    _logger.error(f"{log_context(archive_id)}LLM provider unavailable — stopping summarization")
                     await self._fail(task_id, archive_analysis_id)
                     return
                 except Exception as e:
@@ -128,12 +144,12 @@ class CreateSummariesForArchive:
                     processed += 1
                     continue
 
-                # No DB connection held during the Ollama HTTP call.
+                # No DB connection held during the LLM HTTP call.
                 try:
                     concatenated = "\n".join(folder_summaries)
-                    result = await generate(model, _folder_prompt(concatenated))
-                except OllamaUnavailableError:
-                    _logger.error(f"{log_context(archive_id)}Ollama service unavailable — stopping summarization")
+                    result = await provider.generate(model, _folder_prompt(concatenated))
+                except LlmProviderUnavailableError:
+                    _logger.error(f"{log_context(archive_id)}LLM provider unavailable — stopping summarization")
                     await self._fail(task_id, archive_analysis_id)
                     return
                 except Exception as e:

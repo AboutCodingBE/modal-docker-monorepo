@@ -44,11 +44,39 @@ export interface FolderFile {
 export interface NerResult {
   file_id: string;
   file_name: string;
+  model: string | null;
   persons: string[];
   locations: string[];
   organisations: string[];
   misc: string[];
   total_entities: number;
+}
+
+export interface NerFolderResult {
+  folder_id: string;
+  folder_name: string;
+  model: string | null;
+  persons: string[];
+  locations: string[];
+  organisations: string[];
+  misc: string[];
+  total_entities: number;
+}
+
+export interface TopicsResult {
+  file_id: string;
+  file_name: string;
+  model: string | null;
+  topics: string[];
+  total_topics: number;
+}
+
+export interface TopicsFolderResult {
+  folder_id: string;
+  folder_name: string;
+  model: string | null;
+  topics: string[];
+  total_topics: number;
 }
 
 export interface FolderFilesData {
@@ -68,11 +96,6 @@ export interface FileAnalysis {
   file_id: string;
   type: 'file' | 'folder';
   summaries: AnalysisSummaryEntry[];
-}
-
-export interface AnalysisConfigEntry {
-  type: string;
-  model: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -113,8 +136,20 @@ export class ArchiveService {
     return this.http.get<NerResult>(`/api/archives/${archiveId}/files/${fileId}/ner`);
   }
 
-  getAnalysisConfiguration(): Observable<AnalysisConfigEntry[]> {
-    return this.http.get<AnalysisConfigEntry[]>('/api/analysis/configuration');
+  getNerForFolder(archiveId: string, folderId: string): Observable<NerFolderResult> {
+    return this.http.get<NerFolderResult>(`/api/archives/${archiveId}/folders/${folderId}/ner`);
+  }
+
+  getTopicsForFile(archiveId: string, fileId: string): Observable<TopicsResult> {
+    return this.http.get<TopicsResult>(`/api/archives/${archiveId}/files/${fileId}/topics`);
+  }
+
+  getTopicsForFolder(archiveId: string, folderId: string): Observable<TopicsFolderResult> {
+    return this.http.get<TopicsFolderResult>(`/api/archives/${archiveId}/folders/${folderId}/topics`);
+  }
+
+  deleteArchive(archiveId: string): Observable<void> {
+    return this.http.delete<void>(`/api/archives/${archiveId}`);
   }
 
   startAnalysis(

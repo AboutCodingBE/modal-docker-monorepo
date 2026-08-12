@@ -17,6 +17,9 @@
     <button class="tab" [class.active]="activeTab() === 'ner'" (click)="switchTab('ner')">
       NER
     </button>
+    <button class="tab" [class.active]="activeTab() === 'topics'" (click)="switchTab('topics')">
+      Topics
+    </button>
   </div>
 
   <!-- Tab content -->
@@ -37,6 +40,13 @@
         @if (ner.total_entities === 0) {
           <div class="ner-empty">Geen NER resultaten beschikbaar voor dit bestand.</div>
         } @else {
+
+          <div class="analysis-section-header">
+            <span class="analysis-section-label">Entiteitsherkenning</span>
+            @if (ner.model) {
+              <span class="model-badge">{{ ner.model }}</span>
+            }
+          </div>
 
           @if (ner.persons.length > 0) {
             <div class="ner-section">
@@ -89,6 +99,34 @@
         }
       } @else {
         <div class="ner-empty">Geen NER resultaten beschikbaar voor dit bestand.</div>
+      }
+    }
+
+
+    @if (activeTab() === 'topics') {
+      @if (topicsLoading()) {
+        <div class="ner-loading">Topics laden...</div>
+      } @else if (topicsData(); as td) {
+        @if (td.total_topics === 0) {
+          <div class="ner-empty">Geen topics beschikbaar voor dit bestand.</div>
+        } @else {
+          <div class="analysis-section-header">
+            <span class="analysis-section-label">Onderwerpdetectie</span>
+            @if (td.model) {
+              <span class="model-badge">{{ td.model }}</span>
+            }
+          </div>
+          <div class="topic-tags">
+            @for (topic of td.topics; track topic) {
+              <span class="topic-tag">{{ topic }}</span>
+            }
+          </div>
+          <div class="topic-total">
+            <strong>{{ td.total_topics }}</strong> topics gedetecteerd in dit bestand
+          </div>
+        }
+      } @else {
+        <div class="ner-empty">Geen topics beschikbaar voor dit bestand.</div>
       }
     }
 

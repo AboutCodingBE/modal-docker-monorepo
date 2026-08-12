@@ -5,6 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.get_ner_for_file.repository import NerForFileRepository
 
 
+def _extract_entities(jsonb_list: list | None) -> list[str]:
+    if not jsonb_list:
+        return []
+    return [item["entity"] for item in jsonb_list if "entity" in item]
+
+
 class GetNerForFile:
     def __init__(self, session: AsyncSession):
         self._repo = NerForFileRepository(session)
@@ -14,16 +20,18 @@ class GetNerForFile:
         if file is None:
             return None
 
-        ner = await self._repo.get_ner_for_file(file_id)
+        row = await self._repo.get_ner_for_file(file_id)
+        ner, model = row if row else (None, None)
 
-        persons = ner.persons or [] if ner else []
-        locations = ner.locations or [] if ner else []
-        organisations = ner.organisations or [] if ner else []
-        misc = ner.misc or [] if ner else []
+        persons = _extract_entities(ner.persons) if ner else []
+        locations = _extract_entities(ner.locations) if ner else []
+        organisations = _extract_entities(ner.organisations) if ner else []
+        misc = _extract_entities(ner.misc) if ner else []
 
         return {
             "file_id": str(file_id),
             "file_name": file.name,
+            "model": model,
             "persons": persons,
             "locations": locations,
             "organisations": organisations,

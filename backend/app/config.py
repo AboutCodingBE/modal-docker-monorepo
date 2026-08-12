@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     tika_url: str = "http://tika:9998"
     agent_url: str = "http://host.docker.internal:9090"
     ollama_url: str = "http://ollama:11434"
+    ner_folder_top_n: int = 25
+    topic_folder_top_n: int = 25
 
     embedding_model: str = "qwen3-embedding-0.6b"
     # Moet gelijk blijven aan de VECTOR(n)-kolom in migratie 0010. Wordt momenteel nergens

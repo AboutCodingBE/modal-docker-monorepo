@@ -30,6 +30,7 @@
           [archive]="archive"
           (cardClicked)="openArchive($event)"
           (startAnalysisClicked)="openAnalysisModal($event)"
+          (deleteClicked)="openDeleteModal($event)"
         />
       }
     }
@@ -47,5 +48,13 @@
     [archive]="analysisModalArchive()!"
     (closed)="closeAnalysisModal()"
     (analysisStarted)="onAnalysisStarted($event)"
+  />
+}
+
+@if (archiveToDelete()) {
+  <app-delete-archive-modal
+    [archive]="archiveToDelete()!"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
   />
 }

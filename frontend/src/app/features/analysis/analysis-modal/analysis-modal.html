@@ -13,6 +13,18 @@
       </button>
     </div>
 
+    @if (doneTypeLabels().length > 0) {
+      <div class="done-section">
+        <div class="done-label">Reeds uitgevoerd</div>
+        <div class="done-chips">
+          @for (label of doneTypeLabels(); track label) {
+            <span class="done-chip">{{ label }}</span>
+          }
+        </div>
+      </div>
+      <div class="modal-section-label">Beschikbare analyses</div>
+    }
+
     <div class="modal-body">
       @for (t of types(); track t.type) {
         <div class="tool-row" [class.tool-row--checked]="isChecked(t.type)">

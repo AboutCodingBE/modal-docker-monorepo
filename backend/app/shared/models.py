@@ -1,8 +1,8 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -12,6 +12,7 @@ class AnalysisType(str, enum.Enum):
     STT = "STT"
     NER = "NER"
     SUMMARY = "SUMMARY"
+    TOPIC_DETECTION = "TOPIC_DETECTION"
 
 class ArchiveAnalysisStatus(str, enum.Enum):
     STARTED = "STARTED"
@@ -145,12 +146,23 @@ class GenericType(Base):
     file: Mapped["File"] = relationship("File", back_populates="generic_type")
 
 
+class ProcessingSettings(Base):
+    __tablename__ = "processing_settings"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    summary_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=1000)
+    topic_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=1000)
+    ner_llm_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=6000)
+    minimum_text_length: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
 class AnalysisConfiguration(Base):
     __tablename__ = "analysis_configuration"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    type: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    type: Mapped[AnalysisType] = mapped_column(Enum(AnalysisType, name="analysis_type"), nullable=False)
     model: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class ArchiveAnalysis(Base):
@@ -188,11 +200,18 @@ class Ner(Base):
     parent_folder_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="SET NULL"), nullable=True)
     file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
 
-    persons: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    persons_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    locations: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    locations_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    organisations: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    organisations_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    misc: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
-    misc_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    persons: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    locations: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    organisations: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    misc: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+
+class TopicDetection(Base):
+    __tablename__ = "topic_detection"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
+    analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archive_analysis.id", ondelete="CASCADE"), nullable=False)
+    parent_folder_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="SET NULL"), nullable=True)
+    file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
+
+    topics: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))

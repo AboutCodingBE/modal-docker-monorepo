@@ -118,23 +118,18 @@ async def test_ner_geeft_lege_entiteitenlijst_zonder_crash_bij_leeg_document(
     db_rij = rij.mappings().one()
 
     print(f"[M3.02] DB-rij na persist:")
-    print(f"        persons       ({db_rij['persons_count']}): {db_rij['persons']}")
-    print(f"        locations     ({db_rij['locations_count']}): {db_rij['locations']}")
-    print(f"        organisations ({db_rij['organisations_count']}): {db_rij['organisations']}")
-    print(f"        misc          ({db_rij['misc_count']}): {db_rij['misc']}")
+    print(f"        persons       ({len(db_rij['persons'])}): {db_rij['persons']}")
+    print(f"        locations     ({len(db_rij['locations'])}): {db_rij['locations']}")
+    print(f"        organisations ({len(db_rij['organisations'])}): {db_rij['organisations']}")
+    print(f"        misc          ({len(db_rij['misc'])}): {db_rij['misc']}")
 
     # Lege lijsten mogen niet als NULL worden opgeslagen — [] is niet hetzelfde
     # als NULL. NULL betekent "onbekend"; [] betekent "geanalyseerd, niets gevonden".
     for categorie in ("persons", "locations", "organisations", "misc"):
         db_waarde = db_rij[categorie]
         assert db_waarde is not None, (
-            f"'{categorie}' is NULL in de DB maar de engine gaf [] terug. "
-            "Vermoedelijk converteert asyncpg een lege lijst [] naar NULL — "
-            "controleer de ARRAY-kolom mapping in NerRepository of de asyncpg-driver."
+            f"'{categorie}' is NULL in de DB maar de engine gaf [] terug."
         )
         assert db_waarde == [], (
             f"'{categorie}' in DB is {db_waarde!r} maar verwacht []."
-        )
-        assert db_rij[f"{categorie}_count"] == 0, (
-            f"'{categorie}_count' in DB is {db_rij[f'{categorie}_count']} maar verwacht 0."
         )

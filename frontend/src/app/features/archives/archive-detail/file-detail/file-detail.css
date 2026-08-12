@@ -168,3 +168,57 @@
   color: #111827;
   font-weight: 700;
 }
+
+/* ── Topics ── */
+.topic-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.topic-tag {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.topic-total {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.topic-total strong {
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.analysis-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.analysis-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.model-badge {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  background: #e5e7eb;
+  border-radius: 4px;
+  padding: 2px 7px;
+}

@@ -137,9 +137,9 @@ async def test_ner_crasht_niet_op_franstalige_tekst_en_bewaart_geldige_structuur
     await session.commit()
 
     rij = await session.execute(
-        text("SELECT persons_count, locations_count, organisations_count FROM ner WHERE file_id = :fid"),
+        text("SELECT persons, locations, organisations FROM ner WHERE file_id = :fid"),
         {"fid": str(file_id)},
     )
     db_rij = rij.mappings().one()
-    print(f"[M3.06] DB counts: persons={db_rij['persons_count']}, "
-          f"locations={db_rij['locations_count']}, organisations={db_rij['organisations_count']}")
+    print(f"[M3.06] DB counts: persons={len(db_rij['persons'])}, "
+          f"locations={len(db_rij['locations'])}, organisations={len(db_rij['organisations'])}")
