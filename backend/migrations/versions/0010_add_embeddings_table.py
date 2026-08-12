@@ -19,6 +19,9 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
+    # TODO (open beslissing, Nicholas): overweeg een FastAPI lifespan-check bij opstart die de
+    # effectieve dimensie van embeddings.embedding vergelijkt met settings.embedding_dimension
+    # en fail-fast gooit bij een mismatch. Voorlopig niet geimplementeerd.
     op.create_table(
         "embeddings",
         sa.Column("id", UUID(as_uuid=True), primary_key=True),
@@ -34,7 +37,9 @@ def upgrade() -> None:
         sa.Column("chunk_text", sa.Text(), nullable=False),
         # Optioneel, handig voor debugging/benchmark
         sa.Column("token_count", sa.Integer(), nullable=True),
-        # qwen3-embedding output
+        # qwen3-embedding output — dimensie moet in sync blijven met settings.embedding_dimension
+        # (app/config.py). Bij een modelwissel met andere dimensie: nieuwe migratie +
+        # herembedding van alle bestaande chunks, zie AnalysisConfiguration/ArchiveAnalysis.
         sa.Column("embedding", Vector(1024), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.UniqueConstraint("file_id", "chunk_index", name="uq_embeddings_file_id_chunk_index"),
