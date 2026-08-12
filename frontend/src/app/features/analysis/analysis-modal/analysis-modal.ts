@@ -1,6 +1,7 @@
 import { Component, input, output, signal, computed, OnInit } from '@angular/core';
 import { Archive } from '../../../models/archive.model';
-import { ArchiveService, AnalysisConfigEntry } from '../../../services/archive.service';
+import { ArchiveService } from '../../../services/archive.service';
+import { ConfigurationService } from '../../../services/configuration.service';
 import { ANALYSIS_TYPE_META } from '../../../shared/analysis-type.util';
 
 interface AnalysisType {
@@ -53,28 +54,31 @@ export class AnalysisModal implements OnInit {
 
   canStart = computed(() => this.selected().size > 0 && !this.submitting());
 
-  constructor(private archiveService: ArchiveService) {}
+  constructor(private archiveService: ArchiveService, private configService: ConfigurationService) {}
 
   ngOnInit(): void {
-    this.archiveService.getAnalysisConfiguration().subscribe({
-      next: (configs: AnalysisConfigEntry[]) => {
+    this.configService.getModels().subscribe({
+      next: (grouped) => {
         const completedSet = new Set(this.archive().completed_analysis_types);
-        const pendingConfigs = configs.filter(c => !completedSet.has(c.type));
-        const doneConfigs = configs.filter(c => completedSet.has(c.type));
 
-        this.doneTypeLabels.set(doneConfigs.map(c => ANALYSIS_TYPE_META[c.type]?.label ?? c.type));
+        const pendingTypes = Object.keys(grouped).filter(t => !completedSet.has(t));
+        const doneTypes = Object.keys(grouped).filter(t => completedSet.has(t));
 
-        const analysisTypes: AnalysisType[] = pendingConfigs.map(c => ({
-          type: c.type.toLowerCase(),
-          ...(TYPE_DISPLAY[c.type.toLowerCase()] ?? { ...DEFAULT_DISPLAY, label: c.type }),
-        }));
+        this.doneTypeLabels.set(doneTypes.map(t => ANALYSIS_TYPE_META[t]?.label ?? t));
+
+        const analysisTypes: AnalysisType[] = pendingTypes.map(t => {
+          const key = t.toLowerCase();
+          return { type: key, ...(TYPE_DISPLAY[key] ?? { ...DEFAULT_DISPLAY, label: t }) };
+        });
 
         const options: Record<string, string[]> = {};
         const defaultModels: Record<string, string> = {};
-        for (const c of pendingConfigs) {
-          const key = c.type.toLowerCase();
-          options[key] = [c.model];
-          defaultModels[key] = c.model;
+        for (const t of pendingTypes) {
+          const key = t.toLowerCase();
+          const entries = grouped[t];
+          options[key] = entries.map(e => e.model);
+          const defaultEntry = entries.find(e => e.is_default) ?? entries[0];
+          if (defaultEntry) defaultModels[key] = defaultEntry.model;
         }
 
         this.types.set(analysisTypes);

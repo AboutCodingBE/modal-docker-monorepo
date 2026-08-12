@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.database import get_db
+from app.shared.database import get_db, _session_factory
 from app.analysis import task_tracker
 
 router = APIRouter(prefix="/api/analysis/tasks", tags=["analysis"])
@@ -32,11 +32,12 @@ def _task_to_event(task) -> str:
     return f"data: {json.dumps(payload)}\n\n"
 
 
-async def _progress_stream(task_id: uuid.UUID, db: AsyncSession):
+async def _progress_stream(task_id: uuid.UUID):
     try:
         while True:
-            db.expire_all()
-            task = await task_tracker.get_task(db, task_id)
+            async with _session_factory() as session:
+                task = await task_tracker.get_task(session, task_id)
+
             if task is None:
                 yield f"data: {json.dumps({'error': 'task not found'})}\n\n"
                 return
@@ -81,7 +82,7 @@ async def task_progress(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Task not found")
 
     return StreamingResponse(
-        _progress_stream(task_id, db),
+        _progress_stream(task_id),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

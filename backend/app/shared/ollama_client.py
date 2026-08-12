@@ -9,17 +9,10 @@ class OllamaUnavailableError(Exception):
 
 async def generate(model: str, prompt: str, format: str | None = None) -> str:
     """Send a prompt to Ollama and return the response text.
-    
+
     Supports constrained decoding via the 'format' parameter (e.g., format="json").
     """
-    # Build the base JSON payload
-    payload = {
-        "model": model, 
-        "prompt": prompt, 
-        "stream": False
-    }
-    
-    # Inject the format parameter only if explicitly requested
+    payload: dict = {"model": model, "prompt": prompt, "stream": False}
     if format:
         payload["format"] = format
 
@@ -32,8 +25,6 @@ async def generate(model: str, prompt: str, format: str | None = None) -> str:
             )
             resp.raise_for_status()
             return resp.json()["response"]
-            
-    # Handle broad network infrastructure anomalies (connection drops and timeouts)
     except (httpx.ConnectError, httpx.TimeoutException) as e:
         raise OllamaUnavailableError("Ollama service unavailable or timed out") from e
     except httpx.HTTPStatusError as e:

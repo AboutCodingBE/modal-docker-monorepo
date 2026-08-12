@@ -7,10 +7,14 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from app.analysis import task_tracker
 from app.config import settings
 from app.shared.archive_analysis_repository import ArchiveAnalysisRepository
+from app.shared.analysis_engine_registry import classify_ner_engine, get_llm_provider
+from app.shared.llm.provider import LlmProviderUnavailableError
 from app.create_ner_for_archive.ner_engine import run_ner
+from app.create_ner_for_archive.ner_llm_engine import run_ner_llm
 from app.create_ner_for_archive.ner_repository import NerRepository
 from app.shared.file_repository import FileRepository
 from app.shared.logging_config import log_context
+from app.shared.processing_settings_repository import ProcessingSettingsRepository
 
 _logger = logging.getLogger("app")
 
@@ -39,9 +43,18 @@ class CreateNerForArchive:
             # ── Phase 0: start task and fetch file list ───────────────────────
             async with self._session_factory() as session:
                 await task_tracker.start_task(session, task_id)
+                processing_settings = await ProcessingSettingsRepository(session).get()
+
                 file_repo = FileRepository(session)
                 files = await file_repo.get_files_with_tika_content(archive_id)
                 folders = await file_repo.get_all_folders(archive_id)
+
+                if processing_settings.minimum_text_length > 0:
+                    files = [
+                        f for f in files
+                        if len(f["content"] or "") >= processing_settings.minimum_text_length
+                    ]
+
                 await task_tracker.update_total_files(session, task_id, len(files) + len(folders))
                 await session.commit()
 
@@ -49,25 +62,40 @@ class CreateNerForArchive:
             failed_count = 0
             consecutive_failures = 0
 
+            engine_kind = classify_ner_engine(model)
+            llm_provider = get_llm_provider(engine_kind) if engine_kind != "spacy" else None
+
             # ── File NER loop ─────────────────────────────────────────────────
             for file in files:
                 file_id: uuid.UUID = file["id"]
 
                 # Check if already processed and update progress — short session,
                 # released before the NER call below.
+                already_processed = False
                 async with self._session_factory() as session:
-                    if await NerRepository(session).exists(archive_analysis_id, file_id):
-                        processed += 1
-                        continue
-                    await task_tracker.update_progress(
-                        session, task_id, processed, failed_count, file["relative_path"]
-                    )
-                    await session.commit()
+                    already_processed = await NerRepository(session).exists(archive_analysis_id, file_id)
+                    if not already_processed:
+                        await task_tracker.update_progress(
+                            session, task_id, processed, failed_count, file["relative_path"]
+                        )
+                        await session.commit()
+                if already_processed:
+                    processed += 1
+                    continue
 
-                # No DB connection held during the spaCy call.
+                # No DB connection held during the NER call.
                 try:
                     text = file["content"] or ""
-                    ner_result = await asyncio.to_thread(run_ner, text, model)
+                    if engine_kind == "spacy":
+                        ner_result = await asyncio.to_thread(run_ner, text, model)
+                    else:
+                        ner_result = await run_ner_llm(
+                            text[:processing_settings.ner_llm_char_limit], model, llm_provider
+                        )
+                except LlmProviderUnavailableError:
+                    _logger.error(f"{log_context(archive_id)}LLM provider unavailable — stopping NER")
+                    await self._fail(task_id, archive_analysis_id)
+                    return
                 except Exception as e:
                     _logger.error(f"{log_context(archive_id, file['name'])}Failed to run NER: {e}")
                     failed_count += 1
@@ -99,17 +127,21 @@ class CreateNerForArchive:
                     await session.commit()
 
                 try:
+                    skip_folder = False
                     async with self._session_factory() as session:
                         entities = await NerRepository(session).get_entities_for_folder(
                             archive_analysis_id, folder_id, settings.ner_folder_top_n
                         )
                         if all(not entities[cat] for cat in ("persons", "locations", "organisations", "misc")):
-                            processed += 1
-                            continue
-                        await NerRepository(session).persist_folder(
-                            archive_analysis_id, archive_id, folder["parent_id"], folder_id, entities
-                        )
-                        await session.commit()
+                            skip_folder = True
+                        else:
+                            await NerRepository(session).persist_folder(
+                                archive_analysis_id, archive_id, folder["parent_id"], folder_id, entities
+                            )
+                            await session.commit()
+                    if skip_folder:
+                        processed += 1
+                        continue
                 except Exception as e:
                     _logger.error(f"{log_context(archive_id, folder['name'])}Failed to aggregate NER for folder: {e}")
                     failed_count += 1

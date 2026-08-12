@@ -20,13 +20,15 @@ class GetTopicsForFile:
         if file is None:
             return None
 
-        topic_detection = await self._repo.get_topics_for_file(file_id)
+        row = await self._repo.get_topics_for_file(file_id)
+        topic_detection, model = row if row else (None, None)
 
         topics = _extract_topics(topic_detection.topics) if topic_detection else []
 
         return {
             "file_id": str(file_id),
             "file_name": file.name,
+            "model": model,
             "topics": topics,
             "total_topics": len(topics),
         }
