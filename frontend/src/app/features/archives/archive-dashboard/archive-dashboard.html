@@ -105,20 +105,73 @@
           }
         </div>
         <div class="heatmap-card">
-          <div class="treemap-title">Heatmap: top 10 topics vs top 10 organisaties</div>
-          <div class="heatmap-legend">
-            <span>Weinig</span>
-            <span class="heatmap-swatch" style="background: #7f1d1d"></span>
-            <span class="heatmap-swatch" style="background: #991b1b"></span>
-            <span class="heatmap-swatch" style="background: #ca3e47"></span>
-            <span class="heatmap-swatch" style="background: #fca5a5"></span>
-            <span>Veel</span>
+          <div class="treemap-title">Heatmap</div>
+          <div class="heatmap-toolbar">
+            <div class="heatmap-legend">
+              <span>Weinig</span>
+              <span class="heatmap-swatch" style="background: #7f1d1d"></span>
+              <span class="heatmap-swatch" style="background: #991b1b"></span>
+              <span class="heatmap-swatch" style="background: #ca3e47"></span>
+              <span class="heatmap-swatch" style="background: #fca5a5"></span>
+              <span>Veel</span>
+            </div>
+            <div class="heatmap-axis-controls">
+              <label class="heatmap-axis-control">
+                Horizontaal
+                <select name="heatmap-x-axis" [value]="heatmapXAxis()" (change)="onHeatmapAxisChange('x', $event)">
+                  @for (axis of heatmapAxisOptions; track axis.value) {
+                    <option [value]="axis.value" [selected]="axis.value === heatmapXAxis()">{{ axis.label }}</option>
+                  }
+                </select>
+              </label>
+              <details class="heatmap-multiselect">
+                <summary>Kolommen ({{ heatmapSelectedCount('x') }} geselecteerd)</summary>
+                <div class="heatmap-multiselect-panel">
+                  @for (option of heatmapXOptions(); track option.value) {
+                    <label class="heatmap-multiselect-option">
+                      <input
+                        type="checkbox"
+                        [checked]="isHeatmapSelected('x', option.value)"
+                        (change)="onHeatmapValueToggle('x', option.value, $event)"
+                      />
+                      <span class="heatmap-option-label">{{ option.value }}</span>
+                      <span class="heatmap-option-count">({{ option.count }})</span>
+                    </label>
+                  }
+                </div>
+              </details>
+
+              <label class="heatmap-axis-control">
+                Verticaal
+                <select name="heatmap-y-axis" [value]="heatmapYAxis()" (change)="onHeatmapAxisChange('y', $event)">
+                  @for (axis of heatmapAxisOptions; track axis.value) {
+                    <option [value]="axis.value" [selected]="axis.value === heatmapYAxis()">{{ axis.label }}</option>
+                  }
+                </select>
+              </label>
+              <details class="heatmap-multiselect">
+                <summary>Rijen ({{ heatmapSelectedCount('y') }} geselecteerd)</summary>
+                <div class="heatmap-multiselect-panel">
+                  @for (option of heatmapYOptions(); track option.value) {
+                    <label class="heatmap-multiselect-option">
+                      <input
+                        type="checkbox"
+                        [checked]="isHeatmapSelected('y', option.value)"
+                        (change)="onHeatmapValueToggle('y', option.value, $event)"
+                      />
+                      <span class="heatmap-option-label">{{ option.value }}</span>
+                      <span class="heatmap-option-count">({{ option.count }})</span>
+                    </label>
+                  }
+                </div>
+              </details>
+            </div>
           </div>
           <div class="heatmap-body">
-            <div class="heatmap-y-label">Topics</div>
+            <div class="heatmap-y-label">{{ heatmapAxisLabel(heatmapYAxis()) }}</div>
             <div class="heatmap-plot-shell">
               <div class="heatmap-x-label-wrapper">
-                <div class="heatmap-x-label">Organisaties</div>
+                <div class="heatmap-x-label">{{ heatmapAxisLabel(heatmapXAxis()) }}</div>
               </div>
               <div class="bar-chart-shell">
                 <svg class="heatmap" role="img" aria-label="Heatmap met topic en organisatie co-occurenties"></svg>

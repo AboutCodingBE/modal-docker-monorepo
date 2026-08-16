@@ -37,9 +37,16 @@ interface FileSizeBar {
 }
 
 interface HeatmapCell {
-  topic: string;
-  organization: string;
+  xKey: string;
+  yKey: string;
   value: number;
+}
+
+type HeatmapDimension = 'organisations' | 'persons' | 'locations' | 'topics';
+
+interface HeatmapAxisOption {
+  value: string;
+  count: number;
 }
 
 type ItemScope = 'files' | 'folders' | 'both';
@@ -96,9 +103,22 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
   topicTreemapRects = signal<TreemapRect[]>([]);
   barChartItems = signal<FileSizeBar[]>([]);
   barChartLegendItems = signal<{ category: string; color: string }[]>([]);
-  heatmapTopics = signal<string[]>([]);
-  heatmapOrganizations = signal<string[]>([]);
+  heatmapXValues = signal<string[]>([]);
+  heatmapYValues = signal<string[]>([]);
   heatmapCells = signal<HeatmapCell[]>([]);
+  heatmapXAxis = signal<HeatmapDimension>('organisations');
+  heatmapYAxis = signal<HeatmapDimension>('topics');
+  heatmapResults = signal<ItemAnalytics[]>([]);
+  heatmapXOptions = signal<HeatmapAxisOption[]>([]);
+  heatmapYOptions = signal<HeatmapAxisOption[]>([]);
+  heatmapXSelected = signal<string[]>([]);
+  heatmapYSelected = signal<string[]>([]);
+  heatmapAxisOptions: Array<{ value: HeatmapDimension; label: string }> = [
+    { value: 'organisations', label: 'Organisatie' },
+    { value: 'persons', label: 'Personen' },
+    { value: 'locations', label: 'Locatie' },
+    { value: 'topics', label: 'Topic' },
+  ];
 
   tooltipText = signal('');
   tooltipX = signal(0);
@@ -255,6 +275,64 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     this._loadLocationsForEntities(this.archiveId(), scopedEntities);
   }
 
+  onHeatmapAxisChange(axis: 'x' | 'y', event: Event): void {
+    const dimension = (event.target as HTMLSelectElement).value as HeatmapDimension;
+    if (axis === 'x') {
+      this.heatmapXAxis.set(dimension);
+    } else {
+      this.heatmapYAxis.set(dimension);
+    }
+
+    if (this.heatmapResults().length === 0) {
+      return;
+    }
+
+    this._rebuildHeatmapSelections({
+      resetX: axis === 'x',
+      resetY: axis === 'y',
+    });
+    setTimeout(() => this._renderHeatmap());
+  }
+
+  onHeatmapValueToggle(axis: 'x' | 'y', value: string, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    const options = axis === 'x' ? this.heatmapXOptions() : this.heatmapYOptions();
+    const order = new Map(options.map((option, index) => [option.value, index]));
+    const current = axis === 'x' ? this.heatmapXSelected() : this.heatmapYSelected();
+
+    let next = checked
+      ? [...new Set([...current, value])]
+      : current.filter((entry) => entry !== value);
+
+    next = [...next].sort((a, b) => (order.get(a) ?? 9999) - (order.get(b) ?? 9999));
+
+    if (axis === 'x') {
+      this.heatmapXSelected.set(next);
+    } else {
+      this.heatmapYSelected.set(next);
+    }
+
+    this._applyHeatmapCells();
+    setTimeout(() => this._renderHeatmap());
+  }
+
+  isHeatmapSelected(axis: 'x' | 'y', value: string): boolean {
+    return axis === 'x'
+      ? this.heatmapXSelected().includes(value)
+      : this.heatmapYSelected().includes(value);
+  }
+
+  heatmapSelectedCount(axis: 'x' | 'y'): number {
+    return axis === 'x' ? this.heatmapXSelected().length : this.heatmapYSelected().length;
+  }
+
+  heatmapAxisLabel(dimension: HeatmapDimension): string {
+    if (dimension === 'organisations') return 'Organisaties';
+    if (dimension === 'persons') return 'Personen';
+    if (dimension === 'locations') return 'Locaties';
+    return 'Topics';
+  }
+
   private _entitiesForScope(entities: DashboardEntity[]): DashboardEntity[] {
     const scope = this.itemScope();
     if (scope === 'files') return entities.filter((entry) => !entry.is_directory);
@@ -270,9 +348,14 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       this.topicItems.set([]);
       this.barChartItems.set([]);
       this.barChartLegendItems.set([]);
-      this.heatmapTopics.set([]);
-      this.heatmapOrganizations.set([]);
+      this.heatmapXValues.set([]);
+      this.heatmapYValues.set([]);
       this.heatmapCells.set([]);
+      this.heatmapResults.set([]);
+      this.heatmapXOptions.set([]);
+      this.heatmapYOptions.set([]);
+      this.heatmapXSelected.set([]);
+      this.heatmapYSelected.set([]);
       this._syncTreemapRects();
       this.loading.set(false);
       return;
@@ -309,11 +392,8 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
         this.barChartItems.set(barItems);
         this.barChartLegendItems.set(this._buildBarChartLegend(barItems));
 
-        const topTopics = this._topKeysFromMap(topicCounts, 10);
-        const topOrganizations = this._topKeysFromMap(organizationCounts, 10);
-        this.heatmapTopics.set(topTopics);
-        this.heatmapOrganizations.set(topOrganizations);
-        this.heatmapCells.set(this._buildHeatmapCells(results as ItemAnalytics[], topTopics, topOrganizations));
+        this.heatmapResults.set(results as ItemAnalytics[]);
+        this._rebuildHeatmapSelections({ resetX: true, resetY: true });
 
         this._syncTreemapRects();
         setTimeout(() => this._renderAllCharts());
@@ -671,33 +751,108 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       .map(([key]) => key);
   }
 
+  private _valuesForDimension(result: ItemAnalytics, dimension: HeatmapDimension): string[] {
+    if (dimension === 'organisations') return result.ner.organisations;
+    if (dimension === 'persons') return result.ner.persons;
+    if (dimension === 'locations') return result.ner.locations;
+    return result.topics.topics;
+  }
+
+  private _optionsForDimension(results: ItemAnalytics[], dimension: HeatmapDimension): HeatmapAxisOption[] {
+    const counts = new Map<string, number>();
+
+    results.forEach((result) => {
+      const uniqueValues = new Set(this._valuesForDimension(result, dimension));
+      uniqueValues.forEach((value) => {
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+      });
+    });
+
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([value, count]) => ({ value, count }));
+  }
+
+  private _topDefaultSelection(options: HeatmapAxisOption[]): string[] {
+    return options.slice(0, 10).map((option) => option.value);
+  }
+
+  private _reconcileSelection(
+    previous: string[],
+    options: HeatmapAxisOption[],
+    reset: boolean,
+  ): string[] {
+    if (reset) {
+      return this._topDefaultSelection(options);
+    }
+
+    const allowed = new Set(options.map((option) => option.value));
+    const kept = previous.filter((value) => allowed.has(value));
+    return kept.length > 0 ? kept : this._topDefaultSelection(options);
+  }
+
+  private _rebuildHeatmapSelections(config: { resetX: boolean; resetY: boolean }): void {
+    const results = this.heatmapResults();
+    const xOptions = this._optionsForDimension(results, this.heatmapXAxis());
+    const yOptions = this._optionsForDimension(results, this.heatmapYAxis());
+    const xSelected = this._reconcileSelection(this.heatmapXSelected(), xOptions, config.resetX);
+    const ySelected = this._reconcileSelection(this.heatmapYSelected(), yOptions, config.resetY);
+
+    this.heatmapXOptions.set(xOptions);
+    this.heatmapYOptions.set(yOptions);
+    this.heatmapXSelected.set(xSelected);
+    this.heatmapYSelected.set(ySelected);
+
+    this._applyHeatmapCells();
+  }
+
+  private _applyHeatmapCells(): void {
+    const xValues = this.heatmapXSelected();
+    const yValues = this.heatmapYSelected();
+
+    this.heatmapXValues.set(xValues);
+    this.heatmapYValues.set(yValues);
+    this.heatmapCells.set(
+      this._buildHeatmapCells(
+        this.heatmapResults(),
+        yValues,
+        xValues,
+        this.heatmapYAxis(),
+        this.heatmapXAxis(),
+      ),
+    );
+  }
+
   private _buildHeatmapCells(
     results: ItemAnalytics[],
-    topTopics: string[],
-    topOrganizations: string[]
+    yValues: string[],
+    xValues: string[],
+    yDimension: HeatmapDimension,
+    xDimension: HeatmapDimension,
   ): HeatmapCell[] {
     const counts = new Map<string, number>();
 
-    results.forEach(({ ner, topics }) => {
-      const topicSet = new Set(topics.topics);
-      const orgSet = new Set(ner.organisations);
-      topTopics.forEach((topic) => {
-        if (!topicSet.has(topic)) return;
-        topOrganizations.forEach((organization) => {
-          if (!orgSet.has(organization)) return;
-          const key = `${topic}|||${organization}`;
+    results.forEach((result) => {
+      const ySet = new Set(this._valuesForDimension(result, yDimension));
+      const xSet = new Set(this._valuesForDimension(result, xDimension));
+
+      yValues.forEach((yValue) => {
+        if (!ySet.has(yValue)) return;
+        xValues.forEach((xValue) => {
+          if (!xSet.has(xValue)) return;
+          const key = `${yValue}|||${xValue}`;
           counts.set(key, (counts.get(key) ?? 0) + 1);
         });
       });
     });
 
     const cells: HeatmapCell[] = [];
-    topTopics.forEach((topic) => {
-      topOrganizations.forEach((organization) => {
-        const key = `${topic}|||${organization}`;
+    yValues.forEach((yValue) => {
+      xValues.forEach((xValue) => {
+        const key = `${yValue}|||${xValue}`;
         cells.push({
-          topic,
-          organization,
+          xKey: xValue,
+          yKey: yValue,
           value: counts.get(key) ?? 0,
         });
       });
@@ -710,19 +865,19 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     const svg = this.elementRef.nativeElement.querySelector('svg.heatmap') as SVGSVGElement | null;
     if (!svg) return;
 
-    const topics = this.heatmapTopics();
-    const organizations = this.heatmapOrganizations();
+    const yValues = this.heatmapYValues();
+    const xValues = this.heatmapXValues();
     const cells = this.heatmapCells();
 
     const width = 820;
     const height = 420;
-    const margin = { top: 60, right: 16, bottom: 80, left: 160 };
+    const margin = { top: 18, right: 16, bottom: 80, left: 160 };
     const chartWidth = width - margin.left - margin.right;
     const chartHeight = height - margin.top - margin.bottom;
 
     d3.select<SVGSVGElement, HeatmapCell>(svg).selectAll('*').remove();
 
-    if (topics.length === 0 || organizations.length === 0) {
+    if (yValues.length === 0 || xValues.length === 0) {
       d3.select<SVGSVGElement, HeatmapCell>(svg)
         .attr('viewBox', `0 0 ${width} ${height}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
@@ -742,12 +897,12 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       .range(['#7f1d1d', '#fee2e2']);
 
     const xScale = d3.scaleBand<string>()
-      .domain(organizations)
+      .domain(xValues)
       .range([0, chartWidth])
       .padding(0.05);
 
     const yScale = d3.scaleBand<string>()
-      .domain(topics)
+      .domain(yValues)
       .range([0, chartHeight])
       .padding(0.05);
 
@@ -762,39 +917,86 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       .data(cells)
       .enter()
       .append('rect')
-      .attr('x', (item) => xScale(item.organization) ?? 0)
-      .attr('y', (item) => yScale(item.topic) ?? 0)
+      .attr('x', (item) => xScale(item.xKey) ?? 0)
+      .attr('y', (item) => yScale(item.yKey) ?? 0)
       .attr('width', xScale.bandwidth())
       .attr('height', yScale.bandwidth())
       .attr('fill', (item) => colorScale(item.value))
       .attr('stroke', '#ffffff')
       .attr('stroke-width', 1)
       .append('title')
-      .text((item) => `${item.topic} / ${item.organization}: ${item.value}`);
+      .text((item) => `${item.yKey} / ${item.xKey}: ${item.value}`);
 
-    g.append('g')
+    const xAxisGroup = g.append('g')
       .attr('transform', `translate(0,${chartHeight})`)
-      .call(d3.axisBottom(xScale).tickSize(0))
-      .selectAll('text')
+      .call(d3.axisBottom(xScale).tickSize(0));
+
+    const xTickTexts = xAxisGroup.selectAll<SVGTextElement, string>('text')
       .attr('font-size', '11px')
       .attr('fill', '#111827')
       .attr('text-anchor', 'end')
       .attr('transform', 'rotate(-45)');
+    this._truncateAxisTickLabels(xTickTexts, Math.max(24, xScale.bandwidth() * 1.5));
 
-    g.append('g')
-      .call(d3.axisLeft(yScale).tickSize(0))
-      .selectAll('text')
+    const yAxisGroup = g.append('g')
+      .call(d3.axisLeft(yScale).tickSize(0));
+
+    const yTickTexts = yAxisGroup.selectAll<SVGTextElement, string>('text')
       .attr('font-size', '12px')
       .attr('fill', '#111827');
+    this._truncateAxisTickLabels(yTickTexts, Math.max(24, margin.left - 28));
 
-    g.append('text')
-      .attr('x', chartWidth / 2)
-      .attr('y', -26)
-      .attr('text-anchor', 'middle')
-      .attr('fill', '#111827')
-      .attr('font-size', '13px')
-      .attr('font-weight', '600')
-      .text('Top 10 topics × top 10 organisaties');
+  }
+
+  private _truncateAxisTickLabels(
+    selection: d3.Selection<SVGTextElement, string, SVGGElement, unknown>,
+    maxWidth: number,
+  ): void {
+    selection.each((_d: string, index: number, nodes: SVGTextElement[] | ArrayLike<SVGTextElement>) => {
+      const node = nodes[index] as SVGTextElement;
+      const fullLabel = node.textContent ?? '';
+      node.textContent = fullLabel;
+
+      if (fullLabel === '') {
+        return;
+      }
+
+      if (node.getComputedTextLength() > maxWidth) {
+        const ellipsis = '...';
+        const ellipsisWidth = (() => {
+          node.textContent = ellipsis;
+          return node.getComputedTextLength();
+        })();
+
+        if (ellipsisWidth > maxWidth) {
+          node.textContent = '';
+        } else {
+          const availableWidth = maxWidth - ellipsisWidth;
+        let low = 0;
+        let high = fullLabel.length;
+        let best = 0;
+
+        while (low <= high) {
+          const mid = Math.floor((low + high) / 2);
+          const candidate = fullLabel.slice(0, mid);
+          node.textContent = candidate;
+
+          if (node.getComputedTextLength() <= availableWidth) {
+            best = mid;
+            low = mid + 1;
+          } else {
+            high = mid - 1;
+          }
+        }
+
+          node.textContent = best > 0 ? `${fullLabel.slice(0, best)}...` : ellipsis;
+        }
+      }
+
+      d3.select(node)
+        .append('title')
+        .text(fullLabel);
+    });
   }
 
   private _renderAllCharts(): void {
