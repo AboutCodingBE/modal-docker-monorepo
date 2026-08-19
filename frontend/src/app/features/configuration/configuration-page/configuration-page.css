@@ -1,0 +1,383 @@
+.page-wrapper {
+  padding: 28px 32px;
+}
+
+.page-inner {
+  max-width: 780px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 28px;
+}
+
+/* ── Sections ── */
+
+.section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.section-desc {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+
+.section-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+  margin-top: 18px;
+}
+
+/* ── Form elements ── */
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+
+.form-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.form-input {
+  font-family: inherit;
+  padding: 9px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #111827;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-input:focus {
+  border-color: #3b6ef5;
+  box-shadow: 0 0 0 3px rgba(59, 110, 245, 0.12);
+}
+
+.form-input:disabled {
+  background: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.form-input-number {
+  font-family: inherit;
+  padding: 9px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #111827;
+  outline: none;
+  width: 120px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-input-number:focus {
+  border-color: #3b6ef5;
+  box-shadow: 0 0 0 3px rgba(59, 110, 245, 0.12);
+}
+
+.form-select {
+  font-family: inherit;
+  padding: 9px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #111827;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.form-select:focus {
+  border-color: #3b6ef5;
+}
+
+.form-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+/* ── Buttons ── */
+
+.btn-primary {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 18px;
+  background: #3b6ef5;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #2d5ce0;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-save {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 20px;
+  background: #3b6ef5;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  min-width: 100px;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: #2d5ce0;
+}
+
+.btn-save:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.btn-save--saved {
+  background: #16a34a;
+}
+
+.btn-save--saved:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.btn-save--error {
+  background: #dc2626;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  color: #3b6ef5;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btn-link--error {
+  color: #991b1b;
+}
+
+/* ── Download progress ── */
+
+.download-area {
+  margin-top: 14px;
+}
+
+.download-active {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.download-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.download-model-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.download-pct {
+  font-size: 12px;
+  font-weight: 700;
+  color: #3b6ef5;
+}
+
+.download-bar-track {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.download-bar-fill {
+  height: 100%;
+  background: #3b6ef5;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.download-bar-indeterminate {
+  width: 40%;
+  animation: indeterminate 1.4s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+.download-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.download-bytes {
+  font-size: 11px;
+  color: #6b7280;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.download-status {
+  font-size: 11px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* ── Feedback boxes ── */
+
+.success-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: #15803d;
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.error-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: #991b1b;
+  line-height: 1.5;
+}
+
+/* ── Model config rows ── */
+
+.model-config-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.model-config-row:last-of-type {
+  border-bottom: none;
+}
+
+.model-config-label {
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.model-config-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.model-config-desc {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 1px;
+}
+
+.model-config-select {
+  flex: 1;
+}
+
+/* ── Processing setting rows ── */
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.setting-row:last-of-type {
+  border-bottom: none;
+}
+
+.setting-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.setting-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.setting-desc {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.setting-input {
+  flex-shrink: 0;
+}

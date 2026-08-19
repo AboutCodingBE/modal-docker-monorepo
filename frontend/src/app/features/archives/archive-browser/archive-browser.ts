@@ -157,10 +157,19 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
               ...update.event,
               type: this.taskTypes.get(update.event.task_id),
             };
+            const completedTypes = isCompleted
+              ? (() => {
+                  const type = this.taskTypes.get(update.event.task_id)?.toUpperCase();
+                  return type && !a.completed_analysis_types.includes(type)
+                    ? [...a.completed_analysis_types, type]
+                    : a.completed_analysis_types;
+                })()
+              : a.completed_analysis_types;
             return {
               ...a,
               status: completedStatus,
               analysisEvent: enrichedEvent,
+              completed_analysis_types: completedTypes,
             };
           } else {
             // Tika ingestion: completed → 'ingested', active → progress bar

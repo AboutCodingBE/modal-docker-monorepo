@@ -1,0 +1,218 @@
+<div class="page-wrapper">
+  <div class="page-inner">
+
+    <div class="page-title">Configuratie</div>
+    <div class="page-subtitle">Beheer modellen en verwerkingsinstellingen</div>
+
+    <!-- ── Section 1: Model downloaden ── -->
+    <div class="section">
+      <div class="section-title">Model downloaden</div>
+      <div class="section-desc">
+        Download een nieuw AI-model door de modelnaam in te voeren. Het model wordt beschikbaar voor alle analysetypes.
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Modelnaam</label>
+          <input
+            class="form-input"
+            type="text"
+            placeholder="Bijv. gemma3:4b, llama3:8b, deepseek-v3"
+            [value]="modelInput()"
+            (input)="modelInput.set($any($event.target).value)"
+            [disabled]="downloadState() === 'downloading'"
+          />
+        </div>
+        <button
+          class="btn-primary"
+          (click)="startDownload()"
+          [disabled]="!modelInput().trim() || downloadState() === 'downloading'"
+        >
+          Downloaden
+        </button>
+      </div>
+
+      @if (downloadState() === 'downloading') {
+        <div class="download-area">
+          <div class="download-active">
+            <div class="download-header">
+              <div class="download-model-name">{{ downloadModel() }}</div>
+              @if (downloadPercentage() !== null) {
+                <div class="download-pct">{{ downloadPercentage() }}%</div>
+              }
+            </div>
+            <div class="download-bar-track">
+              @if (downloadPercentage() !== null) {
+                <div class="download-bar-fill" [style.width.%]="downloadPercentage()"></div>
+              } @else {
+                <div class="download-bar-fill download-bar-indeterminate"></div>
+              }
+            </div>
+            <div class="download-details">
+              @if (downloadProgress()?.completed_bytes && downloadProgress()?.total_bytes) {
+                <div class="download-bytes">
+                  {{ formatBytes(downloadProgress()!.completed_bytes!) }} / {{ formatBytes(downloadProgress()!.total_bytes!) }}
+                </div>
+              } @else {
+                <div class="download-bytes"></div>
+              }
+              <div class="download-status">{{ downloadProgress()?.status }}</div>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (downloadState() === 'success' || downloadState() === 'already-added') {
+        <div class="success-box">
+          @if (downloadState() === 'success') {
+            ✓ Model "{{ downloadModel() }}" succesvol gedownload en beschikbaar voor alle analysetypes.
+          } @else {
+            ✓ Model "{{ downloadModel() }}" is al beschikbaar in de app.
+          }
+          <button class="btn-link" (click)="resetDownload()">Nog een model downloaden</button>
+        </div>
+      }
+
+      @if (downloadState() === 'error') {
+        <div class="error-box">
+          ✕ {{ downloadProgress()?.error ?? 'Er is een fout opgetreden bij het downloaden.' }}
+          <button class="btn-link btn-link--error" (click)="resetDownload()">Opnieuw proberen</button>
+        </div>
+      }
+    </div>
+
+    <!-- ── Section 2: Standaard modellen ── -->
+    <div class="section">
+      <div class="section-title">Standaard modellen</div>
+      <div class="section-desc">
+        Stel het standaardmodel in per analysetype. Dit model wordt gebruikt bij het starten van een nieuwe analyse.
+      </div>
+
+      @if (modelsLoadError()) {
+        <div class="error-box">Kon de modelconfiguratie niet laden.</div>
+      } @else {
+        @for (type of typeOrder; track type) {
+          @if (modelsByType()[type]?.length) {
+            <div class="model-config-row">
+              <div class="model-config-label">
+                <div class="model-config-name">{{ typeLabels[type].name }}</div>
+                <div class="model-config-desc">{{ typeLabels[type].desc }}</div>
+              </div>
+              <div class="model-config-select">
+                <select
+                  class="form-select"
+                  (change)="onModelSelect(type, $any($event.target).value)"
+                >
+                  @for (entry of modelsByType()[type]; track entry.id) {
+                    <option [value]="entry.id" [selected]="selectedIds()[type] === entry.id">
+                      {{ entry.model }}
+                    </option>
+                  }
+                </select>
+              </div>
+            </div>
+          }
+        }
+      }
+
+      <div class="section-footer">
+        <button
+          class="btn-save"
+          (click)="saveDefaultModels()"
+          [disabled]="modelsSaveState() === 'saving'"
+          [class.btn-save--saved]="modelsSaveState() === 'saved'"
+          [class.btn-save--error]="modelsSaveState() === 'error'"
+        >
+          @if (modelsSaveState() === 'saving') { Opslaan... }
+          @else if (modelsSaveState() === 'saved') { ✓ Opgeslagen }
+          @else if (modelsSaveState() === 'error') { Fout bij opslaan }
+          @else { Opslaan }
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Section 3: Verwerkingsinstellingen ── -->
+    <div class="section">
+      <div class="section-title">Verwerkingsinstellingen</div>
+      <div class="section-desc">
+        Stel de parameters in voor de tekstverwerking bij analyses.
+      </div>
+
+      @if (processingLoadError()) {
+        <div class="error-box">Kon de verwerkingsinstellingen niet laden.</div>
+      } @else {
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">Minimale verwerkingslengte</div>
+            <div class="setting-desc">
+              Bestanden met minder tekens dan dit minimum worden overgeslagen bij de analyse.
+            </div>
+          </div>
+          <div class="setting-input">
+            <input
+              class="form-input-number"
+              type="number"
+              [value]="minTextLength()"
+              (input)="minTextLength.set(+$any($event.target).value)"
+              min="0"
+            />
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">Tekens voor Samenvatting &amp; Topics</div>
+            <div class="setting-desc">
+              Het maximaal aantal tekens dat wordt meegestuurd naar het model voor samenvatting en onderwerpdetectie.
+            </div>
+          </div>
+          <div class="setting-input">
+            <input
+              class="form-input-number"
+              type="number"
+              [value]="summaryTopicCharLimit()"
+              (input)="summaryTopicCharLimit.set(+$any($event.target).value)"
+              min="1"
+              step="100"
+            />
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">Tekens voor NER</div>
+            <div class="setting-desc">
+              Het maximaal aantal tekens dat wordt meegestuurd naar het model voor entiteitsherkenning.
+            </div>
+          </div>
+          <div class="setting-input">
+            <input
+              class="form-input-number"
+              type="number"
+              [value]="nerCharLimit()"
+              (input)="nerCharLimit.set(+$any($event.target).value)"
+              min="1"
+              step="100"
+            />
+          </div>
+        </div>
+      }
+
+      <div class="section-footer">
+        <button
+          class="btn-save"
+          (click)="saveProcessingSettings()"
+          [disabled]="processingSaveState() === 'saving'"
+          [class.btn-save--saved]="processingSaveState() === 'saved'"
+          [class.btn-save--error]="processingSaveState() === 'error'"
+        >
+          @if (processingSaveState() === 'saving') { Opslaan... }
+          @else if (processingSaveState() === 'saved') { ✓ Opgeslagen }
+          @else if (processingSaveState() === 'error') { Fout bij opslaan }
+          @else { Opslaan }
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -71,6 +71,13 @@
           <div class="ner-empty">Geen NER resultaten beschikbaar voor deze map.</div>
         } @else {
 
+          <div class="analysis-section-header">
+            <span class="analysis-section-label">Entiteitsherkenning</span>
+            @if (ner.model) {
+              <span class="model-badge">{{ ner.model }}</span>
+            }
+          </div>
+
           @if (ner.persons.length > 0) {
             <div class="ner-section">
               <div class="ner-section-label">Personen</div>
@@ -134,6 +141,12 @@
         @if (td.total_topics === 0) {
           <div class="topics-empty">Geen topics beschikbaar voor deze map.</div>
         } @else {
+          <div class="analysis-section-header">
+            <span class="analysis-section-label">Onderwerpdetectie</span>
+            @if (td.model) {
+              <span class="model-badge">{{ td.model }}</span>
+            }
+          </div>
           <div class="topic-tags">
             @for (topic of td.topics; track topic) {
               <span class="topic-tag">{{ topic }}</span>

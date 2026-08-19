@@ -44,6 +44,7 @@ export interface FolderFile {
 export interface NerResult {
   file_id: string;
   file_name: string;
+  model: string | null;
   persons: string[];
   locations: string[];
   organisations: string[];
@@ -54,6 +55,7 @@ export interface NerResult {
 export interface NerFolderResult {
   folder_id: string;
   folder_name: string;
+  model: string | null;
   persons: string[];
   locations: string[];
   organisations: string[];
@@ -64,6 +66,7 @@ export interface NerFolderResult {
 export interface TopicsResult {
   file_id: string;
   file_name: string;
+  model: string | null;
   topics: string[];
   total_topics: number;
 }
@@ -71,6 +74,7 @@ export interface TopicsResult {
 export interface TopicsFolderResult {
   folder_id: string;
   folder_name: string;
+  model: string | null;
   topics: string[];
   total_topics: number;
 }
@@ -92,11 +96,6 @@ export interface FileAnalysis {
   file_id: string;
   type: 'file' | 'folder';
   summaries: AnalysisSummaryEntry[];
-}
-
-export interface AnalysisConfigEntry {
-  type: string;
-  model: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -151,10 +150,6 @@ export class ArchiveService {
 
   deleteArchive(archiveId: string): Observable<void> {
     return this.http.delete<void>(`/api/archives/${archiveId}`);
-  }
-
-  getAnalysisConfiguration(): Observable<AnalysisConfigEntry[]> {
-    return this.http.get<AnalysisConfigEntry[]>('/api/analysis/configuration');
   }
 
   startAnalysis(

@@ -146,12 +146,23 @@ class GenericType(Base):
     file: Mapped["File"] = relationship("File", back_populates="generic_type")
 
 
+class ProcessingSettings(Base):
+    __tablename__ = "processing_settings"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    summary_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=1000)
+    topic_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=1000)
+    ner_llm_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=6000)
+    minimum_text_length: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
 class AnalysisConfiguration(Base):
     __tablename__ = "analysis_configuration"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    type: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    type: Mapped[AnalysisType] = mapped_column(Enum(AnalysisType, name="analysis_type"), nullable=False)
     model: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class ArchiveAnalysis(Base):

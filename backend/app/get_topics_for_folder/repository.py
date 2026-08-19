@@ -22,12 +22,12 @@ class TopicsForFolderRepository:
         )
         return result.scalar_one_or_none()
 
-    async def get_topics_for_folder(self, folder_id: uuid.UUID) -> TopicDetection | None:
+    async def get_topics_for_folder(self, folder_id: uuid.UUID) -> tuple[TopicDetection, str] | None:
         result = await self._session.execute(
-            select(TopicDetection)
+            select(TopicDetection, ArchiveAnalysis.model)
             .join(ArchiveAnalysis, ArchiveAnalysis.id == TopicDetection.analysis_id)
             .where(TopicDetection.file_id == folder_id)
             .order_by(ArchiveAnalysis.date.desc())
             .limit(1)
         )
-        return result.scalar_one_or_none()
+        return result.first()

@@ -6,11 +6,13 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.analysis import task_tracker
 from app.config import settings
-from app.create_topic_detection_for_archive.archive_analysis_repository import ArchiveAnalysisRepository
-from app.create_topic_detection_for_archive.ollama_client import OllamaUnavailableError, generate
+from app.shared.archive_analysis_repository import ArchiveAnalysisRepository
+from app.shared.analysis_engine_registry import classify_llm_engine, get_llm_provider
+from app.shared.llm.provider import LlmProviderUnavailableError
 from app.create_topic_detection_for_archive.topic_detection_repository import TopicDetectionRepository
 from app.shared.file_repository import FileRepository
 from app.shared.logging_config import log_context
+from app.shared.processing_settings_repository import ProcessingSettingsRepository
 
 _logger = logging.getLogger("app.topic")
 
@@ -53,9 +55,18 @@ class CreateTopicDetectionForArchive:
             # ── Phase 0: start task and fetch file + folder list ──────────────
             async with self._session_factory() as session:
                 await task_tracker.start_task(session, task_id)
+                processing_settings = await ProcessingSettingsRepository(session).get()
+
                 file_repo = FileRepository(session)
                 files = await file_repo.get_files_with_tika_content(archive_id)
                 folders = await file_repo.get_all_folders(archive_id)
+
+                if processing_settings.minimum_text_length > 0:
+                    files = [
+                        f for f in files
+                        if len(f["content"] or "") >= processing_settings.minimum_text_length
+                    ]
+
                 await task_tracker.update_total_files(session, task_id, len(files) + len(folders))
                 await session.commit()
 
@@ -63,42 +74,39 @@ class CreateTopicDetectionForArchive:
             failed_count = 0
             consecutive_failures = 0
 
+            provider = get_llm_provider(classify_llm_engine(model))
+
             # ── Phase 1: file topic extraction ──────────────────────────────────
             for file in files:
                 file_id: uuid.UUID = file["id"]
 
                 # Check if topics have already been generated for this file
+                already_processed = False
                 async with self._session_factory() as session:
-                    if await TopicDetectionRepository(session).exists(archive_analysis_id, file_id):
-                        processed += 1
-                        continue
-                    await task_tracker.update_progress(
-                        session, task_id, processed, failed_count, file["relative_path"]
-                    )
-                    await session.commit()
+                    already_processed = await TopicDetectionRepository(session).exists(archive_analysis_id, file_id)
+                    if not already_processed:
+                        await task_tracker.update_progress(
+                            session, task_id, processed, failed_count, file["relative_path"]
+                        )
+                        await session.commit()
+                if already_processed:
+                    processed += 1
+                    continue
 
-                # No DB connection held during the Ollama HTTP call.
+                # No DB connection held during the LLM HTTP call.
                 try:
-                    text = (file["content"] or "")[:1000]
-                    
-                    # Add format="json" to enforce constrained decoding in Ollama
-                    raw_response = await generate(model, _topic_prompt(text), format="json")
-                    
-                    # Validate and parse the response into a native Python dict
+                    text = (file["content"] or "")[:processing_settings.topic_char_limit]
+                    raw_response = await provider.generate(model, _topic_prompt(text), format="json")
                     response_data = json.loads(raw_response)
-                    
-                    # Fallback mechanism in case the model misspells the key or leaves it out
                     topics_list = response_data.get("topics", [])
-                    
-                    # Hard cap at 5 items max in Python for validation consistency
                     validated_topics = topics_list[:5]
 
                 except json.JSONDecodeError:
-                    _logger.warning(f"{log_context(archive_id, file['name'])} Invalid JSON returned by Ollama. Falling back to empty list.")
+                    _logger.warning(f"{log_context(archive_id, file['name'])} Invalid JSON returned by LLM. Falling back to empty list.")
                     validated_topics = []
 
-                except OllamaUnavailableError:
-                    _logger.error(f"{log_context(archive_id)}Ollama service unavailable — stopping topic detection")
+                except LlmProviderUnavailableError:
+                    _logger.error(f"{log_context(archive_id)}LLM provider unavailable — stopping topic detection")
                     await self._fail(task_id, archive_analysis_id)
                     return
                 except Exception as e:
@@ -133,17 +141,21 @@ class CreateTopicDetectionForArchive:
                     await session.commit()
 
                 try:
+                    skip_folder = False
                     async with self._session_factory() as session:
                         topics = await TopicDetectionRepository(session).get_topics_for_folder(
                             archive_analysis_id, folder_id, settings.topic_folder_top_n
                         )
                         if not topics:
-                            processed += 1
-                            continue
-                        await TopicDetectionRepository(session).persist_folder(
-                            archive_analysis_id, archive_id, folder["parent_id"], folder_id, topics
-                        )
-                        await session.commit()
+                            skip_folder = True
+                        else:
+                            await TopicDetectionRepository(session).persist_folder(
+                                archive_analysis_id, archive_id, folder["parent_id"], folder_id, topics
+                            )
+                            await session.commit()
+                    if skip_folder:
+                        processed += 1
+                        continue
                 except Exception as e:
                     _logger.error(
                         f"{log_context(archive_id, folder['name'])}"
