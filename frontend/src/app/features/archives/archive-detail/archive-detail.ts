@@ -6,10 +6,18 @@ import { FileTable } from './file-table/file-table';
 import { FolderDetail } from './folder-detail/folder-detail';
 import { FileDetail } from './file-detail/file-detail';
 import { AnalysisSummary } from './analysis-summary/analysis-summary';
+import { ArchiveDashboard } from '../archive-dashboard/archive-dashboard';
+
+interface ArchiveDetailNavigationState {
+  selectedFile?: FolderFile | null;
+  folderId?: string | null;
+  currentPath?: string;
+  folderName?: string;
+}
 
 @Component({
   selector: 'app-archive-detail',
-  imports: [CommonModule, FileTable, FolderDetail, FileDetail, AnalysisSummary],
+  imports: [CommonModule, FileTable, FolderDetail, FileDetail, AnalysisSummary, ArchiveDashboard],
   templateUrl: './archive-detail.html',
   styleUrl: './archive-detail.css',
 })
@@ -26,6 +34,7 @@ export class ArchiveDetail implements OnInit {
   loadingFolder = signal(true);
   selectedFile = signal<FolderFile | null>(null);
   rootFolderId = signal<string | null>(null);
+  dashboardVisible = signal(false);
 
   breadcrumbs = computed(() => {
     const path = this.currentPath();
@@ -42,9 +51,13 @@ export class ArchiveDetail implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
+    const navState = this.router.getCurrentNavigation()?.extras.state as ArchiveDetailNavigationState | undefined;
+
     this.archiveId.set(id);
+    this.currentPath.set(navState?.currentPath ?? '/');
+    this.selectedFile.set(navState?.selectedFile ?? null);
     this._loadStats(id);
-    this._loadFolder(id, '/');
+    this._loadFolder(id, navState?.currentPath ?? '/');
   }
 
   navigateTo(path: string): void {
@@ -55,6 +68,14 @@ export class ArchiveDetail implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/archives']);
+  }
+
+  openDashboard(): void {
+    this.dashboardVisible.set(true);
+  }
+
+  closeDashboard(): void {
+    this.dashboardVisible.set(false);
   }
 
   private _loadStats(id: string): void {
