@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     ner_folder_top_n: int = 25
     topic_folder_top_n: int = 25
 
-    embedding_model: str = "qwen3-embedding-0.6b"
+    # Ollama-tagnotatie (dubbele punt), niet "qwen3-embedding-0.6b" — zie `ollama list`.
+    embedding_model: str = "qwen3-embedding:0.6b"
     # embedding_dimension moet gelijk blijven aan de VECTOR(n)-kolom in migratie 0017. Wordt momenteel nergens
     # gecheckt bij opstart — zie TODO in 0017_add_embeddings_table.py (open beslissing, Nicholas).
     embedding_dimension: int = 1024
