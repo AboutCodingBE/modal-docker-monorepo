@@ -16,6 +16,7 @@ class AnalysisType(str, enum.Enum):
     NER = "NER"
     SUMMARY = "SUMMARY"
     TOPIC_DETECTION = "TOPIC_DETECTION"
+    EMBEDDING = "EMBEDDING"
 
 class ArchiveAnalysisStatus(str, enum.Enum):
     STARTED = "STARTED"
