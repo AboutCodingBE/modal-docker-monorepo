@@ -10,7 +10,9 @@ die enkel op de string zelf werkt (woord-gebaseerd, geen echte tokenizer).
 
 Story: "Geeft chunk_text() correcte, niet-overlappende chunks terug voor lege
 tekst, tekst korter dan chunk_size, tekst die exact een veelvoud van
-chunk_size is, en tekst die enkel uit witruimte bestaat?"
+chunk_size is, en tekst die enkel uit witruimte bestaat? En wordt een te kort
+laatste restje (< helft van chunk_size) samengevoegd met de voorlaatste chunk,
+zodat er geen piepklein, weinig betekenisvol staartje apart embed wordt?"
 """
 
 from app.create_embeddings_for_archive.embedding_engine import chunk_text
@@ -45,15 +47,35 @@ def test_chunk_text_exact_veelvoud_geeft_gelijke_chunks_zonder_rest():
     assert result == ["woord0 woord1 woord2", "woord3 woord4 woord5"]
 
 
-def test_chunk_text_niet_exact_veelvoud_laatste_chunk_is_korter():
-    """Bij een rest-aantal woorden moet de laatste chunk gewoon de overblijvende
-    woorden bevatten, in plaats van te falen of woorden te laten vallen."""
+def test_chunk_text_te_kort_laatste_restje_wordt_samengevoegd_met_vorige_chunk():
+    """Als de laatste chunk minder dan de helft van chunk_size woorden bevat (hier: 1 van 3),
+    moet hij samengevoegd worden met de voorlaatste chunk — geen piepklein, weinig
+    betekenisvol staartje dat op zichzelf embed wordt."""
     woorden = [f"woord{i}" for i in range(7)]
     tekst = " ".join(woorden)
 
     result = chunk_text(tekst, chunk_size=3)
 
-    assert result == ["woord0 woord1 woord2", "woord3 woord4 woord5", "woord6"]
+    assert result == ["woord0 woord1 woord2", "woord3 woord4 woord5 woord6"]
+
+
+def test_chunk_text_restje_van_precies_de_helft_blijft_apart():
+    """Bij een restje van exact de helft van chunk_size (hier: 2 van 4) wordt NIET
+    samengevoegd — de drempel is 'strikt minder dan de helft', dus dit is de grens
+    waarop het nog als 'lang genoeg' telt."""
+    woorden = [f"woord{i}" for i in range(6)]
+    tekst = " ".join(woorden)
+
+    result = chunk_text(tekst, chunk_size=4)
+
+    assert result == ["woord0 woord1 woord2 woord3", "woord4 woord5"]
+
+
+def test_chunk_text_met_slechts_1_chunk_wordt_nooit_samengevoegd():
+    """Als de hele tekst in 1 chunk past, is er geen voorlaatste chunk om mee samen
+    te voegen — die ene chunk blijft gewoon staan, ook al is hij zelf 'kort'."""
+    result = chunk_text("een woord", chunk_size=10)
+    assert result == ["een woord"]
 
 
 def test_chunk_text_laat_geen_woorden_vallen_of_dupliceren():
