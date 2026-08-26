@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.models import Embedding
+from app.shared.models import Embedding, File
 
 
 class EmbeddingRepository:
@@ -38,3 +38,38 @@ class EmbeddingRepository:
                 embedding=embedding,
             ))
         await self._session.flush()
+
+    async def search(
+        self,
+        query_vector: list[float],
+        top_n: int,
+        archive_id: uuid.UUID,
+    ) -> list[dict]:
+        """Zoekt de top_n dichtstbijzijnde chunks (cosine distance) binnen één archief.
+
+        Geeft alle metadata van de chunk terug (nog niet gefilterd op wat uiteindelijk
+        gevisualiseerd wordt — die keuze hoort bij de presentatielaag) plus de
+        bestandsnaam/pad via een join met files, en de rauwe cosine distance
+        (0 = identiek, 1 = orthogonaal/ongerelateerd, 2 = tegenovergesteld).
+        """
+        distance = Embedding.embedding.cosine_distance(query_vector).label("distance")
+        stmt = (
+            select(
+                Embedding.id,
+                Embedding.file_id,
+                Embedding.chunk_index,
+                Embedding.chunk_text,
+                Embedding.token_count,
+                Embedding.created_at,
+                File.name,
+                File.full_path,
+                File.relative_path,
+                distance,
+            )
+            .join(File, File.id == Embedding.file_id)
+            .where(File.archive_id == archive_id)
+            .order_by(distance)
+            .limit(top_n)
+        )
+        result = await self._session.execute(stmt)
+        return [dict(row._mapping) for row in result.all()]
