@@ -35,7 +35,7 @@ services:
       retries: 5
 
   tika:
-    image: apache/tika:latest-full
+    image: apache/tika:3.3.1.0-full
     ports:
       - "7777:9998"
     healthcheck:
