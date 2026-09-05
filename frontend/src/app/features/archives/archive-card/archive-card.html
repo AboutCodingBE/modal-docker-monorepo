@@ -1,5 +1,31 @@
 <div class="archive-card" (click)="cardClicked.emit(archive().id)">
-  <h3 class="card-name">{{ archive().name }}</h3>
+  <div class="card-top">
+    <h3 class="card-name">{{ archive().name }}</h3>
+    <div class="export-wrapper" (click)="$event.stopPropagation()">
+      <button
+        class="btn-export"
+        [disabled]="exporting()"
+        (click)="toggleExportMenu()"
+        title="Exporteer archief"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" x2="12" y1="15" y2="3"/>
+        </svg>
+        {{ exporting() ? 'Bezig...' : 'Export' }}
+      </button>
+      @if (exportMenuOpen()) {
+        <div class="export-popover">
+          <div class="popover-header">Exporteer als</div>
+          <div class="popover-badges">
+            <button class="format-badge-btn" (click)="onExport('csv')">CSV</button>
+            <button class="format-badge-btn" (click)="onExport('json')">JSON</button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
 
   <div class="card-meta">
     <div class="meta-item">
@@ -72,4 +98,15 @@
       </svg>
     </button>
   </div>
+
+  @if (exportSuccessPath()) {
+    <div class="export-feedback export-feedback--success">
+      ✓ Geëxporteerd naar: {{ exportSuccessPath() }}
+    </div>
+  }
+  @if (exportError()) {
+    <div class="export-feedback export-feedback--error">
+      ✕ {{ exportError() }}
+    </div>
+  }
 </div>

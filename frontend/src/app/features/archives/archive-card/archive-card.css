@@ -218,3 +218,108 @@
   border-color: #fecaca;
   background: #fef2f2;
 }
+
+.export-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.btn-export {
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-export svg {
+  width: 13px;
+  height: 13px;
+}
+
+.btn-export:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.btn-export:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.export-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 160px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  padding: 10px 12px;
+}
+
+.popover-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.popover-badges {
+  display: flex;
+  gap: 6px;
+}
+
+.format-badge-btn {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 5px;
+  background: #e5e7eb;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  text-transform: uppercase;
+}
+
+.format-badge-btn:hover {
+  background: #3b6ef5;
+  border-color: #3b6ef5;
+  color: #fff;
+}
+
+.export-feedback {
+  font-size: 11px;
+  padding: 7px 12px;
+  border-radius: 0 0 10px 10px;
+  margin: 0 -18px;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.export-feedback--success {
+  background: #f0fdf4;
+  color: #15803d;
+  border-top: 1px solid #bbf7d0;
+}
+
+.export-feedback--error {
+  background: #fef2f2;
+  color: #991b1b;
+  border-top: 1px solid #fecaca;
+}
