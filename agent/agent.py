@@ -262,6 +262,49 @@ def file_content():
     return send_file(file_path, mimetype=mime_type)
 
 
+@app.get("/export/default-path")
+def export_default_path():
+    """
+    Return the OS-appropriate default export folder (Documents/modal_exports).
+    Uses platformdirs for correct cross-platform resolution — in particular the
+    Windows case where Documents may be redirected via OneDrive or Group Policy.
+    Does NOT create the folder; that happens naturally on first write.
+    """
+    from platformdirs import user_documents_dir
+    path = os.path.join(user_documents_dir(), "modal_exports")
+    return jsonify({"path": path})
+
+
+@app.post("/export/write")
+def export_write():
+    """
+    Write one or more text files into a folder on the host machine.
+    Body: {"export_root": str, "files": [{"filename": str, "content": str}, ...]}
+    Creates export_root if it does not exist. Returns the final written path.
+    """
+    data = request.get_json(silent=True)
+    if not data or "base_path" not in data or "subfolder_name" not in data or "files" not in data:
+        return jsonify({"error": "Missing base_path, subfolder_name, or files"}), 400
+
+    export_root = Path(data["base_path"]) / data["subfolder_name"]
+    files = data["files"]
+
+    try:
+        export_root.mkdir(parents=True, exist_ok=True)
+        for file_entry in files:
+            filename = file_entry.get("filename")
+            content = file_entry.get("content", "")
+            if not filename:
+                return jsonify({"error": "Each file entry must have a filename"}), 400
+            dest = export_root / filename
+            dest.write_text(content, encoding="utf-8")
+    except OSError as e:
+        logger.error("Export write failed: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"path": str(export_root)})
+
+
 # ---------------------------------------------------------------------------
 # Folder picker (platform-native via subprocess)
 # ---------------------------------------------------------------------------

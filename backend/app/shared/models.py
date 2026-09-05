@@ -215,3 +215,11 @@ class TopicDetection(Base):
     file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
 
     topics: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+
+
+class ExportSettings(Base):
+    __tablename__ = "export_settings"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    default_export_path: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    content_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=2000)
