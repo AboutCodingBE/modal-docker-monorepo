@@ -1,7 +1,8 @@
-import { Component, input, output, computed, inject } from '@angular/core';
+import { Component, input, output, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Archive } from '../../../models/archive.model';
 import { ConfigurationService } from '../../../services/configuration.service';
+import { ExportArchiveService, ExportFormat } from '../../../services/export-archive.service';
 import { ProgressBar } from '../../../shared/progress-bar/progress-bar';
 import { AnalysisPipeline } from '../../analysis/analysis-pipeline/analysis-pipeline';
 import { ANALYSIS_TYPE_META, splitAnalysisTypes } from '../../../shared/analysis-type.util';
@@ -25,6 +26,7 @@ export class ArchiveCard {
   deleteClicked = output<string>();
 
   private configService = inject(ConfigurationService);
+  private exportService = inject(ExportArchiveService);
   private modelsByType = toSignal(this.configService.getModels(), { initialValue: {} as Record<string, { id: string; model: string; is_default: boolean }[]> });
 
   private configuration = computed(() =>
@@ -68,6 +70,36 @@ export class ArchiveCard {
     const type = this.archive().analysisEvent?.type;
     return type ? (TYPE_LABELS[type] ?? type) : 'Analyse';
   });
+
+  // ── Export ───────────────────────────────────────────────────────────────
+  exporting = signal(false);
+  exportMenuOpen = signal(false);
+  exportSuccessPath = signal<string | null>(null);
+  exportError = signal<string | null>(null);
+
+  toggleExportMenu(): void {
+    this.exportMenuOpen.update(open => !open);
+  }
+
+  onExport(format: ExportFormat): void {
+    this.exportMenuOpen.set(false);
+    this.exporting.set(true);
+    this.exportSuccessPath.set(null);
+    this.exportError.set(null);
+
+    this.exportService.exportArchive(this.archive().id, format).subscribe({
+      next: (result) => {
+        this.exporting.set(false);
+        this.exportSuccessPath.set(result.path);
+        setTimeout(() => this.exportSuccessPath.set(null), 5000);
+      },
+      error: (err) => {
+        this.exporting.set(false);
+        this.exportError.set(err?.error?.detail ?? 'Export mislukt.');
+        setTimeout(() => this.exportError.set(null), 5000);
+      },
+    });
+  }
 
   isDone(type: string): boolean {
     return this.archive().completed_analysis_types.includes(type);

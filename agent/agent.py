@@ -266,12 +266,25 @@ def file_content():
 def export_default_path():
     """
     Return the OS-appropriate default export folder (Documents/modal_exports).
-    Uses platformdirs for correct cross-platform resolution — in particular the
-    Windows case where Documents may be redirected via OneDrive or Group Policy.
+    Uses platformdirs when available for correct cross-platform resolution
+    (particularly the Windows case where Documents may be redirected via
+    OneDrive or Group Policy). Falls back to inline platform detection so the
+    endpoint works even before platformdirs is installed.
     Does NOT create the folder; that happens naturally on first write.
     """
-    from platformdirs import user_documents_dir
-    path = os.path.join(user_documents_dir(), "modal_exports")
+    try:
+        from platformdirs import user_documents_dir
+        docs = user_documents_dir()
+    except ImportError:
+        system = platform.system()
+        if system == "Windows":
+            docs = os.path.join(os.environ.get("USERPROFILE", os.path.expanduser("~")), "Documents")
+        elif system == "Linux":
+            docs = os.environ.get("XDG_DOCUMENTS_DIR", os.path.join(os.path.expanduser("~"), "Documents"))
+        else:  # macOS
+            docs = os.path.join(os.path.expanduser("~"), "Documents")
+
+    path = os.path.join(docs, "modal_exports")
     return jsonify({"path": path})
 
 
