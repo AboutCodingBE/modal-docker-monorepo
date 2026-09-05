@@ -48,6 +48,9 @@ class Archive(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Ingest settings
+    ocr_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
     # Calculated statistics
     file_count: Mapped[int] = mapped_column(nullable=False, default=0)
     directory_count: Mapped[int] = mapped_column(nullable=False, default=0)

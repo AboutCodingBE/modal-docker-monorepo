@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nieuw Archief Toevoegen — Wireframe</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          background: #f0f2f5;
+          padding: 60px;
+          display: flex;
+          justify-content: center;
+        }
+
+        .modal {
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          width: 560px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 22px 26px;
+          border-bottom: 1px solid #f3f4f6;
+        }
+
+        .modal-title { font-size: 20px; font-weight: 700; color: #111827; }
+
+        .modal-close {
+          font-size: 18px;
+          color: #9ca3af;
+          background: none;
+          border: none;
+          cursor: pointer;
+          line-height: 1;
+          transition: color 0.15s;
+        }
+
+        .modal-close:hover { color: #111827; }
+
+        .modal-body {
+          padding: 22px 26px;
+          display: flex;
+          flex-direction: column;
+          gap: 22px;
+        }
+
+        .field-group { display: flex; flex-direction: column; gap: 8px; }
+
+        .field-label {
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: #6b7280;
+        }
+
+        .text-input {
+          font-family: inherit;
+          font-size: 14px;
+          padding: 11px 14px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          color: #111827;
+          width: 100%;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .text-input::placeholder { color: #9ca3af; }
+
+        .text-input:focus {
+          outline: none;
+          border-color: #3b6ef5;
+          box-shadow: 0 0 0 3px rgba(59, 110, 245, 0.12);
+        }
+
+        .folder-row { display: flex; gap: 10px; }
+
+        .folder-input {
+          flex: 1;
+          font-family: inherit;
+          font-size: 14px;
+          padding: 11px 14px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          background: #f9fafb;
+          color: #9ca3af;
+        }
+
+        .btn-select-folder {
+          font-family: inherit;
+          font-size: 14px;
+          font-weight: 700;
+          padding: 11px 20px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          background: #ffffff;
+          color: #374151;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: background 0.15s, border-color 0.15s;
+        }
+
+        .btn-select-folder:hover { background: #f9fafb; border-color: #9ca3af; }
+
+        /* ── OCR row: compact inline ── */
+        .ocr-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 14px 0;
+          border-top: 1px solid #f3f4f6;
+          border-bottom: 1px solid #f3f4f6;
+        }
+
+        .ocr-text { display: flex; flex-direction: column; gap: 2px; }
+
+        .ocr-label { font-size: 13px; font-weight: 700; color: #111827; }
+
+        .ocr-desc { font-size: 12px; color: #6b7280; }
+
+        .pill-toggle {
+          display: flex;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+
+        .pill-option {
+          font-family: inherit;
+          font-size: 12px;
+          font-weight: 700;
+          padding: 7px 16px;
+          border: none;
+          background: #ffffff;
+          color: #9ca3af;
+          cursor: pointer;
+          transition: background 0.15s, color 0.15s;
+        }
+
+        .pill-option + .pill-option { border-left: 1px solid #d1d5db; }
+
+        .pill-option:hover:not(.active) { background: #f9fafb; color: #6b7280; }
+
+        .pill-option.active { background: #3b6ef5; color: #ffffff; }
+
+        .modal-footer {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 20px;
+          padding: 18px 26px;
+          border-top: 1px solid #f3f4f6;
+        }
+
+        .btn-cancel {
+          font-family: inherit;
+          font-size: 14px;
+          font-weight: 700;
+          background: none;
+          border: none;
+          color: #6b7280;
+          cursor: pointer;
+          transition: color 0.15s;
+        }
+
+        .btn-cancel:hover { color: #111827; }
+
+        .btn-primary {
+          font-family: inherit;
+          font-size: 14px;
+          font-weight: 700;
+          padding: 12px 22px;
+          border: none;
+          border-radius: 6px;
+          background: #3b6ef5;
+          color: #ffffff;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+
+        .btn-primary:hover { background: #2d5ce0; }
+    </style>
+</head>
+<body>
+
+<div class="modal">
+    <div class="modal-header">
+        <div class="modal-title">Nieuw Archief Toevoegen</div>
+        <button class="modal-close">✕</button>
+    </div>
+
+    <div class="modal-body">
+        <div class="field-group">
+            <div class="field-label">Naam van het archief</div>
+            <input class="text-input" type="text" placeholder="Bijv. Project_Antwerpen_2026">
+        </div>
+
+        <div class="field-group">
+            <div class="field-label">Locatie op schijf</div>
+            <div class="folder-row">
+                <input class="folder-input" type="text" placeholder="Selecteer een map..." readonly>
+                <button class="btn-select-folder">Select Folder</button>
+            </div>
+        </div>
+
+        <!-- OCR toggle: compact inline row, off by default -->
+        <div class="ocr-row">
+            <div class="ocr-text">
+                <div class="ocr-label">OCR Analyse</div>
+                <div class="ocr-desc">Herken tekst in gescande documenten</div>
+            </div>
+            <div class="pill-toggle" data-state="off">
+                <button class="pill-option" data-value="off">Uit</button>
+                <button class="pill-option" data-value="on">Aan</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button class="btn-cancel">Annuleren</button>
+        <button class="btn-primary">Archief Ingesten</button>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('.pill-toggle').forEach(function(toggle) {
+      var options = toggle.querySelectorAll('.pill-option');
+      function render() {
+        var state = toggle.getAttribute('data-state');
+        options.forEach(function(opt) {
+          opt.classList.toggle('active', opt.getAttribute('data-value') === state);
+        });
+      }
+      options.forEach(function(opt) {
+        opt.addEventListener('click', function() {
+          toggle.setAttribute('data-state', opt.getAttribute('data-value'));
+          render();
+        });
+      });
+      render();
+    });
+</script>
+
+</body>
+</html>
