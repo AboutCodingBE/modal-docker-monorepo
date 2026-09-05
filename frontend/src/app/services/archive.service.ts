@@ -106,8 +106,8 @@ export class ArchiveService {
     return this.http.get<Archive[]>('/api/archives');
   }
 
-  create(name: string, path: string): Observable<Archive> {
-    return this.http.post<Archive>('/api/archives', { name, path });
+  create(name: string, path: string, ocr_enabled: boolean): Observable<Archive> {
+    return this.http.post<Archive>('/api/archives', { name, path, ocr_enabled });
   }
 
   getStats(archiveId: string): Observable<ArchiveStats> {

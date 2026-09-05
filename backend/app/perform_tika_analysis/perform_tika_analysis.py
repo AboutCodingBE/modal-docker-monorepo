@@ -46,7 +46,7 @@ class PerformTikaAnalysis:
         except (ValueError, TypeError):
             return None
 
-    async def execute(self, archive_id: uuid.UUID, task_id: uuid.UUID) -> None:
+    async def execute(self, archive_id: uuid.UUID, task_id: uuid.UUID, ocr_enabled: bool = False) -> None:
         await task_tracker.start_task(self._session, task_id)
         await self._session.commit()
 
@@ -83,7 +83,7 @@ class PerformTikaAnalysis:
                     failed_count += 1
                     continue
 
-                tika = await asyncio.to_thread(TIKA_text_extract, file_content)
+                tika = await asyncio.to_thread(TIKA_text_extract, file_content, ocr_enabled)
 
                 if not isinstance(tika, (tuple, list)) or len(tika) < 6:
                     _logger.warning(f"{log_context(archive_id, file_name)}Invalid Tika output, skipping.")
