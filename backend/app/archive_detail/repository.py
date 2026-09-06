@@ -68,7 +68,7 @@ class ArchiveDetailRepository:
             select(Summary, ArchiveAnalysis)
             .join(ArchiveAnalysis, ArchiveAnalysis.id == Summary.analysis_id)
             .where(Summary.file_id == file_id)
-            .order_by(ArchiveAnalysis.date.desc())
+            .order_by(ArchiveAnalysis.analyzed_at.desc())
         )
 
         return {
@@ -78,7 +78,7 @@ class ArchiveDetailRepository:
                 {
                     "analysis_id": str(summary.id),
                     "model": analysis.model,
-                    "date": analysis.date.isoformat(),
+                    "date": analysis.analyzed_at.isoformat(),
                     "result": summary.result,
                 }
                 for summary, analysis in summaries_result.all()

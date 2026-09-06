@@ -27,7 +27,7 @@ class TopicsForFolderRepository:
             select(TopicDetection, ArchiveAnalysis.model)
             .join(ArchiveAnalysis, ArchiveAnalysis.id == TopicDetection.analysis_id)
             .where(TopicDetection.file_id == folder_id)
-            .order_by(ArchiveAnalysis.date.desc())
+            .order_by(ArchiveAnalysis.analyzed_at.desc())
             .limit(1)
         )
         return result.first()

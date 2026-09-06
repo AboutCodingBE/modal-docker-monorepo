@@ -1,5 +1,4 @@
 import uuid
-from datetime import date
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,7 +21,7 @@ class ArchiveAnalysisRepository:
         analysis = ArchiveAnalysis(
             archive_id=archive_id,
             type=analysis_type.upper(),
-            date=date.today(),
+
             model=model,
             status="STARTED",
         )
