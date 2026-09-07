@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tekstweergave — Wireframe</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+background: #f0f2f5;
+min-height: 100vh;
+display: flex;
+align-items: flex-start;
+justify-content: center;
+gap: 40px;
+padding: 40px;
+flex-wrap: wrap;
+}
+
+.state-wrap { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 860px; }
+
+.state-label {
+font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+text-transform: uppercase; color: #6b7280;
+}
+
+/* dimmed backdrop representing the page behind the modal */
+.backdrop {
+position: relative;
+width: 100%;
+}
+
+.overlay-scrim {
+position: absolute;
+inset: -40px;
+background: rgba(17, 24, 39, 0.45);
+border-radius: 4px;
+}
+
+.modal {
+position: relative;
+background: #ffffff;
+border: 1px solid #e5e7eb;
+border-radius: 10px;
+width: 100%;
+max-width: 860px;
+margin: 0 auto;
+max-height: 80vh;
+display: flex;
+flex-direction: column;
+overflow: hidden;
+box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+display: flex;
+align-items: flex-start;
+justify-content: space-between;
+padding: 18px 24px;
+border-bottom: 1px solid #f3f4f6;
+flex-shrink: 0;
+}
+
+.header-left {
+display: flex;
+flex-direction: column;
+gap: 3px;
+min-width: 0;
+}
+
+.file-name {
+font-size: 16px;
+font-weight: 700;
+color: #111827;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+
+.fetch-warning {
+font-size: 11px;
+font-weight: 600;
+color: #b45309;
+display: flex;
+align-items: center;
+gap: 5px;
+}
+
+.fetch-warning .warn-icon {
+width: 12px;
+height: 12px;
+background: #fef3c7;
+border: 1px solid #b45309;
+border-radius: 50%;
+flex-shrink: 0;
+}
+
+.header-right {
+display: flex;
+align-items: center;
+gap: 14px;
+flex-shrink: 0;
+padding-top: 2px;
+}
+
+.fulltext-toggle-group {
+display: flex;
+align-items: center;
+gap: 8px;
+}
+
+.fulltext-toggle-label {
+font-size: 12px;
+font-weight: 600;
+color: #6b7280;
+}
+
+.switch {
+position: relative;
+width: 38px;
+height: 20px;
+border-radius: 999px;
+border: 1px solid #d1d5db;
+background: #e5e7eb;
+cursor: pointer;
+transition: background 0.15s, border-color 0.15s;
+}
+
+.switch-knob {
+position: absolute;
+top: 1px;
+left: 1px;
+width: 16px;
+height: 16px;
+border-radius: 50%;
+background: #ffffff;
+border: 1px solid #d1d5db;
+transition: left 0.15s;
+}
+
+.switch.on {
+background: #3b6ef5;
+border-color: #3b6ef5;
+}
+
+.switch.on .switch-knob {
+left: 19px;
+border-color: #3b6ef5;
+}
+
+.modal-close {
+font-size: 18px;
+color: #9ca3af;
+background: none;
+border: none;
+cursor: pointer;
+line-height: 1;
+transition: color 0.15s;
+}
+
+.modal-close:hover { color: #111827; }
+
+.modal-body {
+padding: 24px 28px;
+overflow-y: auto;
+flex: 1;
+}
+
+.text-content {
+font-size: 14px;
+line-height: 1.7;
+color: #374151;
+white-space: pre-wrap;
+}
+
+.text-content p { margin-bottom: 14px; }
+
+.fade-cutoff {
+position: relative;
+}
+
+.fade-cutoff::after {
+content: '';
+position: absolute;
+left: 0; right: 0; bottom: 0;
+height: 60px;
+background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,1));
+pointer-events: none;
+}
+
+.modal-footer {
+padding: 12px 24px;
+border-top: 1px solid #f3f4f6;
+flex-shrink: 0;
+font-size: 11px;
+color: #9ca3af;
+text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="state-wrap">
+  <div class="state-label">Volledige tekst beschikbaar</div>
+  <div class="backdrop">
+    <div class="overlay-scrim"></div>
+
+    <div class="modal">
+      <div class="modal-header">
+        <div class="header-left">
+          <div class="file-name">Letter of recommendation.pdf</div>
+        </div>
+        <div class="header-right">
+          <div class="fulltext-toggle-group">
+            <span class="fulltext-toggle-label">Volledige tekst</span>
+            <div class="switch" id="fulltextSwitch1">
+              <div class="switch-knob"></div>
+            </div>
+          </div>
+          <button class="modal-close">✕</button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div class="text-content fade-cutoff" id="textContent1">
+          <p>[Geëxtraheerde tekst van het bestand — placeholder alinea 1. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.]</p>
+          <p>[Placeholder alinea 2. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.]</p>
+          <p>[Placeholder alinea 3 — bij "Volledige tekst" uit toont de body slechts de eerste paar alinea's, met een fade-out onderaan. Bij "Volledige tekst" aan wordt de fade verwijderd en scrollt de body door de volledige inhoud.]</p>
+          <p>[Placeholder alinea 4, blijft verborgen onder de fade tenzij volledige tekst aan staat.]</p>
+          <p>[Placeholder alinea 5, blijft verborgen onder de fade tenzij volledige tekst aan staat.]</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        Geëxtraheerde tekst — mogelijk niet 100% nauwkeurig
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="state-wrap">
+  <div class="state-label">Volledige tekst kon niet volledig worden opgehaald</div>
+  <div class="backdrop">
+    <div class="overlay-scrim"></div>
+
+    <div class="modal">
+      <div class="modal-header">
+        <div class="header-left">
+          <div class="file-name">design_along-preview.pdf</div>
+          <div class="fetch-warning">
+            <span class="warn-icon"></span>
+            <span>Niet alle tekst kon worden opgehaald</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="fulltext-toggle-group">
+            <span class="fulltext-toggle-label">Volledige tekst</span>
+            <div class="switch on" id="fulltextSwitch2">
+              <div class="switch-knob"></div>
+            </div>
+          </div>
+          <button class="modal-close">✕</button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div class="text-content" id="textContent2">
+          <p>[Geëxtraheerde tekst van het bestand — placeholder alinea 1. Lorem ipsum dolor sit amet, consectetur adipiscing elit.]</p>
+          <p>[Placeholder alinea 2. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.]</p>
+          <p>[Placeholder alinea 3 — hier stopt de beschikbare tekst. De rest van het document kon niet worden opgehaald of verwerkt.]</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        Geëxtraheerde tekst — mogelijk niet 100% nauwkeurig
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function wireSwitch(switchId, contentId) {
+    const sw = document.getElementById(switchId);
+    const content = document.getElementById(contentId);
+    sw.addEventListener('click', function() {
+      sw.classList.toggle('on');
+      content.classList.toggle('fade-cutoff');
+    });
+  }
+  wireSwitch('fulltextSwitch1', 'textContent1');
+  wireSwitch('fulltextSwitch2', 'textContent2');
+</script>
+
+</body>
+</html>
