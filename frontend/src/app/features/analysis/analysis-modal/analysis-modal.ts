@@ -2,7 +2,6 @@ import { Component, input, output, signal, computed, OnInit } from '@angular/cor
 import { Archive } from '../../../models/archive.model';
 import { ArchiveService } from '../../../services/archive.service';
 import { ConfigurationService } from '../../../services/configuration.service';
-import { ANALYSIS_TYPE_META } from '../../../shared/analysis-type.util';
 
 interface AnalysisType {
   type: string;
@@ -44,7 +43,6 @@ export class AnalysisModal implements OnInit {
 
   types = signal<AnalysisType[]>([]);
   modelOptions = signal<Record<string, string[]>>({});
-  doneTypeLabels = signal<string[]>([]);
 
   selected = signal<Set<string>>(new Set());
   models = signal<Record<string, string>>({});
@@ -61,19 +59,19 @@ export class AnalysisModal implements OnInit {
       next: (grouped) => {
         const completedSet = new Set(this.archive().completed_analysis_types);
 
-        const pendingTypes = Object.keys(grouped).filter(t => !completedSet.has(t));
-        const doneTypes = Object.keys(grouped).filter(t => completedSet.has(t));
+        const allTypeKeys = Object.keys(grouped);
+        const pendingKeys = allTypeKeys.filter(t => !completedSet.has(t));
+        const doneKeys = allTypeKeys.filter(t => completedSet.has(t));
 
-        this.doneTypeLabels.set(doneTypes.map(t => ANALYSIS_TYPE_META[t]?.label ?? t));
-
-        const analysisTypes: AnalysisType[] = pendingTypes.map(t => {
+        // Done types first, then pending — done start unchecked, pending start checked.
+        const analysisTypes: AnalysisType[] = [...doneKeys, ...pendingKeys].map(t => {
           const key = t.toLowerCase();
           return { type: key, ...(TYPE_DISPLAY[key] ?? { ...DEFAULT_DISPLAY, label: t }) };
         });
 
         const options: Record<string, string[]> = {};
         const defaultModels: Record<string, string> = {};
-        for (const t of pendingTypes) {
+        for (const t of allTypeKeys) {
           const key = t.toLowerCase();
           const entries = grouped[t];
           options[key] = entries.map(e => e.model);
@@ -83,7 +81,7 @@ export class AnalysisModal implements OnInit {
 
         this.types.set(analysisTypes);
         this.modelOptions.set(options);
-        this.selected.set(new Set(analysisTypes.map(t => t.type)));
+        this.selected.set(new Set(pendingKeys.map(t => t.toLowerCase())));
         this.models.set(defaultModels);
       },
     });

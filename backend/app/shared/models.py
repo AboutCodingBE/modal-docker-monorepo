@@ -1,7 +1,7 @@
 import uuid
-from datetime import date, datetime
+from datetime import datetime
 
-from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum, text
+from sqlalchemy import Boolean, BigInteger, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -174,7 +174,7 @@ class ArchiveAnalysis(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
     type: Mapped[AnalysisType] = mapped_column(Enum(AnalysisType, name="analysis_type"), nullable=False)
-    date: Mapped[date] = mapped_column(Date, nullable=False, server_default=func.current_date())
+    analyzed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     model: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[ArchiveAnalysisStatus] = mapped_column(Enum(ArchiveAnalysisStatus, name="archive_analysis_status"), nullable=False)
 

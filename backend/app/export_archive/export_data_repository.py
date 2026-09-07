@@ -35,10 +35,6 @@ class ExportDataRepository:
     async def _get_latest_completed_analysis(
         self, archive_id: uuid.UUID, analysis_type: AnalysisType
     ) -> ArchiveAnalysis | None:
-        # TODO once bugfix-context-archive-analysis-analyzed-at lands:
-        # change .order_by(ArchiveAnalysis.date.desc()) to
-        # .order_by(ArchiveAnalysis.analyzed_at.desc()) — this is the only
-        # change this file will need at that point.
         result = await self._session.execute(
             select(ArchiveAnalysis)
             .where(
@@ -46,7 +42,7 @@ class ExportDataRepository:
                 ArchiveAnalysis.type == analysis_type,
                 ArchiveAnalysis.status == ArchiveAnalysisStatus.COMPLETED,
             )
-            .order_by(ArchiveAnalysis.date.desc())
+            .order_by(ArchiveAnalysis.analyzed_at.desc())
             .limit(1)
         )
         return result.scalar_one_or_none()
@@ -117,18 +113,18 @@ class ExportDataRepository:
                 # summary — model/analyzed_at constant for all rows when analysis ran
                 "summary_result": summary.result if summary else None,
                 "summary_model": summary_analysis.model if summary_analysis else None,
-                "summary_analyzed_at": summary_analysis.date.isoformat() if summary_analysis else None,
+                "summary_analyzed_at": summary_analysis.analyzed_at.isoformat() if summary_analysis else None,
                 # ner
                 "ner_persons": _extract_entities(ner.persons) if ner else [],
                 "ner_locations": _extract_entities(ner.locations) if ner else [],
                 "ner_organisations": _extract_entities(ner.organisations) if ner else [],
                 "ner_misc": _extract_entities(ner.misc) if ner else [],
                 "ner_model": ner_analysis.model if ner_analysis else None,
-                "ner_analyzed_at": ner_analysis.date.isoformat() if ner_analysis else None,
+                "ner_analyzed_at": ner_analysis.analyzed_at.isoformat() if ner_analysis else None,
                 # topics
                 "topics": _extract_topics(topics.topics) if topics else [],
                 "topics_model": topic_analysis.model if topic_analysis else None,
-                "topics_analyzed_at": topic_analysis.date.isoformat() if topic_analysis else None,
+                "topics_analyzed_at": topic_analysis.analyzed_at.isoformat() if topic_analysis else None,
             })
 
         return rows
