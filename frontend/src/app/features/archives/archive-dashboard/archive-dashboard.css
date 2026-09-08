@@ -395,3 +395,197 @@
   font-size: 11px;
   opacity: 0.95;
 }
+
+/* Timeline Heatmap Styles */
+.timeline-heatmap-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fff;
+  margin-top: 20px;
+}
+
+.timeline-heatmap-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.timeline-heatmap-legend {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+
+.timeline-heatmap-axis-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline-range-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.timeline-range-sliders {
+  position: relative;
+  height: 20px;
+}
+
+.timeline-range-track {
+  position: absolute;
+  top: 7px;
+  right: 0;
+  left: 0;
+  height: 6px;
+  border-radius: 3px;
+  background: #e5e7eb;
+}
+
+.timeline-range-sliders input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 6px;
+  margin: 7px 0;
+  background: transparent;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: none;
+}
+
+.timeline-range-sliders input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  background: transparent;
+}
+
+.timeline-range-sliders input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: transparent;
+}
+
+.timeline-range-sliders input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+}
+
+.timeline-range-sliders input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+}
+
+.timeline-axis-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.timeline-axis-control select {
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.timeline-multiselect {
+  font-size: 13px;
+}
+
+.timeline-multiselect > summary {
+  cursor: pointer;
+  padding: 6px 8px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-weight: 500;
+  user-select: none;
+}
+
+.timeline-multiselect > summary::-webkit-details-marker {
+  display: none;
+}
+
+.timeline-multiselect-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  margin-top: 4px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.timeline-multiselect-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 12px;
+  user-select: none;
+}
+
+.timeline-multiselect-option input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.timeline-option-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline-option-count {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.timeline-heatmap-body {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  background: #f9fafb;
+}
+
+.timeline-heatmap-shell {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 300px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.timeline-heatmap {
+  width: 100%;
+  height: 100%;
+}

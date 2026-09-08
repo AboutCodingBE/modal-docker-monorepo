@@ -179,6 +179,72 @@
             </div>
           </div>
         </div>
+        <div class="timeline-heatmap-card">
+          <div class="treemap-title">Timeline Heatmap</div>
+          <div class="timeline-heatmap-toolbar">
+            <div class="timeline-heatmap-legend">
+              <span>Weinig</span>
+              <span class="heatmap-swatch" style="background: #7f1d1d"></span>
+              <span class="heatmap-swatch" style="background: #991b1b"></span>
+              <span class="heatmap-swatch" style="background: #ca3e47"></span>
+              <span class="heatmap-swatch" style="background: #fca5a5"></span>
+              <span>Veel</span>
+            </div>
+            <div class="timeline-heatmap-axis-controls">
+              <label class="timeline-range-control">
+                Jaar bereik ({{ timelineRangeMin() }} - {{ timelineRangeMax() }})
+                <div class="timeline-range-sliders">
+                  <span class="timeline-range-track" aria-hidden="true"></span>
+                  <input
+                    type="range"
+                    class="timeline-range-min"
+                    [min]="timelineAvailableMin()"
+                    [max]="timelineAvailableMax()"
+                    [value]="timelineRangeMin()"
+                    (input)="onTimelineRangeChange('min', $event)"
+                  />
+                  <input
+                    type="range"
+                    class="timeline-range-max"
+                    [min]="timelineAvailableMin()"
+                    [max]="timelineAvailableMax()"
+                    [value]="timelineRangeMax()"
+                    (input)="onTimelineRangeChange('max', $event)"
+                  />
+                </div>
+              </label>
+              <label class="timeline-axis-control">
+                Dimensie
+                <select name="timeline-y-axis" [value]="timelineYDimension()" (change)="onTimelineYAxisChange($event)">
+                  @for (axis of timelineAxisOptions; track axis.value) {
+                    <option [value]="axis.value" [selected]="axis.value === timelineYDimension()">{{ axis.label }}</option>
+                  }
+                </select>
+              </label>
+              <details class="timeline-multiselect">
+                <summary>Waarden ({{ timelineSelectedCount() }} geselecteerd)</summary>
+                <div class="timeline-multiselect-panel">
+                  @for (option of timelineYOptions(); track option.value) {
+                    <label class="timeline-multiselect-option">
+                      <input
+                        type="checkbox"
+                        [checked]="isTimelineSelected(option.value)"
+                        (change)="onTimelineValueToggle(option.value, $event)"
+                      />
+                      <span class="timeline-option-label">{{ option.value }}</span>
+                      <span class="timeline-option-count">({{ option.count }})</span>
+                    </label>
+                  }
+                </div>
+              </details>
+            </div>
+          </div>
+          <div class="timeline-heatmap-body">
+            <div class="timeline-heatmap-shell">
+              <svg class="timeline-heatmap" role="img" aria-label="Timeline heatmap per jaar"></svg>
+            </div>
+          </div>
+        </div>
       }
   </div>
 

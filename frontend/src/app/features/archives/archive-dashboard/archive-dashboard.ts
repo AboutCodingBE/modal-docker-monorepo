@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import * as d3 from 'd3';
-import { ArchiveService, FolderFile, NerResult, TopicsResult } from '../../../services/archive.service';
+import { ArchiveService, FolderFile, NerResult, TopicsResult, TimelineHeatmapCell, TimelineHeatmapResult } from '../../../services/archive.service';
 
 interface DashboardNavigationState {
   selectedFile?: FolderFile | null;
@@ -42,7 +42,7 @@ interface HeatmapCell {
   value: number;
 }
 
-type HeatmapDimension = 'organisations' | 'persons' | 'locations' | 'topics';
+type HeatmapDimension = 'organisations' | 'persons' | 'locations' | 'misc' | 'topics';
 
 interface HeatmapAxisOption {
   value: string;
@@ -117,6 +117,23 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     { value: 'organisations', label: 'Organisatie' },
     { value: 'persons', label: 'Personen' },
     { value: 'locations', label: 'Locatie' },
+    { value: 'topics', label: 'Topic' },
+  ];
+
+  // Timeline Heatmap
+  timelineHeatmapData = signal<TimelineHeatmapResult | null>(null);
+  timelineRangeMin = signal<number>(0);
+  timelineRangeMax = signal<number>(10);
+  timelineAvailableMin = signal<number>(0);
+  timelineAvailableMax = signal<number>(10);
+  timelineYDimension = signal<HeatmapDimension>('organisations');
+  timelineYOptions = signal<HeatmapAxisOption[]>([]);
+  timelineYSelected = signal<string[]>([]);
+  timelineAxisOptions: Array<{ value: HeatmapDimension; label: string }> = [
+    { value: 'organisations', label: 'Organisatie' },
+    { value: 'persons', label: 'Personen' },
+    { value: 'locations', label: 'Locatie' },
+    { value: 'misc', label: 'Overig' },
     { value: 'topics', label: 'Topic' },
   ];
 
@@ -333,6 +350,50 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     return 'Topics';
   }
 
+  onTimelineYAxisChange(event: Event): void {
+    const dimension = (event.target as HTMLSelectElement).value as HeatmapDimension;
+    this.timelineYDimension.set(dimension);
+
+    if (this.timelineHeatmapData() === null) return;
+
+    // Reload with new dimension
+    this._loadTimelineHeatmap(this.archiveId(), this.folderId());
+  }
+
+  onTimelineValueToggle(value: string, event: Event): void {
+    const checkbox = event.target as HTMLInputElement;
+    const order = new Map(this.timelineYOptions().map((option, index) => [option.value, index]));
+    const current = this.timelineYSelected();
+    const next = (checkbox.checked ? [...current, value] : current.filter((entry) => entry !== value))
+      .sort((left, right) => (order.get(left) ?? Number.MAX_SAFE_INTEGER) - (order.get(right) ?? Number.MAX_SAFE_INTEGER));
+
+    this.timelineYSelected.set(next);
+    setTimeout(() => this._renderTimelineHeatmap());
+  }
+
+  isTimelineSelected(value: string): boolean {
+    return this.timelineYSelected().includes(value);
+  }
+
+  timelineSelectedCount(): number {
+    return this.timelineYSelected().length;
+  }
+
+  onTimelineRangeChange(axis: 'min' | 'max', event: Event): void {
+    const newValue = parseInt((event.target as HTMLInputElement).value, 10);
+    if (axis === 'min') {
+      this.timelineRangeMin.set(Math.min(newValue, this.timelineRangeMax()));
+    } else {
+      this.timelineRangeMax.set(Math.max(newValue, this.timelineRangeMin()));
+    }
+    this._loadTimelineHeatmap(
+      this.archiveId(),
+      this.folderId(),
+      this.timelineRangeMin(),
+      this.timelineRangeMax(),
+    );
+  }
+
   private _entitiesForScope(entities: DashboardEntity[]): DashboardEntity[] {
     const scope = this.itemScope();
     if (scope === 'files') return entities.filter((entry) => !entry.is_directory);
@@ -394,6 +455,7 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
 
         this.heatmapResults.set(results as ItemAnalytics[]);
         this._rebuildHeatmapSelections({ resetX: true, resetY: true });
+        this._loadTimelineHeatmap(this.archiveId(), this.folderId());
 
         this._syncTreemapRects();
         setTimeout(() => this._renderAllCharts());
@@ -416,6 +478,183 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     const counts = new Map<string, number>();
     this._addTopicValues(counts, data.topics);
     return this._buildItemsFromMap(counts);
+  }
+
+  private _loadTimelineHeatmap(
+    archiveId: string,
+    folderId: string | null,
+    rangeMin?: number,
+    rangeMax?: number,
+  ): void {
+    if (!folderId || !archiveId) {
+      return;
+    }
+
+    this.archiveService
+      .getTimelineHeatmap(
+        archiveId,
+        folderId,
+        this.timelineYDimension(),
+        this.itemScope(),
+        rangeMin,
+        rangeMax,
+      )
+      .subscribe({
+        next: (data) => {
+          this.timelineHeatmapData.set(data);
+
+          // Update range from data
+          if (rangeMin === undefined && rangeMax === undefined
+            && data.default_range[0] !== null && data.default_range[1] !== null) {
+            this.timelineRangeMin.set(data.default_range[0]);
+            this.timelineRangeMax.set(data.default_range[1]);
+          }
+          if (rangeMin === undefined && rangeMax === undefined
+            && data.available_range[0] !== null && data.available_range[1] !== null) {
+            this.timelineAvailableMin.set(Math.min(data.available_range[0], data.default_range[0] ?? data.available_range[0]));
+            this.timelineAvailableMax.set(Math.max(data.available_range[1], data.default_range[1] ?? data.available_range[1]));
+          }
+
+          // Rebuild y-value selections
+          if (data.y_values.length > 0) {
+            const yOptions: HeatmapAxisOption[] = data.y_values.map((value) => {
+              const count = data.y_value_counts[value] ?? 0;
+              return { value, count };
+            }).sort((left, right) => right.count - left.count || left.value.localeCompare(right.value));
+            this.timelineYOptions.set(yOptions);
+
+            const topSelected = yOptions.slice(0, 10).map((option) => option.value);
+            this.timelineYSelected.set(topSelected);
+          }
+
+          setTimeout(() => this._renderTimelineHeatmap());
+        },
+        error: () => {
+          this.error.set('Kon de timeline heatmap data niet laden.');
+        },
+      });
+  }
+
+  private _renderTimelineHeatmap(): void {
+    const data = this.timelineHeatmapData();
+    if (!data) {
+      return;
+    }
+
+    const svg = document.querySelector('.timeline-heatmap') as SVGSVGElement;
+    if (!svg) {
+      return;
+    }
+
+    d3.select(svg).selectAll('*').remove();
+
+    const width = svg.clientWidth || 800;
+    const height = svg.clientHeight || 400;
+    const margin = { top: 20, right: 20, bottom: 60, left: 100 };
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
+
+    const ySelected = new Set(this.timelineYSelected());
+    const yearsInRange = data.years.filter(
+      (y) => y >= this.timelineRangeMin() && y <= this.timelineRangeMax(),
+    );
+    const filteredYValues = this.timelineYOptions()
+      .map((option) => option.value)
+      .filter((value) => ySelected.has(value));
+
+    if (yearsInRange.length === 0 || filteredYValues.length === 0) {
+      d3.select(svg)
+        .append('text')
+        .attr('x', width / 2)
+        .attr('y', height / 2)
+        .attr('text-anchor', 'middle')
+        .text('Geen data beschikbaar');
+      return;
+    }
+
+    // Scales
+    const xScale = d3
+      .scaleBand()
+      .domain(yearsInRange.map(String))
+      .range([0, innerWidth])
+      .padding(0.1);
+
+    const yScale = d3.scaleBand().domain([...filteredYValues].reverse()).range([innerHeight, 0]).padding(0.1);
+
+    const maxCount = d3.max(data.cells, (d) => d.count) || 1;
+    const colorScale = d3
+      .scaleLinear<string>()
+      .domain([0, maxCount])
+      .range(['#7f1d1d', '#fee2e2']);
+
+    // Create SVG group
+    const g = d3
+      .select(svg)
+      .append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Draw cells
+    const cells = data.cells.filter(
+      (c) => yearsInRange.includes(c.year) && filteredYValues.includes(c.y_value),
+    );
+
+    g.selectAll('.cell')
+      .data(cells)
+      .join('rect')
+      .attr('class', 'cell')
+      .attr('x', (d) => xScale(String(d.year)) || 0)
+      .attr('y', (d) => yScale(d.y_value) || 0)
+      .attr('width', xScale.bandwidth())
+      .attr('height', yScale.bandwidth())
+      .attr('fill', (d) => colorScale(d.count))
+      .attr('stroke', '#ccc')
+      .attr('stroke-width', 1)
+      .on('mouseover', (event: MouseEvent, d: TimelineHeatmapCell) => {
+        this.tooltipText.set(`${d.y_value} (${d.year}): ${d.count}`);
+        this.tooltipX.set(event.clientX + 12);
+        this.tooltipY.set(event.clientY + 12);
+        this.tooltipVisible.set(true);
+      })
+      .on('mousemove', (event: MouseEvent) => {
+        this.tooltipX.set(event.clientX + 12);
+        this.tooltipY.set(event.clientY + 12);
+      })
+      .on('mouseout', () => {
+        this.tooltipVisible.set(false);
+      })
+      .append('title')
+      .text((d) => `${d.y_value} (${d.year}): ${d.count}`);
+
+    // X-axis
+    g.append('g')
+      .attr('transform', `translate(0,${innerHeight})`)
+      .call(d3.axisBottom(xScale))
+      .append('text')
+      .attr('x', innerWidth / 2)
+      .attr('y', 40)
+      .attr('fill', 'black')
+      .text('Jaar');
+
+    // Y-axis
+    g.append('g')
+      .call(d3.axisLeft(yScale))
+      .append('text')
+      .attr('transform', 'rotate(-90)')
+      .attr('y', -60)
+      .attr('x', -innerHeight / 2)
+      .attr('fill', 'black')
+      .text(this._getLabelForDimension(this.timelineYDimension()));
+  }
+
+  private _getLabelForDimension(dimension: HeatmapDimension): string {
+    const labels: Record<HeatmapDimension, string> = {
+      organisations: 'Organisatie',
+      persons: 'Persoon',
+      locations: 'Locatie',
+      misc: 'Overig',
+      topics: 'Topic',
+    };
+    return labels[dimension] || dimension;
   }
 
   private _addNerValues(counts: Map<string, number>, values: string[]): void {
