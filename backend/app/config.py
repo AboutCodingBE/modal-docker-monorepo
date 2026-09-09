@@ -14,8 +14,9 @@ class Settings(BaseSettings):
     ollama_url: str = "http://ollama:11434"
     ner_folder_top_n: int = 25
     topic_folder_top_n: int = 25
+    search_top_n: int = 25
 
-    # Ollama-tagnotatie (dubbele punt), niet "qwen3-embedding-0.6b" — zie `ollama list`.
+
     embedding_model: str = "qwen3-embedding:0.6b"
     # embedding_dimension moet gelijk blijven aan de VECTOR(n)-kolom in migratie 0017. Wordt momenteel nergens
     # gecheckt bij opstart — zie TODO in 0017_add_embeddings_table.py (open beslissing, Nicholas).

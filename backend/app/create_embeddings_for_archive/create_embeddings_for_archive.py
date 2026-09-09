@@ -75,7 +75,7 @@ class CreateEmbeddingsForArchive:
             failed_count = 0
             consecutive_failures = 0
 
-            # ── File embedding loop ────────────────────────────────────────────
+            # ── File embedding loop: creeer een of meerdere embeddings per file ────────────────────────────
             for file in files:
                 file_id: uuid.UUID = file["id"]
 
@@ -95,9 +95,12 @@ class CreateEmbeddingsForArchive:
 
                 # Geen DB-connectie vastgehouden tijdens chunken + de mogelijk trage embed-aanroepen.
                 try:
+                    # NOOT: kan eigenlijk nooit None zijn
                     file_text = file["content"] or ""
+
                     chunks = chunk_text(file_text, settings.embedding_chunk_size)
 
+                    # tokenizen is << embedden, dus geen probleem om eerst alle chunks te maken
                     if settings.embedding_max_chunks_per_file is not None:
                         chunks = chunks[: settings.embedding_max_chunks_per_file]
 
