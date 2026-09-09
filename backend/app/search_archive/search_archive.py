@@ -1,9 +1,11 @@
 import uuid
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.create_embeddings_for_archive.embedding_repository import EmbeddingRepository
+from app.shared.models import Archive
 from app.shared.ollama_client import embed
 
 
@@ -22,6 +24,12 @@ class SearchArchive:
         archive_id: uuid.UUID,
         query: str,
         top_n: int = settings.search_top_n,
-    ) -> list[dict]:
+    ) -> list[dict] | None:
+        """Geeft None terug als archive_id niet bestaat (router zet dit om naar 404) —
+        een bestaand archief zonder resultaten geeft wel gewoon [] terug."""
+        result = await self._session.execute(select(Archive.id).where(Archive.id == archive_id))
+        if result.scalar_one_or_none() is None:
+            return None
+
         query_vector = await embed(settings.embedding_model, query)
         return await EmbeddingRepository(self._session).search(query_vector, top_n, archive_id)
