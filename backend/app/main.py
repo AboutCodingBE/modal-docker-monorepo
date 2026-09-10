@@ -26,6 +26,7 @@ from app.list_analysis_models.router import router as list_analysis_models_route
 from app.processing_settings.router import router as processing_settings_router
 from app.export_settings.router import router as export_settings_router
 from app.export_archive.router import router as export_archive_router
+from app.get_file_content.router import router as get_file_content_router
 
 import asyncio
 import sys
@@ -59,6 +60,7 @@ app.include_router(list_analysis_models_router)
 app.include_router(processing_settings_router)
 app.include_router(export_settings_router)
 app.include_router(export_archive_router)
+app.include_router(get_file_content_router)
 
 @app.get("/api/health")
 async def health():
