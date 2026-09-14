@@ -1,3 +1,10 @@
+@if (contentModalFile()) {
+  <app-file-content-modal
+    [file]="contentModalFile()!"
+    (closed)="closeContentModal()"
+  />
+}
+
 @if (files().length > 0 || loading()) {
   <hr class="section-divider" />
 
@@ -45,7 +52,9 @@
                 [class.selected]="selectedFileId() === file.id"
                 (click)="selectFile(file)"
               >
-                <td class="file-name">{{ file.name }}</td>
+                <td class="file-name">
+                  <button class="file-name-btn" (click)="openContentModal(file, $event)">{{ file.name }}</button>
+                </td>
                 <td class="file-type">{{ file.category ?? '—' }}</td>
                 <td class="file-size">{{ formatSize(file.size_bytes) }}</td>
               </tr>

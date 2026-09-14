@@ -1,11 +1,12 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ArchiveService, FolderFile } from '../../../../services/archive.service';
+import { FileContentModal } from '../file-content-modal/file-content-modal';
 
 @Component({
   selector: 'app-file-table',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FileContentModal],
   templateUrl: './file-table.html',
   styleUrl: './file-table.css',
 })
@@ -15,6 +16,8 @@ export class FileTable {
   folderId = input<string | null>(null);
 
   fileSelected = output<FolderFile | null>();
+
+  contentModalFile = signal<FolderFile | null>(null);
 
   private archiveService = inject(ArchiveService);
 
@@ -100,6 +103,15 @@ export class FileTable {
       this.selectedFileId.set(file.id);
       this.fileSelected.emit(file);
     }
+  }
+
+  openContentModal(file: FolderFile, event: MouseEvent): void {
+    event.stopPropagation();
+    this.contentModalFile.set(file);
+  }
+
+  closeContentModal(): void {
+    this.contentModalFile.set(null);
   }
 
   formatSize(bytes: number | null): string {

@@ -118,6 +118,25 @@
   word-break: break-all;
 }
 
+.file-name-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  word-break: break-all;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.file-name-btn:hover {
+  color: #1d4ed8;
+}
+
 .file-row.selected .file-name {
   color: #1d4ed8;
 }

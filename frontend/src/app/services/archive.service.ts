@@ -148,6 +148,10 @@ export class ArchiveService {
     return this.http.get<TopicsFolderResult>(`/api/archives/${archiveId}/folders/${folderId}/topics`);
   }
 
+  getFileContent(fileId: string): Observable<{ file_id: string; content: string | null }> {
+    return this.http.get<{ file_id: string; content: string | null }>(`/api/files/${fileId}/content`);
+  }
+
   deleteArchive(archiveId: string): Observable<void> {
     return this.http.delete<void>(`/api/archives/${archiveId}`);
   }
