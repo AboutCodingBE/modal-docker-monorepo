@@ -8,7 +8,7 @@ import uuid
 from sqlalchemy import text
 
 
-def test_tagindex_01_cascade_bij_redo(ner_prerequisites, db_conn):
+def test_M7_02_tagindex_cascade_bij_redo(ner_prerequisites, db_conn):
     ids = ner_prerequisites
     tag_id = uuid.uuid4()
 

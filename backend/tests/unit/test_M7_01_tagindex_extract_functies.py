@@ -1,6 +1,6 @@
 """
 Run with:
-    pytest tests/unit/test_tagindex_02_extract_functies.py -v
+    pytest tests/unit/test_M7_01_tagindex_extract_functies.py -v
 
 Tests for tag_index_engine.py — pure extract-functies, geen database nodig.
 
