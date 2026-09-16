@@ -21,6 +21,21 @@ class NerRepository:
         )
         return result.scalar_one_or_none() is not None
 
+    async def get_all_for_analysis(self, analysis_id: uuid.UUID) -> list[Ner]:
+        """Alle Ner-rijen van deze analyse — zowel bestanden als folder-aggregaten
+        (persist_folder zet ook een rij weg, met file_id verwijzend naar een map).
+        Gebruikt door CreateTagIndexForArchive om de volledige tag_index te vullen.
+
+        LET OP: laadt alle Ner-rijen van de analyse in één keer in het geheugen
+        (result.scalars().all()) — zie de gelijkaardige noot bij
+        FileRepository.get_files_with_tika_content(). Voor zeer grote archieven een
+        aandachtspunt voor later: een lazy/streaming iterator i.p.v. alles materialiseren.
+        """
+        result = await self._session.execute(
+            select(Ner).where(Ner.analysis_id == analysis_id)
+        )
+        return list(result.scalars().all())
+
     async def persist(
         self,
         analysis_id: uuid.UUID,
