@@ -1,6 +1,6 @@
 """
 Run with:
-    pytest tests/test_ner_engine.py -v
+    pytest tests/unit/test_M3_11_ner_engine.py -v
 
 Tests for ner_engine.py — the spaCy NER component.
 
