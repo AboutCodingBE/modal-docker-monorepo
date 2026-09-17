@@ -120,4 +120,9 @@ export class FileTable {
     if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return bytes + ' B';
   }
+
+  formatDate(isoString: string | null): string {
+    if (!isoString) return '—';
+    return isoString.split('T')[0];
+  }
 }
