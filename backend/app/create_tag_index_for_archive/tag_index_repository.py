@@ -1,6 +1,7 @@
 import uuid
+from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -77,6 +78,70 @@ class TagIndexRepository:
             )
             .join(File, File.id == TagIndex.file_id)
             .where(TagIndex.archive_id == archive_id, TagIndex.value.ilike(f"{prefix}%"))
+            .order_by(TagIndex.value)
+            .limit(top_n)
+        )
+        result = await self._session.execute(stmt)
+        return [dict(row._mapping) for row in result.all()]
+
+    async def search_by_tags(
+        self,
+        archive_id: uuid.UUID,
+        values: list[str],
+        top_n: int,
+        match: Literal["any", "all"] = "any",
+    ) -> list[dict]:
+        """Multi-tag filter — voor een filterpaneel waar de gebruiker al concrete tags
+        heeft aangeklikt (exacte match, geen ILIKE-prefix zoals search()).
+
+        match="any" (OR): bestanden met minstens 1 van de opgegeven tags.
+        match="all" (AND): enkel bestanden met alle opgegeven tags tegelijk.
+
+        Geeft, net als search(), 1 rij per (tag, bestand)-match terug.
+
+        bv.: await repo.search_by_tags(archive_id, values=["Jan Janssens", "Gent"], top_n=25, match="all")
+        """
+
+        if not values:
+            return []
+
+        # value IN (values) = OR-selectie op rij-niveau: elke rij met 1 van de
+        # gevraagde waarden matcht. Bij match="any" is dit de volledige query.
+        filters = [TagIndex.archive_id == archive_id, TagIndex.value.in_(values)]
+
+        if match == "all":
+            # AND op bestand-niveau:
+            # formaat tabel: 1 rij = 1 (tag, file), we filteren dus eerst alle rijen die aan 1
+            # van de values voldoet. Vervolgens doen we groupby file_id en moeten we als we tellen
+            # altijd op len(values) uitkomen anders matcht een file niet met ALLE tags.
+            #   func.distinct(value)        -> DISTINCT value, binnen die groep
+            #   func.count(...)             -> COUNT(...) daarvan
+            #   HAVING count(...) == len(values)  -> telt
+            qualifying_files = (
+                select(TagIndex.file_id)
+                .where(*filters)  # nog enkel de 2 basisvoorwaarden hierboven
+                .group_by(TagIndex.file_id)
+                .having(func.count(func.distinct(TagIndex.value)) == len(set(values)))
+            )
+            # qualifying_files wordt hier zelf niet uitgevoerd — het wordt als
+            # subquery ingeplakt in een 3de filter: "file_id moet in dat lijstje zitten".
+            filters.append(TagIndex.file_id.in_(qualifying_files))
+
+        # stmt = de uiteindelijke, ene query die echt naar de database gaat: haal de
+        # tag + bestandsinfo op voor elke tag_index-rij die aan alle filters voldoet
+        # (2 filters bij "any", 3 bij "all" — inclusief de subquery hierboven).
+        stmt = (
+            select(
+                TagIndex.value,
+                TagIndex.source,
+                TagIndex.category,
+                File.id.label("file_id"),
+                File.name.label("file_name"),
+                File.relative_path,
+                File.is_directory,
+            )
+            .join(File, File.id == TagIndex.file_id)
+            .where(*filters)  # combineert filters met AND (WHERE a AND b [AND c])
             .order_by(TagIndex.value)
             .limit(top_n)
         )
