@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.models import TagIndex
+from app.shared.models import File, TagIndex
 
 
 class TagIndexRepository:
@@ -57,3 +57,28 @@ class TagIndexRepository:
 
         await self._session.execute(stmt)
         await self._session.flush()
+
+    async def search(self, archive_id: uuid.UUID, prefix: str, top_n: int) -> list[dict]:
+        """Prefix-zoekopdracht binnen 1 archief — voor een typeahead-zoekbalk.
+
+        Geeft per match de tag zelf (waarde/source/categorie) terug, samen met het
+        bestand of de map waarin die tag voorkomt (is_directory onderscheidt beide —
+        tag_index bevat ook folder-aggregaten, zie CreateTagIndexForArchive).
+        """
+        stmt = (
+            select(
+                TagIndex.value,
+                TagIndex.source,
+                TagIndex.category,
+                File.id.label("file_id"),
+                File.name.label("file_name"),
+                File.relative_path,
+                File.is_directory,
+            )
+            .join(File, File.id == TagIndex.file_id)
+            .where(TagIndex.archive_id == archive_id, TagIndex.value.ilike(f"{prefix}%"))
+            .order_by(TagIndex.value)
+            .limit(top_n)
+        )
+        result = await self._session.execute(stmt)
+        return [dict(row._mapping) for row in result.all()]
