@@ -127,9 +127,8 @@ class TagIndexRepository:
             # subquery ingeplakt in een 3de filter: "file_id moet in dat lijstje zitten".
             filters.append(TagIndex.file_id.in_(qualifying_files))
 
-        # stmt = de uiteindelijke, ene query die echt naar de database gaat: haal de
-        # tag + bestandsinfo op voor elke tag_index-rij die aan alle filters voldoet
-        # (2 filters bij "any", 3 bij "all" — inclusief de subquery hierboven).
+        # stmt: haal de tag + bestandsinfo op voor elke tag_index-rij die aan alle filters voldoet
+        # (2 filters bij "any", 3 bij "all"  
         stmt = (
             select(
                 TagIndex.value,
@@ -145,5 +144,31 @@ class TagIndexRepository:
             .order_by(TagIndex.value)
             .limit(top_n)
         )
+        result = await self._session.execute(stmt)
+        return [dict(row._mapping) for row in result.all()]
+
+    async def get_all_tags(self, archive_id: uuid.UUID, category: str | None = None) -> list[dict]:
+        """Alle unieke tags in dit archief, optioneel gefilterd op category.
+
+        Geen category -> alle tags ongeacht categorie. In tegenstelling tot search()/
+        search_by_tags() geen file_id/bestandsinfo in het resultaat: dit is bewust
+        gededupliceerd over bestanden heen (DISTINCT) — bedoeld om een filterpaneel
+        te vullen met de beschikbare tag-opties, niet om per bestand te tonen.
+
+        LET OP: de DISTINCT werkt op (source, category, value) samen, niet op value
+        alleen. Dezelfde tekst kan dus 2x in het resultaat staan als ze in meerdere
+        (source, category)-combinaties voorkomt — bv. "Gent" als NER-locatie ÉN als
+        LLM-topic. Dat is bewust: met category=None getoond, is dat 2 apart aanklikbare
+        filter-opties, geen echte duplicaat. Wil een aanroeper toch een platte lijst van
+        unieke tag-teksten (zonder categorie-context), dan dedupliceert die zelf verder,
+        bv. {r["value"] for r in resultaten}.
+        """
+        stmt = select(TagIndex.source, TagIndex.category, TagIndex.value).distinct().where(
+            TagIndex.archive_id == archive_id
+        )
+        if category is not None:
+            stmt = stmt.where(TagIndex.category == category)
+        stmt = stmt.order_by(TagIndex.value)
+
         result = await self._session.execute(stmt)
         return [dict(row._mapping) for row in result.all()]
