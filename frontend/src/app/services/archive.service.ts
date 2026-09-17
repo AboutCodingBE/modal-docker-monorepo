@@ -39,6 +39,9 @@ export interface FolderFile {
   size_bytes: number | null;
   mime_type: string | null;
   category: string | null;
+  language: string | null;
+  author: string | null;
+  content_created_at: string | null;
 }
 
 export interface NerResult {
