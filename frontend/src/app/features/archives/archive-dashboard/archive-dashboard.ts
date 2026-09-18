@@ -32,7 +32,8 @@ interface TreemapRect {
 interface PersonCountBar {
   name: string;
   uniqueCount: number;
-  duplicateCount: number;
+  repeatedCount: number;
+  frequentCount: number;
 }
 
 interface HeatmapCell {
@@ -666,7 +667,7 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       .padding(0.18);
 
     const yScale = d3.scaleLinear()
-      .domain([0, d3.max(data, (item) => item.uniqueCount + item.duplicateCount) ?? 0])
+      .domain([0, d3.max(data, (item) => item.uniqueCount + item.repeatedCount + item.frequentCount) ?? 0])
       .nice()
       .range([chartHeight, 0]);
 
@@ -717,13 +718,21 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     bars.append('rect')
       .attr('class', 'bar bar-duplicate')
       .attr('x', 0)
-      .attr('y', (item) => yScale(item.uniqueCount + item.duplicateCount))
+      .attr('y', (item) => yScale(item.uniqueCount + item.repeatedCount))
       .attr('width', xScale.bandwidth())
-      .attr('height', (item) => yScale(item.uniqueCount) - yScale(item.uniqueCount + item.duplicateCount))
+      .attr('height', (item) => yScale(item.uniqueCount) - yScale(item.uniqueCount + item.repeatedCount))
       .attr('fill', '#f97316');
 
+    bars.append('rect')
+      .attr('class', 'bar bar-frequent')
+      .attr('x', 0)
+      .attr('y', (item) => yScale(item.uniqueCount + item.repeatedCount + item.frequentCount))
+      .attr('width', xScale.bandwidth())
+      .attr('height', (item) => yScale(item.uniqueCount + item.repeatedCount) - yScale(item.uniqueCount + item.repeatedCount + item.frequentCount))
+      .attr('fill', '#dc2626');
+
     bars.append('title')
-      .text((item) => `${item.name}: ${item.uniqueCount} ${this.barChartDimensionLabel().toLowerCase()} uniek voor dit bestand, ${item.duplicateCount} ${this.barChartDimensionLabel().toLowerCase()} in meerdere bestanden`);
+      .text((item) => `${item.name}: ${item.uniqueCount} uniek, ${item.repeatedCount} in 2-4 bestanden, ${item.frequentCount} in 5+ bestanden`);
 
     g.selectAll('text.bar-value')
       .data(data)
@@ -731,15 +740,15 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       .append('text')
       .attr('class', 'bar-value')
       .attr('x', (item) => (xScale(item.name) ?? 0) + xScale.bandwidth() / 2)
-      .attr('y', (item) => yScale(item.uniqueCount + item.duplicateCount) - 6)
+      .attr('y', (item) => yScale(item.uniqueCount + item.repeatedCount + item.frequentCount) - 6)
       .attr('text-anchor', 'middle')
       .attr('font-size', '11px')
       .attr('fill', '#111827')
-      .text((item) => String(item.uniqueCount + item.duplicateCount));
+      .text((item) => String(item.uniqueCount + item.repeatedCount + item.frequentCount));
 
     bars.selectAll<SVGRectElement, PersonCountBar>('rect.bar')
       .on('mouseover', (event: MouseEvent, item: PersonCountBar) => {
-        this.tooltipText.set(`${item.name}: ${item.uniqueCount} uniek, ${item.duplicateCount} ook in andere bestanden`);
+        this.tooltipText.set(`${item.name}: ${item.uniqueCount} uniek, ${item.repeatedCount} in 2-4 bestanden, ${item.frequentCount} in 5+ bestanden`);
         this.tooltipX.set(event.clientX + 12);
         this.tooltipY.set(event.clientY + 12);
         this.tooltipVisible.set(true);
@@ -795,18 +804,22 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
 
     return filePersons.map(({ name, values }) => {
         let uniqueCount = 0;
-        let duplicateCount = 0;
+        let repeatedCount = 0;
+        let frequentCount = 0;
         values.forEach((value) => {
-          if ((filesPerValue.get(value) ?? 0) === 1) uniqueCount += 1;
-          else duplicateCount += 1;
+          const fileCount = filesPerValue.get(value) ?? 0;
+          if (fileCount === 1) uniqueCount += 1;
+          else if (fileCount >= 5) frequentCount += 1;
+          else repeatedCount += 1;
         });
         return {
           name,
           uniqueCount,
-          duplicateCount,
+          repeatedCount,
+          frequentCount,
         };
         })
-      .sort((a, b) => (b.uniqueCount + b.duplicateCount) - (a.uniqueCount + a.duplicateCount) || a.name.localeCompare(b.name));
+      .sort((a, b) => (b.uniqueCount + b.repeatedCount + b.frequentCount) - (a.uniqueCount + a.repeatedCount + a.frequentCount) || a.name.localeCompare(b.name));
   }
 
   onTimelineDimensionChange(event: Event): void {
