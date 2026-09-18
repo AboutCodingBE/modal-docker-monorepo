@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import * as d3 from 'd3';
-import { ArchiveService, FolderFile, NerResult, TopicsResult, TimelineHeatmapCell, TimelineHeatmapResult } from '../../../services/archive.service';
+import { ArchiveService, FolderFile, NerResult, TimelineHeatmapCell, TimelineHeatmapResult, TopicsResult } from '../../../services/archive.service';
 
 interface DashboardNavigationState {
   selectedFile?: FolderFile | null;
@@ -29,11 +29,10 @@ interface TreemapRect {
   height: number;
 }
 
-interface FileSizeBar {
+interface PersonCountBar {
   name: string;
-  size: number;
-  category: string;
-  color: string;
+  uniqueCount: number;
+  duplicateCount: number;
 }
 
 interface HeatmapCell {
@@ -42,7 +41,7 @@ interface HeatmapCell {
   value: number;
 }
 
-type HeatmapDimension = 'organisations' | 'persons' | 'locations' | 'misc' | 'topics';
+type HeatmapDimension = 'organisations' | 'persons' | 'locations' | 'topics';
 
 interface HeatmapAxisOption {
   value: string;
@@ -101,8 +100,16 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
   personTreemapRects = signal<TreemapRect[]>([]);
   organizationTreemapRects = signal<TreemapRect[]>([]);
   topicTreemapRects = signal<TreemapRect[]>([]);
-  barChartItems = signal<FileSizeBar[]>([]);
-  barChartLegendItems = signal<{ category: string; color: string }[]>([]);
+  barChartItems = signal<PersonCountBar[]>([]);
+  barChartDimension = signal<HeatmapDimension>('persons');
+  timelineHeatmapData = signal<TimelineHeatmapResult | null>(null);
+  timelineRangeMin = signal(0);
+  timelineRangeMax = signal(10);
+  timelineAvailableMin = signal(0);
+  timelineAvailableMax = signal(10);
+  timelineYDimension = signal<HeatmapDimension>('organisations');
+  timelineYOptions = signal<HeatmapAxisOption[]>([]);
+  timelineYSelected = signal<string[]>([]);
   heatmapXValues = signal<string[]>([]);
   heatmapYValues = signal<string[]>([]);
   heatmapCells = signal<HeatmapCell[]>([]);
@@ -120,29 +127,18 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     { value: 'topics', label: 'Topic' },
   ];
 
-  // Timeline Heatmap
-  timelineHeatmapData = signal<TimelineHeatmapResult | null>(null);
-  timelineRangeMin = signal<number>(0);
-  timelineRangeMax = signal<number>(10);
-  timelineAvailableMin = signal<number>(0);
-  timelineAvailableMax = signal<number>(10);
-  timelineYDimension = signal<HeatmapDimension>('organisations');
-  timelineYOptions = signal<HeatmapAxisOption[]>([]);
-  timelineYSelected = signal<string[]>([]);
-  timelineAxisOptions: Array<{ value: HeatmapDimension; label: string }> = [
-    { value: 'organisations', label: 'Organisatie' },
-    { value: 'persons', label: 'Personen' },
-    { value: 'locations', label: 'Locatie' },
-    { value: 'misc', label: 'Overig' },
-    { value: 'topics', label: 'Topic' },
-  ];
-
   tooltipText = signal('');
   tooltipX = signal(0);
   tooltipY = signal(0);
   tooltipVisible = signal(false);
   itemScope = signal<ItemScope>('both');
   allEntities = signal<DashboardEntity[]>([]);
+  timelineAxisOptions: Array<{ value: HeatmapDimension; label: string }> = [
+    { value: 'organisations', label: 'Organisaties' },
+    { value: 'persons', label: 'Personen' },
+    { value: 'locations', label: 'Locaties' },
+    { value: 'topics', label: 'Topics' },
+  ];
 
   ngOnInit(): void {
     const routeArchiveId = this.route.snapshot.paramMap.get('archiveId') ?? '';
@@ -350,50 +346,6 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     return 'Topics';
   }
 
-  onTimelineYAxisChange(event: Event): void {
-    const dimension = (event.target as HTMLSelectElement).value as HeatmapDimension;
-    this.timelineYDimension.set(dimension);
-
-    if (this.timelineHeatmapData() === null) return;
-
-    // Reload with new dimension
-    this._loadTimelineHeatmap(this.archiveId(), this.folderId());
-  }
-
-  onTimelineValueToggle(value: string, event: Event): void {
-    const checkbox = event.target as HTMLInputElement;
-    const order = new Map(this.timelineYOptions().map((option, index) => [option.value, index]));
-    const current = this.timelineYSelected();
-    const next = (checkbox.checked ? [...current, value] : current.filter((entry) => entry !== value))
-      .sort((left, right) => (order.get(left) ?? Number.MAX_SAFE_INTEGER) - (order.get(right) ?? Number.MAX_SAFE_INTEGER));
-
-    this.timelineYSelected.set(next);
-    setTimeout(() => this._renderTimelineHeatmap());
-  }
-
-  isTimelineSelected(value: string): boolean {
-    return this.timelineYSelected().includes(value);
-  }
-
-  timelineSelectedCount(): number {
-    return this.timelineYSelected().length;
-  }
-
-  onTimelineRangeChange(axis: 'min' | 'max', event: Event): void {
-    const newValue = parseInt((event.target as HTMLInputElement).value, 10);
-    if (axis === 'min') {
-      this.timelineRangeMin.set(Math.min(newValue, this.timelineRangeMax()));
-    } else {
-      this.timelineRangeMax.set(Math.max(newValue, this.timelineRangeMin()));
-    }
-    this._loadTimelineHeatmap(
-      this.archiveId(),
-      this.folderId(),
-      this.timelineRangeMin(),
-      this.timelineRangeMax(),
-    );
-  }
-
   private _entitiesForScope(entities: DashboardEntity[]): DashboardEntity[] {
     const scope = this.itemScope();
     if (scope === 'files') return entities.filter((entry) => !entry.is_directory);
@@ -408,7 +360,6 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       this.organizationItems.set([]);
       this.topicItems.set([]);
       this.barChartItems.set([]);
-      this.barChartLegendItems.set([]);
       this.heatmapXValues.set([]);
       this.heatmapYValues.set([]);
       this.heatmapCells.set([]);
@@ -449,9 +400,8 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
         this.personItems.set(this._buildItemsFromMap(personCounts));
         this.organizationItems.set(this._buildItemsFromMap(organizationCounts));
         this.topicItems.set(this._buildItemsFromMap(topicCounts));
-        const barItems = this._buildBarChartItems(entities.filter((entry) => !entry.is_directory));
+        const barItems = this._buildPersonCountBarItems(entities, results);
         this.barChartItems.set(barItems);
-        this.barChartLegendItems.set(this._buildBarChartLegend(barItems));
 
         this.heatmapResults.set(results as ItemAnalytics[]);
         this._rebuildHeatmapSelections({ resetX: true, resetY: true });
@@ -478,183 +428,6 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     const counts = new Map<string, number>();
     this._addTopicValues(counts, data.topics);
     return this._buildItemsFromMap(counts);
-  }
-
-  private _loadTimelineHeatmap(
-    archiveId: string,
-    folderId: string | null,
-    rangeMin?: number,
-    rangeMax?: number,
-  ): void {
-    if (!folderId || !archiveId) {
-      return;
-    }
-
-    this.archiveService
-      .getTimelineHeatmap(
-        archiveId,
-        folderId,
-        this.timelineYDimension(),
-        this.itemScope(),
-        rangeMin,
-        rangeMax,
-      )
-      .subscribe({
-        next: (data) => {
-          this.timelineHeatmapData.set(data);
-
-          // Update range from data
-          if (rangeMin === undefined && rangeMax === undefined
-            && data.default_range[0] !== null && data.default_range[1] !== null) {
-            this.timelineRangeMin.set(data.default_range[0]);
-            this.timelineRangeMax.set(data.default_range[1]);
-          }
-          if (rangeMin === undefined && rangeMax === undefined
-            && data.available_range[0] !== null && data.available_range[1] !== null) {
-            this.timelineAvailableMin.set(Math.min(data.available_range[0], data.default_range[0] ?? data.available_range[0]));
-            this.timelineAvailableMax.set(Math.max(data.available_range[1], data.default_range[1] ?? data.available_range[1]));
-          }
-
-          // Rebuild y-value selections
-          if (data.y_values.length > 0) {
-            const yOptions: HeatmapAxisOption[] = data.y_values.map((value) => {
-              const count = data.y_value_counts[value] ?? 0;
-              return { value, count };
-            }).sort((left, right) => right.count - left.count || left.value.localeCompare(right.value));
-            this.timelineYOptions.set(yOptions);
-
-            const topSelected = yOptions.slice(0, 10).map((option) => option.value);
-            this.timelineYSelected.set(topSelected);
-          }
-
-          setTimeout(() => this._renderTimelineHeatmap());
-        },
-        error: () => {
-          this.error.set('Kon de timeline heatmap data niet laden.');
-        },
-      });
-  }
-
-  private _renderTimelineHeatmap(): void {
-    const data = this.timelineHeatmapData();
-    if (!data) {
-      return;
-    }
-
-    const svg = document.querySelector('.timeline-heatmap') as SVGSVGElement;
-    if (!svg) {
-      return;
-    }
-
-    d3.select(svg).selectAll('*').remove();
-
-    const width = svg.clientWidth || 800;
-    const height = svg.clientHeight || 400;
-    const margin = { top: 20, right: 20, bottom: 60, left: 100 };
-    const innerWidth = width - margin.left - margin.right;
-    const innerHeight = height - margin.top - margin.bottom;
-
-    const ySelected = new Set(this.timelineYSelected());
-    const yearsInRange = data.years.filter(
-      (y) => y >= this.timelineRangeMin() && y <= this.timelineRangeMax(),
-    );
-    const filteredYValues = this.timelineYOptions()
-      .map((option) => option.value)
-      .filter((value) => ySelected.has(value));
-
-    if (yearsInRange.length === 0 || filteredYValues.length === 0) {
-      d3.select(svg)
-        .append('text')
-        .attr('x', width / 2)
-        .attr('y', height / 2)
-        .attr('text-anchor', 'middle')
-        .text('Geen data beschikbaar');
-      return;
-    }
-
-    // Scales
-    const xScale = d3
-      .scaleBand()
-      .domain(yearsInRange.map(String))
-      .range([0, innerWidth])
-      .padding(0.1);
-
-    const yScale = d3.scaleBand().domain([...filteredYValues].reverse()).range([innerHeight, 0]).padding(0.1);
-
-    const maxCount = d3.max(data.cells, (d) => d.count) || 1;
-    const colorScale = d3
-      .scaleLinear<string>()
-      .domain([0, maxCount])
-      .range(['#7f1d1d', '#fee2e2']);
-
-    // Create SVG group
-    const g = d3
-      .select(svg)
-      .append('g')
-      .attr('transform', `translate(${margin.left},${margin.top})`);
-
-    // Draw cells
-    const cells = data.cells.filter(
-      (c) => yearsInRange.includes(c.year) && filteredYValues.includes(c.y_value),
-    );
-
-    g.selectAll('.cell')
-      .data(cells)
-      .join('rect')
-      .attr('class', 'cell')
-      .attr('x', (d) => xScale(String(d.year)) || 0)
-      .attr('y', (d) => yScale(d.y_value) || 0)
-      .attr('width', xScale.bandwidth())
-      .attr('height', yScale.bandwidth())
-      .attr('fill', (d) => colorScale(d.count))
-      .attr('stroke', '#ccc')
-      .attr('stroke-width', 1)
-      .on('mouseover', (event: MouseEvent, d: TimelineHeatmapCell) => {
-        this.tooltipText.set(`${d.y_value} (${d.year}): ${d.count}`);
-        this.tooltipX.set(event.clientX + 12);
-        this.tooltipY.set(event.clientY + 12);
-        this.tooltipVisible.set(true);
-      })
-      .on('mousemove', (event: MouseEvent) => {
-        this.tooltipX.set(event.clientX + 12);
-        this.tooltipY.set(event.clientY + 12);
-      })
-      .on('mouseout', () => {
-        this.tooltipVisible.set(false);
-      })
-      .append('title')
-      .text((d) => `${d.y_value} (${d.year}): ${d.count}`);
-
-    // X-axis
-    g.append('g')
-      .attr('transform', `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(xScale))
-      .append('text')
-      .attr('x', innerWidth / 2)
-      .attr('y', 40)
-      .attr('fill', 'black')
-      .text('Jaar');
-
-    // Y-axis
-    g.append('g')
-      .call(d3.axisLeft(yScale))
-      .append('text')
-      .attr('transform', 'rotate(-90)')
-      .attr('y', -60)
-      .attr('x', -innerHeight / 2)
-      .attr('fill', 'black')
-      .text(this._getLabelForDimension(this.timelineYDimension()));
-  }
-
-  private _getLabelForDimension(dimension: HeatmapDimension): string {
-    const labels: Record<HeatmapDimension, string> = {
-      organisations: 'Organisatie',
-      persons: 'Persoon',
-      locations: 'Locatie',
-      misc: 'Overig',
-      topics: 'Topic',
-    };
-    return labels[dimension] || dimension;
   }
 
   private _addNerValues(counts: Map<string, number>, values: string[]): void {
@@ -871,10 +644,10 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     const chartWidth = width - margin.left - margin.right;
     const chartHeight = height - margin.top - margin.bottom;
 
-    d3.select<SVGSVGElement, FileSizeBar>(svg).selectAll('*').remove();
+    d3.select<SVGSVGElement, PersonCountBar>(svg).selectAll('*').remove();
 
     if (data.length === 0) {
-      d3.select<SVGSVGElement, FileSizeBar>(svg)
+      d3.select<SVGSVGElement, PersonCountBar>(svg)
         .attr('viewBox', `0 0 ${width} ${height}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
         .append('text')
@@ -883,12 +656,12 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
         .attr('text-anchor', 'middle')
         .attr('fill', '#6b7280')
         .attr('font-size', '13px')
-        .text('Geen bestanden beschikbaar voor size grafiek.');
+        .text(`Geen bestanden beschikbaar voor de ${this.barChartDimensionLabel().toLowerCase()}-grafiek.`);
       return;
     }
 
     const xScale = d3.scaleLinear()
-      .domain([0, d3.max(data, (item) => item.size) ?? 0])
+      .domain([0, d3.max(data, (item) => item.uniqueCount + item.duplicateCount) ?? 0])
       .nice()
       .range([0, chartWidth]);
 
@@ -897,7 +670,7 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       .range([0, chartHeight])
       .padding(0.18);
 
-    const g = d3.select<SVGSVGElement, FileSizeBar>(svg)
+    const g = d3.select<SVGSVGElement, PersonCountBar>(svg)
       .attr('viewBox', `0 0 ${width} ${height}`)
       .attr('preserveAspectRatio', 'xMidYMid meet')
       .append('g')
@@ -917,63 +690,193 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
 
     g.append('g')
       .attr('transform', `translate(0,${chartHeight})`)
-      .call(d3.axisBottom(xScale).ticks(5).tickFormat((value) => `${d3.format('~s')(value as number)}B`))
+      .call(d3.axisBottom(xScale).ticks(5).tickFormat((value) => String(value)))
       .selectAll('text')
       .attr('font-size', '12px')
       .attr('fill', '#6b7280');
 
-    const bars = g.selectAll('rect.bar')
+    const bars = g.selectAll('g.bar-group')
       .data(data)
       .enter()
-      .append('rect')
-      .attr('class', 'bar')
+      .append('g')
+      .attr('class', 'bar-group')
+      .attr('transform', (item) => `translate(0,${yScale(item.name) ?? 0})`);
+
+    bars.append('rect')
+      .attr('class', 'bar bar-unique')
       .attr('x', 0)
-      .attr('y', (item) => yScale(item.name) ?? 0)
-      .attr('width', (item) => xScale(item.size))
+      .attr('width', (item) => xScale(item.uniqueCount))
       .attr('height', yScale.bandwidth())
-      .attr('fill', (item) => item.color)
-      .attr('rx', 6);
+      .attr('fill', '#2563eb')
+      .attr('rx', 0)
+      .attr('ry', 0);
+
+    bars.append('rect')
+      .attr('class', 'bar bar-duplicate')
+      .attr('x', (item) => xScale(item.uniqueCount))
+      .attr('width', (item) => xScale(item.duplicateCount))
+      .attr('height', yScale.bandwidth())
+      .attr('fill', '#f97316');
 
     bars.append('title')
-      .text((item) => `${item.name}: ${d3.format(',')(item.size)} bytes`);
+      .text((item) => `${item.name}: ${item.uniqueCount} ${this.barChartDimensionLabel().toLowerCase()} uniek voor dit bestand, ${item.duplicateCount} ${this.barChartDimensionLabel().toLowerCase()} in meerdere bestanden`);
 
     g.selectAll('text.bar-value')
       .data(data)
       .enter()
       .append('text')
       .attr('class', 'bar-value')
-      .attr('x', (item) => xScale(item.size) + 8)
+      .attr('x', (item) => xScale(item.uniqueCount + item.duplicateCount) + 8)
       .attr('y', (item) => (yScale(item.name) ?? 0) + yScale.bandwidth() / 2 + 4)
       .attr('font-size', '11px')
       .attr('fill', '#111827')
-      .text((item) => `${d3.format(',')(item.size)} B`);
-  }
+      .text((item) => String(item.uniqueCount + item.duplicateCount));
 
-  private _buildBarChartItems(entities: DashboardEntity[]): FileSizeBar[] {
-    const colorMap = this._buildCategoryColorMap(entities);
-
-    return [...entities]
-      .filter((entry) => entry.size_bytes !== null)
-      .map((entry) => {
-        const category = entry.category ?? 'Unknown';
-        return {
-          name: entry.name,
-          size: entry.size_bytes ?? 0,
-          category,
-          color: colorMap.get(category) ?? this._categoryColor(0),
-        };
+    bars.selectAll<SVGRectElement, PersonCountBar>('rect.bar')
+      .on('mouseover', (event: MouseEvent, item: PersonCountBar) => {
+        this.tooltipText.set(`${item.name}: ${item.uniqueCount} uniek, ${item.duplicateCount} ook in andere bestanden`);
+        this.tooltipX.set(event.clientX + 12);
+        this.tooltipY.set(event.clientY + 12);
+        this.tooltipVisible.set(true);
       })
-      .sort((a, b) => b.size - a.size);
+      .on('mousemove', (event: MouseEvent) => {
+        this.tooltipX.set(event.clientX + 12);
+        this.tooltipY.set(event.clientY + 12);
+      })
+      .on('mouseout', () => this.tooltipVisible.set(false));
   }
 
-  private _buildBarChartLegend(items: FileSizeBar[]): { category: string; color: string }[] {
-    const legendMap = new Map<string, string>();
-    items.forEach((item) => {
-      if (!legendMap.has(item.category)) {
-        legendMap.set(item.category, item.color);
-      }
+  private _buildPersonCountBarItems(entities: DashboardEntity[], results: ItemAnalytics[]): PersonCountBar[] {
+    return this._buildDimensionCountBarItems(entities, results, this.barChartDimension());
+  }
+
+  onBarChartDimensionChange(event: Event): void {
+    this.barChartDimension.set((event.target as HTMLSelectElement).value as HeatmapDimension);
+    this.barChartItems.set(
+      this._buildDimensionCountBarItems(this.allEntities(), this.heatmapResults(), this.barChartDimension()),
+    );
+    setTimeout(() => this._renderBarChart());
+  }
+
+  barChartDimensionLabel(): string {
+    const labels: Record<HeatmapDimension, string> = {
+      organisations: 'Organisaties',
+      persons: 'Personen',
+      locations: 'Locaties',
+      topics: 'Topics',
+    };
+    return labels[this.barChartDimension()];
+  }
+
+  private _buildDimensionCountBarItems(
+    entities: DashboardEntity[],
+    results: ItemAnalytics[],
+    dimension: HeatmapDimension,
+  ): PersonCountBar[] {
+    const filePersons = entities
+      .map((entry, index) => ({ entry, index }))
+      .filter(({ entry }) => !entry.is_directory)
+      .map(({ entry, index }) => ({
+        name: entry.name,
+        values: new Set(this._valuesForDimension(results[index], dimension)),
+      }));
+    const filesPerValue = new Map<string, number>();
+
+    filePersons.forEach(({ values }) => {
+      values.forEach((value) => {
+        filesPerValue.set(value, (filesPerValue.get(value) ?? 0) + 1);
+      });
     });
-    return [...legendMap.entries()].map(([category, color]) => ({ category, color }));
+
+    return filePersons.map(({ name, values }) => {
+        let uniqueCount = 0;
+        let duplicateCount = 0;
+        values.forEach((value) => {
+          if ((filesPerValue.get(value) ?? 0) === 1) uniqueCount += 1;
+          else duplicateCount += 1;
+        });
+        return {
+          name,
+          uniqueCount,
+          duplicateCount,
+        };
+        })
+      .sort((a, b) => (b.uniqueCount + b.duplicateCount) - (a.uniqueCount + a.duplicateCount) || a.name.localeCompare(b.name));
+  }
+
+  onTimelineDimensionChange(event: Event): void {
+    this.timelineYDimension.set((event.target as HTMLSelectElement).value as HeatmapDimension);
+    this._loadTimelineHeatmap(this.archiveId(), this.folderId());
+  }
+
+  onTimelineValueToggle(value: string, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    const selected = this.timelineYSelected();
+    this.timelineYSelected.set(checked ? [...selected, value] : selected.filter((item) => item !== value));
+    setTimeout(() => this._renderTimelineHeatmap());
+  }
+
+  onTimelineRangeChange(axis: 'min' | 'max', event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (axis === 'min') this.timelineRangeMin.set(Math.min(value, this.timelineRangeMax()));
+    else this.timelineRangeMax.set(Math.max(value, this.timelineRangeMin()));
+    this._loadTimelineHeatmap(this.archiveId(), this.folderId(), this.timelineRangeMin(), this.timelineRangeMax());
+  }
+
+  isTimelineSelected(value: string): boolean {
+    return this.timelineYSelected().includes(value);
+  }
+
+  timelineSelectedCount(): number {
+    return this.timelineYSelected().length;
+  }
+
+  private _loadTimelineHeatmap(archiveId: string, folderId: string | null, rangeMin?: number, rangeMax?: number): void {
+    if (!archiveId || !folderId) return;
+    this.archiveService.getTimelineHeatmap(archiveId, folderId, this.timelineYDimension(), rangeMin, rangeMax).subscribe({
+      next: (data) => {
+        this.timelineHeatmapData.set(data);
+        if (rangeMin === undefined && data.default_range[0] !== null && data.default_range[1] !== null) {
+          this.timelineRangeMin.set(data.default_range[0]);
+          this.timelineRangeMax.set(data.default_range[1]);
+        }
+        if (data.available_range[0] !== null && data.available_range[1] !== null) {
+          this.timelineAvailableMin.set(data.available_range[0]);
+          this.timelineAvailableMax.set(data.available_range[1]);
+        }
+        const options = data.y_values
+          .map((value) => ({ value, count: data.y_value_counts[value] ?? 0 }))
+          .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
+        this.timelineYOptions.set(options);
+        if (rangeMin === undefined) this.timelineYSelected.set(options.slice(0, 10).map((option) => option.value));
+        setTimeout(() => this._renderTimelineHeatmap());
+      },
+      error: () => this.error.set('Kon de timeline heatmap niet laden.'),
+    });
+  }
+
+  private _renderTimelineHeatmap(): void {
+    const svg = this.elementRef.nativeElement.querySelector('svg.timeline-heatmap') as SVGSVGElement | null;
+    const data = this.timelineHeatmapData();
+    if (!svg || !data) return;
+    const width = svg.clientWidth || 820;
+    const height = svg.clientHeight || 420;
+    const margin = { top: 18, right: 16, bottom: 60, left: 160 };
+    const years = data.years.filter((year) => year >= this.timelineRangeMin() && year <= this.timelineRangeMax());
+    const values = this.timelineYOptions().map((option) => option.value).filter((value) => this.isTimelineSelected(value));
+    d3.select(svg).selectAll('*').remove();
+    if (!years.length || !values.length) return;
+    const x = d3.scaleBand<string>().domain(years.map(String)).range([0, width - margin.left - margin.right]).padding(0.05);
+    const y = d3.scaleBand<string>().domain([...values].reverse()).range([height - margin.top - margin.bottom, 0]).padding(0.05);
+    const max = d3.max(data.cells, (cell) => cell.count) ?? 1;
+    const color = d3.scaleLinear<string>().domain([0, max || 1]).range(['#7f1d1d', '#fee2e2']);
+    const group = d3.select(svg).attr('viewBox', `0 0 ${width} ${height}`).append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    group.selectAll('rect').data(data.cells.filter((cell) => years.includes(cell.year) && values.includes(cell.y_value))).join('rect')
+      .attr('x', (cell) => x(String(cell.year)) ?? 0).attr('y', (cell) => y(cell.y_value) ?? 0)
+      .attr('width', x.bandwidth()).attr('height', y.bandwidth()).attr('fill', (cell) => color(cell.count)).attr('stroke', '#fff')
+      .append('title').text((cell) => `${cell.y_value} (${cell.year}): ${cell.count}`);
+    group.append('g').attr('transform', `translate(0,${height - margin.top - margin.bottom})`).call(d3.axisBottom(x));
+    group.append('g').call(d3.axisLeft(y));
   }
 
   private _buildCategoryColorMap(entities: DashboardEntity[]): Map<string, string> {

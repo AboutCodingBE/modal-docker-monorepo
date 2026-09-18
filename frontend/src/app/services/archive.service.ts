@@ -89,13 +89,11 @@ export interface TimelineHeatmapResult {
   folder_id: string;
   folder_name: string;
   y_dimension: string;
-  scope: string;
   years: number[];
   available_range: [number | null, number | null];
   y_values: string[];
   y_value_counts: Record<string, number>;
-  year_with_most_data: number | null;
-  default_range: [number, number];
+  default_range: [number | null, number | null];
   cells: TimelineHeatmapCell[];
 }
 
@@ -168,24 +166,11 @@ export class ArchiveService {
     return this.http.get<TopicsFolderResult>(`/api/archives/${archiveId}/folders/${folderId}/topics`);
   }
 
-  getTimelineHeatmap(
-    archiveId: string,
-    folderId: string,
-    yDimension: string,
-    scope: string,
-    rangeMin?: number,
-    rangeMax?: number,
-  ): Observable<TimelineHeatmapResult> {
-    let params = new HttpParams()
-      .set('y_dimension', yDimension)
-      .set('scope', scope);
+  getTimelineHeatmap(archiveId: string, folderId: string, yDimension: string, rangeMin?: number, rangeMax?: number): Observable<TimelineHeatmapResult> {
+    let params = new HttpParams().set('y_dimension', yDimension);
     if (rangeMin !== undefined) params = params.set('range_min', String(rangeMin));
     if (rangeMax !== undefined) params = params.set('range_max', String(rangeMax));
-    
-    return this.http.get<TimelineHeatmapResult>(
-      `/api/archives/${archiveId}/folders/${folderId}/timeline-heatmap`,
-      { params },
-    );
+    return this.http.get<TimelineHeatmapResult>(`/api/archives/${archiveId}/folders/${folderId}/timeline-heatmap`, { params });
   }
 
   deleteArchive(archiveId: string): Observable<void> {
