@@ -86,31 +86,6 @@
             }
           </div>
         </div>
-        <div class="bar-chart-card">
-          <div class="bar-chart-header">
-            <div class="treemap-title">{{ barChartDimensionLabel() }} per bestand</div>
-            <label class="bar-chart-dimension-control">
-              Dimensie
-              <select [value]="barChartDimension()" (change)="onBarChartDimensionChange($event)">
-                <option value="persons">Personen</option>
-                <option value="organisations">Organisaties</option>
-                <option value="locations">Locaties</option>
-                <option value="topics">Topics</option>
-              </select>
-            </label>
-          </div>
-          <div class="bar-chart-legend">
-            <div class="legend-item"><span class="legend-swatch" style="background: #2563eb"></span><span class="legend-label">Uniek voor dit bestand</span></div>
-            <div class="legend-item"><span class="legend-swatch" style="background: #f97316"></span><span class="legend-label">Ook in andere bestanden</span></div>
-          </div>
-          @if (barChartItems().length === 0) {
-            <div class="dashboard-empty small">Geen bestanden beschikbaar.</div>
-          } @else {
-            <div class="bar-chart-shell">
-              <svg class="bar-chart" role="img" aria-label="Gestapelde staafgrafiek met personen die uniek zijn voor een bestand en personen die ook in andere bestanden voorkomen"></svg>
-            </div>
-          }
-        </div>
         <div class="heatmap-card">
           <div class="treemap-title">Heatmap</div>
           <div class="heatmap-toolbar">
@@ -221,6 +196,31 @@
           <div class="timeline-heatmap-shell">
             <svg class="timeline-heatmap" role="img" aria-label="Heatmap per jaar"></svg>
           </div>
+        </div>
+        <div class="bar-chart-card">
+          <div class="bar-chart-header">
+            <div class="treemap-title">{{ barChartDimensionLabel() }} per bestand</div>
+            <label class="bar-chart-dimension-control">
+              Dimensie
+              <select [value]="barChartDimension()" (change)="onBarChartDimensionChange($event)">
+                <option value="persons">Personen</option>
+                <option value="organisations">Organisaties</option>
+                <option value="locations">Locaties</option>
+                <option value="topics">Topics</option>
+              </select>
+            </label>
+          </div>
+          <div class="bar-chart-legend">
+            <div class="legend-item"><span class="legend-swatch" style="background: #2563eb"></span><span class="legend-label">Uniek voor dit bestand</span></div>
+            <div class="legend-item"><span class="legend-swatch" style="background: #f97316"></span><span class="legend-label">Ook in andere bestanden</span></div>
+          </div>
+          @if (barChartItems().length === 0) {
+            <div class="dashboard-empty small">Geen bestanden beschikbaar.</div>
+          } @else {
+            <div class="bar-chart-shell">
+              <svg class="bar-chart" role="img" aria-label="Gestapelde staafgrafiek met personen die uniek zijn voor een bestand en personen die ook in andere bestanden voorkomen"></svg>
+            </div>
+          }
         </div>
       }
   </div>

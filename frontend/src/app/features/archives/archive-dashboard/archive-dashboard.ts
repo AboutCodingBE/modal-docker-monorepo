@@ -640,7 +640,7 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
     const data = this.barChartItems();
     const width = 820;
     const height = 360;
-    const margin = { top: 24, right: 18, bottom: 60, left: 120 };
+    const margin = { top: 24, right: 18, bottom: 105, left: 58 };
     const chartWidth = width - margin.left - margin.right;
     const chartHeight = height - margin.top - margin.bottom;
 
@@ -660,15 +660,15 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       return;
     }
 
-    const xScale = d3.scaleLinear()
+    const xScale = d3.scaleBand<string>()
+      .domain(data.map((item) => item.name))
+      .range([0, chartWidth])
+      .padding(0.18);
+
+    const yScale = d3.scaleLinear()
       .domain([0, d3.max(data, (item) => item.uniqueCount + item.duplicateCount) ?? 0])
       .nice()
-      .range([0, chartWidth]);
-
-    const yScale = d3.scaleBand<string>()
-      .domain(data.map((item) => item.name))
-      .range([0, chartHeight])
-      .padding(0.18);
+      .range([chartHeight, 0]);
 
     const g = d3.select<SVGSVGElement, PersonCountBar>(svg)
       .attr('viewBox', `0 0 ${width} ${height}`)
@@ -680,42 +680,46 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       .call(d3.axisLeft(yScale).tickSize(0))
       .selectAll('text')
       .attr('font-size', '12px')
-      .attr('fill', '#1f2937')
-      .text((d) => {
-        const label = String(d);
-        return label.length > 24 ? `${label.slice(0, 21)}...` : label;
-      })
-      .append('title')
-      .text((d) => String(d));
+      .attr('fill', '#6b7280');
 
     g.append('g')
       .attr('transform', `translate(0,${chartHeight})`)
-      .call(d3.axisBottom(xScale).ticks(5).tickFormat((value) => String(value)))
+      .call(d3.axisBottom(xScale).tickSize(0))
       .selectAll('text')
       .attr('font-size', '12px')
-      .attr('fill', '#6b7280');
+      .attr('fill', '#1f2937')
+      .attr('text-anchor', 'end')
+      .attr('transform', 'rotate(-45)')
+      .text((d) => {
+        const label = String(d);
+        return label.length > 18 ? `${label.slice(0, 15)}...` : label;
+      })
+      .append('title')
+      .text((d) => String(d));
 
     const bars = g.selectAll('g.bar-group')
       .data(data)
       .enter()
       .append('g')
       .attr('class', 'bar-group')
-      .attr('transform', (item) => `translate(0,${yScale(item.name) ?? 0})`);
+      .attr('transform', (item) => `translate(${xScale(item.name) ?? 0},0)`);
 
     bars.append('rect')
       .attr('class', 'bar bar-unique')
       .attr('x', 0)
-      .attr('width', (item) => xScale(item.uniqueCount))
-      .attr('height', yScale.bandwidth())
+      .attr('y', (item) => yScale(item.uniqueCount))
+      .attr('width', xScale.bandwidth())
+      .attr('height', (item) => chartHeight - yScale(item.uniqueCount))
       .attr('fill', '#2563eb')
       .attr('rx', 0)
       .attr('ry', 0);
 
     bars.append('rect')
       .attr('class', 'bar bar-duplicate')
-      .attr('x', (item) => xScale(item.uniqueCount))
-      .attr('width', (item) => xScale(item.duplicateCount))
-      .attr('height', yScale.bandwidth())
+      .attr('x', 0)
+      .attr('y', (item) => yScale(item.uniqueCount + item.duplicateCount))
+      .attr('width', xScale.bandwidth())
+      .attr('height', (item) => yScale(item.uniqueCount) - yScale(item.uniqueCount + item.duplicateCount))
       .attr('fill', '#f97316');
 
     bars.append('title')
@@ -726,8 +730,9 @@ export class ArchiveDashboard implements OnInit, AfterViewInit {
       .enter()
       .append('text')
       .attr('class', 'bar-value')
-      .attr('x', (item) => xScale(item.uniqueCount + item.duplicateCount) + 8)
-      .attr('y', (item) => (yScale(item.name) ?? 0) + yScale.bandwidth() / 2 + 4)
+      .attr('x', (item) => (xScale(item.name) ?? 0) + xScale.bandwidth() / 2)
+      .attr('y', (item) => yScale(item.uniqueCount + item.duplicateCount) - 6)
+      .attr('text-anchor', 'middle')
       .attr('font-size', '11px')
       .attr('fill', '#111827')
       .text((item) => String(item.uniqueCount + item.duplicateCount));
