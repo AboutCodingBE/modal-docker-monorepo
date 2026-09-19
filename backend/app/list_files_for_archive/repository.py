@@ -9,7 +9,7 @@ from app.shared.models import Archive, File, FileEntity, FileTopic, GenericType,
 
 PAGE_SIZE = 75
 
-_VALID_SORT_FIELDS = {"content_created_at", "relative_path", "category", "mime_type"}
+_VALID_SORT_FIELDS = {"content_created_at", "relative_path", "category"}
 _VALID_SORT_DIRS = {"asc", "desc"}
 
 
@@ -100,10 +100,6 @@ class ListFilesRepository:
             sort_col = GenericType.generic_type
             order_clause = [nullslast(direction(sort_col)), direction(File.id)]
             nullable_sort = True
-        elif sort_by == "mime_type":
-            sort_col = TikaAnalysis.mime_type
-            order_clause = [nullslast(direction(sort_col)), direction(File.id)]
-            nullable_sort = True
         else:  # content_created_at
             sort_col = TikaAnalysis.content_created_at
             order_clause = [nullslast(direction(sort_col)), direction(File.id)]
@@ -163,8 +159,6 @@ class ListFilesRepository:
                 next_cursor_value = last["relative_path"]
             elif sort_by == "category":
                 next_cursor_value = last["category"]
-            elif sort_by == "mime_type":
-                next_cursor_value = last["mime_type"]
             else:
                 next_cursor_value = last["content_created_at"]
 

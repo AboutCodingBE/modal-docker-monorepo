@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/archives", tags=["list-files"])
 async def list_files_for_archive(
     archive_id: uuid.UUID,
     folder_path: str | None = Query(default=None, description="Relative path of folder to scope the listing; omit for whole archive"),
-    sort_by: str = Query(default="content_created_at", description="Sort field: content_created_at | relative_path | category"),
+    sort_by: str = Query(default="content_created_at", description="Sort field: content_created_at | relative_path | category (documenttype/klasse)"),
     sort_dir: str = Query(default="desc", description="Sort direction: asc | desc"),
     mime_types: list[str] = Query(default=[], description="Filter by MIME type (OR within facet); repeat param for multiple"),
     categories: list[str] = Query(default=[], description="Filter by generic category/klasse (OR within facet); repeat param for multiple"),

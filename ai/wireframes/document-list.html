@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archief detail — Wireframe</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          background: #f0f2f5;
+          color: #111827;
+          padding: 32px;
+        }
+
+        .page { max-width: 1300px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+        /* ── Top bar ── */
+        .topbar { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+
+        .btn-back {
+          font-family: inherit;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 7px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          background: #ffffff;
+          color: #374151;
+          cursor: pointer;
+          transition: background 0.15s, border-color 0.15s;
+        }
+
+        .btn-back:hover { background: #f9fafb; border-color: #9ca3af; }
+
+        .page-title { font-size: 22px; font-weight: 700; color: #111827; }
+        .page-meta { font-size: 12px; color: #6b7280; }
+        .page-meta b { color: #374151; }
+
+        /* ── Stats card ── */
+        .stats-card {
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 20px;
+          display: flex;
+          gap: 24px;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .stats-numbers { display: flex; gap: 24px; padding-right: 24px; border-right: 1px solid #f3f4f6; }
+
+        .stat { text-align: center; }
+        .stat .num { font-size: 22px; font-weight: 700; color: #111827; }
+        .stat .lbl { font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; }
+
+        .summary-box { flex: 1; }
+        .summary-label {
+          font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+          color: #6b7280; margin-bottom: 6px;
+        }
+        .summary-text { font-size: 13px; color: #9ca3af; font-style: italic; line-height: 1.6; }
+
+        /* ── Main row ── */
+        .main-row { display: flex; gap: 16px; align-items: flex-start; }
+
+        /* ── Browser card ── */
+        .browser-card {
+          flex: 1;
+          min-width: 0;
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 20px;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .browser-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 16px;
+        }
+
+        .browser-title { font-size: 16px; font-weight: 700; color: #111827; }
+
+        .view-tabs {
+          display: flex;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          overflow: hidden;
+        }
+
+        .view-tab {
+          font-family: inherit;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 6px 14px;
+          border: none;
+          background: #ffffff;
+          color: #6b7280;
+          cursor: pointer;
+          transition: background 0.15s, color 0.15s;
+        }
+
+        .view-tab:hover:not(.active) { background: #f9fafb; }
+
+        .view-tab + .view-tab { border-left: 1px solid #d1d5db; }
+
+        .view-tab.active { background: #3b6ef5; color: #ffffff; }
+
+        .breadcrumb {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 12px;
+          margin-bottom: 12px;
+        }
+
+        .crumb {
+          padding: 4px 9px;
+          background: #f1f5f9;
+          color: #374151;
+          border-radius: 5px;
+          cursor: pointer;
+          font-weight: 600;
+          transition: background 0.15s, color 0.15s;
+        }
+
+        .crumb:hover { background: #e5e7eb; }
+
+        .crumb.current { background: #3b6ef5; color: #ffffff; }
+
+        .crumb-sep { color: #d1d5db; }
+
+        .direct-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          color: #6b7280;
+          border: 1px solid #e5e7eb;
+          padding: 8px 12px;
+          border-radius: 6px;
+          margin-bottom: 16px;
+        }
+
+        .submappen-label {
+          font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+          color: #6b7280; margin-bottom: 8px;
+        }
+
+        .submappen-list { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+        .folder-chip {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 13px; font-weight: 600;
+          color: #374151;
+          border: 1px solid #d1d5db; border-radius: 6px;
+          padding: 8px 14px; cursor: pointer;
+          background: #ffffff;
+          transition: border-color 0.15s;
+        }
+
+        .folder-chip:hover { border-color: #9ca3af; }
+        .folder-chip.active { border-color: #3b6ef5; }
+
+        .divider { border-top: 1px solid #f3f4f6; margin-bottom: 16px; }
+
+        .section-label {
+          font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+          color: #6b7280; margin-bottom: 10px;
+        }
+
+        /* ── Tree view: search controls ── */
+        .table-controls { display: flex; gap: 10px; margin-bottom: 14px; }
+
+        .search-input {
+          flex: 1;
+          font-family: inherit;
+          font-size: 13px;
+          padding: 9px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          color: #111827;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .search-input:focus {
+          outline: none;
+          border-color: #3b6ef5;
+          box-shadow: 0 0 0 3px rgba(59, 110, 245, 0.12);
+        }
+
+        .type-select {
+          font-family: inherit;
+          font-size: 13px;
+          padding: 9px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          background: #ffffff;
+          color: #374151;
+          min-width: 140px;
+        }
+
+        /* ── List view: entity/topic filter row ── */
+        .entity-filter-row { display: flex; gap: 10px; margin-bottom: 12px; }
+
+        .entity-type-select {
+          font-family: inherit;
+          font-size: 13px;
+          font-weight: 600;
+          padding: 9px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          background: #ffffff;
+          color: #111827;
+          min-width: 130px;
+        }
+
+        .entity-search-input {
+          flex: 1;
+          font-family: inherit;
+          font-size: 13px;
+          padding: 9px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          color: #111827;
+          width: 100%;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .entity-search-input:focus {
+          outline: none;
+          border-color: #3b6ef5;
+          box-shadow: 0 0 0 3px rgba(59, 110, 245, 0.12);
+        }
+
+        .autocomplete-wrap { position: relative; flex: 1; }
+
+        .autocomplete-list {
+          position: absolute;
+          top: calc(100% + 4px);
+          left: 0;
+          right: 0;
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          max-height: 260px;
+          overflow-y: auto;
+          z-index: 6;
+          display: none;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .autocomplete-list.open { display: block; }
+
+        .autocomplete-item {
+          padding: 8px 12px;
+          font-size: 13px;
+          color: #374151;
+          cursor: pointer;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.highlighted { background: #eff6ff; color: #1d4ed8; }
+
+        .autocomplete-empty {
+          padding: 8px 12px;
+          font-size: 12px;
+          color: #9ca3af;
+        }
+
+        .active-filter-badges {
+          display: flex;
+          gap: 16px;
+          margin-bottom: 14px;
+          min-height: 20px;
+          flex-wrap: wrap;
+        }
+
+        .filter-badge {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 13px;
+        }
+
+        .filter-badge .fb-label { color: #6b7280; }
+        .filter-badge .fb-value { font-weight: 600; color: #111827; }
+        .filter-badge .fb-remove {
+          cursor: pointer; color: #9ca3af; font-size: 13px; line-height: 1;
+          padding: 0 2px;
+          transition: color 0.15s;
+        }
+        .filter-badge .fb-remove:hover { color: #111827; }
+
+        /* ── Table (shared) ── */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+        thead th {
+          text-align: left;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          color: #6b7280;
+          padding: 0 10px 10px 0;
+          white-space: nowrap;
+        }
+
+        .th-plain { display: inline-flex; align-items: center; gap: 4px; cursor: default; }
+
+        .th-sortable { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; transition: color 0.15s; }
+        .th-sortable:hover { color: #374151; }
+        .sort-arrow { font-size: 10px; }
+
+        /* combo header: plain sortable label + separate boxed filter caret, kept visually distinct */
+        .th-combo { display: inline-flex; align-items: center; gap: 5px; }
+
+        .th-filter-caret {
+          display: inline-flex; align-items: center; justify-content: center;
+          border: 1px solid #d1d5db; border-radius: 4px;
+          width: 18px; height: 18px;
+          cursor: pointer;
+          font-size: 9px;
+          color: #6b7280;
+          transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+        .th-filter-caret:hover { border-color: #9ca3af; color: #374151; }
+        .th-filter-caret.active { border-color: #3b6ef5; color: #1d4ed8; background: #eff6ff; }
+
+        tbody tr { border-top: 1px solid #f3f4f6; cursor: pointer; transition: background 0.15s; }
+        tbody tr:hover { background: #f9fafb; }
+        tbody tr.selected { background: #eff6ff; }
+
+        tbody td { padding: 10px; color: #374151; }
+
+        .filename-cell { color: #1d4ed8; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+        .path-cell { color: #9ca3af; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+        .dim-cell { color: #9ca3af; }
+
+        .filter-status {
+          font-size: 11px;
+          color: #9ca3af;
+          margin-top: 14px;
+        }
+
+        /* small filter dropdown popover, purely illustrative in this wireframe */
+        .filter-popover {
+          position: absolute;
+          margin-top: 4px;
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          padding: 8px;
+          font-size: 12px;
+          display: none;
+          z-index: 5;
+          min-width: 140px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+        .filter-popover.open { display: block; }
+        .filter-popover-option { padding: 6px 8px; border-radius: 4px; cursor: pointer; color: #374151; }
+        .filter-popover-option:hover { background: #f9fafb; }
+        th { position: relative; }
+
+        /* ── Side panel ── */
+        .side-panel {
+          width: 300px;
+          flex-shrink: 0;
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 18px;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .side-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .side-filename { font-size: 14px; font-weight: 700; color: #111827; }
+        .side-tag {
+          font-size: 9px; font-weight: 700; letter-spacing: 0.05em;
+          color: #6b7280; border: 1px solid #e5e7eb; border-radius: 4px; padding: 2px 6px;
+        }
+
+        .side-tabs { display: flex; gap: 14px; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px; margin-bottom: 14px; }
+        .side-tab { font-size: 12px; font-weight: 600; color: #6b7280; cursor: pointer; padding-bottom: 8px; }
+        .side-tab.active { color: #111827; border-bottom: 2px solid #3b6ef5; }
+
+        .side-metric-row { display: flex; gap: 10px; margin-bottom: 14px; }
+        .side-metric {
+          flex: 1; text-align: center; background: #f1f5f9; border-radius: 6px; padding: 12px 8px;
+        }
+        .side-metric .num { font-size: 18px; font-weight: 700; color: #111827; }
+        .side-metric .lbl { font-size: 9px; color: #6b7280; text-transform: uppercase; }
+
+        .side-cats-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #6b7280; margin-bottom: 8px; }
+        .side-cat-chip {
+          display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
+          color: #374151;
+          border: 1px solid #e5e7eb; border-radius: 5px; padding: 4px 8px; margin: 0 6px 6px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page">
+
+    <div class="topbar">
+        <button class="btn-back">&larr; Overzicht</button>
+        <div class="page-title">specificfile5</div>
+        <div class="page-meta">/Users/dragonfly/Downloads/test-archieven/specific-test5 &nbsp;&nbsp; Aangemaakt: <b>2026-09-19</b></div>
+    </div>
+
+    <div class="stats-card">
+        <div class="stats-numbers">
+            <div class="stat"><div class="num">5</div><div class="lbl">Bestanden</div></div>
+            <div class="stat"><div class="num">3</div><div class="lbl">Types</div></div>
+            <div class="stat"><div class="num">2</div><div class="lbl">Mappen</div></div>
+        </div>
+        <div class="summary-box">
+            <div class="summary-label">Archief samenvatting</div>
+            <div class="summary-text">Geen samenvatting beschikbaar.</div>
+        </div>
+    </div>
+
+    <div class="main-row">
+
+        <div class="browser-card">
+
+            <div class="browser-header">
+                <div class="browser-title">Archief browser</div>
+                <div class="view-tabs">
+                    <button class="view-tab active" data-view="tree">Hiërarchisch</button>
+                    <button class="view-tab" data-view="list">Lijst</button>
+                </div>
+            </div>
+
+            <div class="breadcrumb" id="breadcrumb">
+                <div class="crumb current" data-path="/">/</div>
+            </div>
+
+            <div class="direct-chip" id="directChip">📄 4 bestanden direct in deze map</div>
+
+            <div class="submappen-label">1 submappen</div>
+            <div class="submappen-list">
+                <div class="folder-chip" data-folder="story">📁 story</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- ══ TREE VIEW ══ -->
+            <div class="view-panel" id="view-tree">
+                <div class="section-label" id="treeCountLabel">Bestanden in deze map (4 van 4)</div>
+                <div class="table-controls">
+                    <input class="search-input" placeholder="Zoek op bestandsnaam...">
+                    <select class="type-select">
+                        <option>Alle types</option>
+                        <option>tekstbestand</option>
+                        <option>beeldbestand</option>
+                        <option>gegevensbestand</option>
+                        <option>andere</option>
+                    </select>
+                </div>
+                <table>
+                    <thead>
+                    <tr>
+                        <th><span class="th-plain">Bestandsnaam</span></th>
+                        <th><span class="th-plain">Categorie</span></th>
+                        <th><span class="th-plain">Grootte</span></th>
+                        <th><span class="th-plain">Taal</span></th>
+                        <th><span class="th-plain">Auteur</span></th>
+                        <th><span class="th-plain">Datum aangemaakt</span></th>
+                    </tr>
+                    </thead>
+                    <tbody id="treeTableBody">
+                    <tr class="file-row" data-file=".DS_Store">
+                        <td class="filename-cell">.DS_Store</td>
+                        <td>andere</td>
+                        <td>6.0 KB</td>
+                        <td class="dim-cell">&mdash;</td>
+                        <td class="dim-cell">&mdash;</td>
+                        <td class="dim-cell">&mdash;</td>
+                    </tr>
+                    <tr class="file-row" data-file="report.html">
+                        <td class="filename-cell">report.html</td>
+                        <td>tekstbestand</td>
+                        <td>59.9 KB</td>
+                        <td>en</td>
+                        <td class="dim-cell">&mdash;</td>
+                        <td class="dim-cell">&mdash;</td>
+                    </tr>
+                    <tr class="file-row" data-file="siegfried.csv">
+                        <td class="filename-cell">siegfried.csv</td>
+                        <td>gegevensbestand</td>
+                        <td>772.2 KB</td>
+                        <td class="dim-cell">&mdash;</td>
+                        <td class="dim-cell">&mdash;</td>
+                        <td class="dim-cell">&mdash;</td>
+                    </tr>
+                    <tr class="file-row" data-file="tree.txt">
+                        <td class="filename-cell">tree.txt</td>
+                        <td>tekstbestand</td>
+                        <td>230.6 KB</td>
+                        <td>en</td>
+                        <td class="dim-cell">&mdash;</td>
+                        <td class="dim-cell">&mdash;</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ══ LIST VIEW ══ -->
+            <div class="view-panel" id="view-list" style="display:none;">
+
+                <div class="entity-filter-row">
+                    <select class="entity-type-select" id="entityTypeSelect">
+                        <option>Persoon</option>
+                        <option>Locatie</option>
+                        <option>Organisatie</option>
+                        <option>Overige</option>
+                    </select>
+                    <div class="autocomplete-wrap">
+                        <input class="entity-search-input" id="entitySearchInput" placeholder="Zoek entiteit..." autocomplete="off">
+                        <div class="autocomplete-list" id="entitySuggestions"></div>
+                    </div>
+                    <div class="autocomplete-wrap">
+                        <input class="entity-search-input" id="topicSearchInput" placeholder="Zoek topic..." autocomplete="off">
+                        <div class="autocomplete-list" id="topicSuggestions"></div>
+                    </div>
+                </div>
+
+                <div class="active-filter-badges" id="activeBadges"></div>
+
+                <table>
+                    <thead>
+                    <tr>
+                        <th><span class="th-plain">Bestandsnaam</span></th>
+                        <th>
+                            <span class="th-sortable" data-sort="pad">Pad <span class="sort-arrow">&#8593;</span></span>
+                        </th>
+                        <th style="position:relative;">
+                <span class="th-combo">
+                  <span class="th-sortable" data-sort="klasse">Klasse <span class="sort-arrow">&#8593;</span></span>
+                  <span class="th-filter-caret" id="klasseFilterBtn">&#9662;</span>
+                </span>
+                            <div class="filter-popover" id="klassePopover">
+                                <div class="filter-popover-option" data-value="tekstbestand">tekstbestand</div>
+                                <div class="filter-popover-option" data-value="beeldbestand">beeldbestand</div>
+                                <div class="filter-popover-option" data-value="gegevensbestand">gegevensbestand</div>
+                                <div class="filter-popover-option" data-value="andere">andere</div>
+                                <div class="filter-popover-option" data-value="">Alle</div>
+                            </div>
+                        </th>
+                        <th style="position:relative;">
+                <span class="th-combo">
+                  <span class="th-sortable" data-sort="taal">Taal <span class="sort-arrow">&#8593;</span></span>
+                  <span class="th-filter-caret" id="taalFilterBtn">&#9662;</span>
+                </span>
+                            <div class="filter-popover" id="taalPopover">
+                                <div class="filter-popover-option" data-value="en">en</div>
+                                <div class="filter-popover-option" data-value="nl">nl</div>
+                                <div class="filter-popover-option" data-value="onbekend">onbekend</div>
+                                <div class="filter-popover-option" data-value="">Alle</div>
+                            </div>
+                        </th>
+                        <th><span class="th-plain">Grootte</span></th>
+                        <th>
+                            <span class="th-sortable" data-sort="datum">Datum <span class="sort-arrow">&#8595;</span></span>
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody id="listTableBody">
+                    <tr class="file-row" data-file="report.html">
+                        <td class="filename-cell">report.html</td>
+                        <td class="path-cell">/</td>
+                        <td>tekstbestand</td>
+                        <td>en</td>
+                        <td>59.9 KB</td>
+                        <td>2026-09-18</td>
+                    </tr>
+                    <tr class="file-row" data-file="draft.txt">
+                        <td class="filename-cell">draft.txt</td>
+                        <td class="path-cell">story/</td>
+                        <td>tekstbestand</td>
+                        <td>en</td>
+                        <td>12.1 KB</td>
+                        <td>2026-09-11</td>
+                    </tr>
+                    <tr class="file-row" data-file="tree.txt">
+                        <td class="filename-cell">tree.txt</td>
+                        <td class="path-cell">/</td>
+                        <td>tekstbestand</td>
+                        <td>onbekend</td>
+                        <td>230.6 KB</td>
+                        <td class="dim-cell">&mdash;</td>
+                    </tr>
+                    <tr class="file-row" data-file="siegfried.csv">
+                        <td class="filename-cell">siegfried.csv</td>
+                        <td class="path-cell">/</td>
+                        <td>gegevensbestand</td>
+                        <td>onbekend</td>
+                        <td>772.2 KB</td>
+                        <td class="dim-cell">&mdash;</td>
+                    </tr>
+                    <tr class="file-row" data-file=".DS_Store">
+                        <td class="filename-cell">.DS_Store</td>
+                        <td class="path-cell">/</td>
+                        <td>andere</td>
+                        <td>onbekend</td>
+                        <td>6.0 KB</td>
+                        <td class="dim-cell">&mdash;</td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="filter-status" id="filterStatus">Geen filters actief</div>
+            </div>
+
+        </div>
+
+        <div class="side-panel">
+            <div class="side-header">
+                <div class="side-filename" id="sideFilename">report.html</div>
+                <div class="side-tag">BESTAND</div>
+            </div>
+            <div class="side-tabs">
+                <div class="side-tab active">Overzicht</div>
+                <div class="side-tab">Samenvatting</div>
+                <div class="side-tab">NER</div>
+                <div class="side-tab">Topics</div>
+            </div>
+            <div class="side-metric-row">
+                <div class="side-metric"><div class="num">1</div><div class="lbl">Bestanden</div></div>
+                <div class="side-metric"><div class="num">1</div><div class="lbl">Types</div></div>
+            </div>
+            <div class="side-cats-label">Bestandscategorieën</div>
+            <div>
+                <span class="side-cat-chip">tekstbestand 1</span>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    // ── View tab switching ──
+    const viewTabs = document.querySelectorAll('.view-tab');
+    const viewTree = document.getElementById('view-tree');
+    const viewList = document.getElementById('view-list');
+
+    viewTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        viewTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        if (tab.dataset.view === 'tree') {
+          viewTree.style.display = '';
+          viewList.style.display = 'none';
+        } else {
+          viewTree.style.display = 'none';
+          viewList.style.display = '';
+        }
+      });
+    });
+
+    // ── Folder chip -> breadcrumb (illustrative single-level demo) ──
+    document.querySelectorAll('.folder-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const name = chip.dataset.folder;
+        const breadcrumb = document.getElementById('breadcrumb');
+        const alreadyThere = breadcrumb.querySelector('[data-path="' + name + '"]');
+        if (alreadyThere) return;
+        breadcrumb.querySelectorAll('.crumb').forEach(c => c.classList.remove('current'));
+        const sep = document.createElement('span');
+        sep.className = 'crumb-sep';
+        sep.textContent = '/';
+        const crumb = document.createElement('div');
+        crumb.className = 'crumb current';
+        crumb.dataset.path = name;
+        crumb.textContent = name;
+        breadcrumb.appendChild(sep);
+        breadcrumb.appendChild(crumb);
+        chip.classList.add('active');
+        document.getElementById('directChip').textContent = '📄 1 bestanden direct in deze map';
+        document.getElementById('treeCountLabel').textContent = 'Bestanden in deze map (1 van 1)';
+      });
+    });
+
+    document.getElementById('breadcrumb').addEventListener('click', (e) => {
+      const crumb = e.target.closest('.crumb');
+      if (!crumb || crumb.dataset.path !== '/') return;
+      document.getElementById('breadcrumb').innerHTML = '<div class="crumb current" data-path="/">/</div>';
+      document.querySelectorAll('.folder-chip').forEach(c => c.classList.remove('active'));
+      document.getElementById('directChip').textContent = '📄 4 bestanden direct in deze map';
+      document.getElementById('treeCountLabel').textContent = 'Bestanden in deze map (4 van 4)';
+    });
+
+    // ── Row selection -> side panel ──
+    document.querySelectorAll('.file-row').forEach(row => {
+      row.addEventListener('click', () => {
+        document.querySelectorAll('.file-row').forEach(r => r.classList.remove('selected'));
+        row.classList.add('selected');
+        document.getElementById('sideFilename').textContent = row.dataset.file;
+      });
+    });
+
+    // ── Sortable column headers: toggle arrow direction ──
+    document.querySelectorAll('.th-sortable').forEach(th => {
+      th.addEventListener('click', () => {
+        const arrow = th.querySelector('.sort-arrow');
+        arrow.textContent = arrow.textContent === '\u2191' ? '\u2193' : '\u2191';
+      });
+    });
+
+    // ── Badge system: shared across persoon, topic, klasse, taal ──
+    const activeBadges = document.getElementById('activeBadges');
+    const badgeState = { persoon: null, topic: null, klasse: null, taal: null };
+    const badgeLabels = { persoon: null, topic: 'Topic', klasse: 'Klasse', taal: 'Taal' };
+
+    function renderBadges() {
+      activeBadges.innerHTML = '';
+      Object.keys(badgeState).forEach(key => {
+        if (!badgeState[key]) return;
+        const label = key === 'persoon' ? document.getElementById('entityTypeSelect').value : badgeLabels[key];
+        activeBadges.appendChild(makeBadge(label, badgeState[key], key));
+      });
+      updateFilterStatus();
+    }
+
+    function makeBadge(label, value, key) {
+      const el = document.createElement('div');
+      el.className = 'filter-badge';
+      el.innerHTML = '<span class="fb-label">' + label + ':</span> <span class="fb-value">' + value + '</span> <span class="fb-remove">&times;</span>';
+      el.querySelector('.fb-remove').addEventListener('click', () => {
+        badgeState[key] = null;
+        if (key === 'klasse' || key === 'taal') {
+          const caret = document.getElementById(key + 'FilterBtn');
+          caret.classList.remove('active');
+        }
+        renderBadges();
+      });
+      return el;
+    }
+
+    // ── Klasse / Taal filter caret: popover picks a value -> caret active + badge ──
+    function wireFilterCaret(btnId, popoverId, key) {
+      const btn = document.getElementById(btnId);
+      const popover = document.getElementById(popoverId);
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.filter-popover').forEach(p => { if (p !== popover) p.classList.remove('open'); });
+        popover.classList.toggle('open');
+      });
+      popover.querySelectorAll('.filter-popover-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          const value = opt.dataset.value;
+          if (value) {
+            btn.classList.add('active');
+            badgeState[key] = value;
+          } else {
+            btn.classList.remove('active');
+            badgeState[key] = null;
+          }
+          popover.classList.remove('open');
+          renderBadges();
+        });
+      });
+    }
+    wireFilterCaret('klasseFilterBtn', 'klassePopover', 'klasse');
+    wireFilterCaret('taalFilterBtn', 'taalPopover', 'taal');
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.filter-popover').forEach(p => p.classList.remove('open'));
+    });
+
+    // ── Entity / topic: autocomplete dropdown, max 10 suggestions ──
+    const ENTITY_SUGGESTIONS = [
+      'Stijn Dejongh', 'Nicholas Ocket', 'Karl Van Damme', 'Sofie Peeters', 'Wout Claeys',
+      'Ine Vermeulen', 'Bram De Smet', 'Elke Willems', 'Tom Verhoeven', 'Anke Goossens',
+      'Dries Van Acker', 'Lotte Maes'
+    ];
+    const TOPIC_SUGGESTIONS = [
+      'software development', 'apprenticeship', 'Java', 'coaching', 'skill development',
+      'design along', 'mentorship', 'code review', 'onboarding', 'career growth',
+      'git workflow', 'documentation'
+    ];
+
+    function wireAutocomplete(inputId, listId, suggestions, badgeKey) {
+      const input = document.getElementById(inputId);
+      const list = document.getElementById(listId);
+
+      function renderList() {
+        const q = input.value.trim().toLowerCase();
+        const matches = suggestions.filter(s => s.toLowerCase().includes(q)).slice(0, 10);
+        list.innerHTML = '';
+        if (matches.length === 0) {
+          list.innerHTML = '<div class="autocomplete-empty">Geen resultaten</div>';
+        } else {
+          matches.forEach(m => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            item.textContent = m;
+            item.addEventListener('click', () => {
+              badgeState[badgeKey] = m;
+              input.value = '';
+              list.classList.remove('open');
+              renderBadges();
+            });
+            list.appendChild(item);
+          });
+        }
+        list.classList.add('open');
+      }
+
+      input.addEventListener('focus', renderList);
+      input.addEventListener('input', renderList);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') list.classList.remove('open');
+      });
+    }
+
+    wireAutocomplete('entitySearchInput', 'entitySuggestions', ENTITY_SUGGESTIONS, 'persoon');
+    wireAutocomplete('topicSearchInput', 'topicSuggestions', TOPIC_SUGGESTIONS, 'topic');
+
+    document.addEventListener('click', (e) => {
+      document.querySelectorAll('.autocomplete-list').forEach(l => {
+        if (!l.parentElement.contains(e.target)) l.classList.remove('open');
+      });
+    });
+
+    function updateFilterStatus() {
+      const active = Object.values(badgeState).filter(Boolean).length;
+      const statusEl = document.getElementById('filterStatus');
+      statusEl.textContent = active === 0 ? 'Geen filters actief' : active + ' filter' + (active > 1 ? 's' : '') + ' actief';
+    }
+</script>
+
+</body>
+</html>
