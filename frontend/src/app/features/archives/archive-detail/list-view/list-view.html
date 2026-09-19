@@ -1,0 +1,165 @@
+<div class="list-view" (click)="closePopovers(); closeDropdowns()">
+
+  <!-- ── Filter toolbar ── -->
+  <div class="filter-toolbar" (click)="$event.stopPropagation()">
+
+    <!-- Klasse -->
+    <div class="popover-anchor">
+      <button
+        class="filter-btn"
+        [class.active]="activeCategories().length > 0"
+        (click)="openKlassePopover()"
+      >
+        Klasse@if (activeCategories().length > 0) { ({{ activeCategories().length }})} ▾
+      </button>
+      @if (klassePopoverOpen()) {
+        <div class="popover">
+          <div class="popover-list">
+            @for (cat of availableCategories(); track cat) {
+              <label class="popover-item">
+                <input type="checkbox" [checked]="isTempCategoryChecked(cat)" (change)="toggleTempCategory(cat)" />
+                {{ cat }}
+              </label>
+            }
+            @if (availableCategories().length === 0) {
+              <div class="popover-empty">Geen opties beschikbaar</div>
+            }
+          </div>
+          <div class="popover-actions">
+            <button class="btn-apply" (click)="applyKlasse()">Toepassen</button>
+            <button class="btn-clear" (click)="clearKlasse()">Wissen</button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Taal -->
+    <div class="popover-anchor">
+      <button
+        class="filter-btn"
+        [class.active]="activeLanguages().length > 0"
+        (click)="openTaalPopover()"
+      >
+        Taal@if (activeLanguages().length > 0) { ({{ activeLanguages().length }})} ▾
+      </button>
+      @if (taalPopoverOpen()) {
+        <div class="popover">
+          <div class="popover-list">
+            @for (lang of availableLanguages(); track lang) {
+              <label class="popover-item">
+                <input type="checkbox" [checked]="isTempLanguageChecked(lang)" (change)="toggleTempLanguage(lang)" />
+                {{ lang }}
+              </label>
+            }
+            @if (availableLanguages().length === 0) {
+              <div class="popover-empty">Geen opties beschikbaar</div>
+            }
+          </div>
+          <div class="popover-actions">
+            <button class="btn-apply" (click)="applyTaal()">Toepassen</button>
+            <button class="btn-clear" (click)="clearTaal()">Wissen</button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Entity autocomplete -->
+    <div class="autocomplete-anchor">
+      <select class="entity-type-select" (change)="onEntityTypeChange($event)">
+        @for (et of entityTypes; track et.value) {
+          <option [value]="et.value" [selected]="entityType() === et.value">{{ et.label }}</option>
+        }
+      </select>
+      <input
+        #entityInput
+        class="autocomplete-input"
+        type="text"
+        placeholder="Zoek entiteit..."
+        (input)="onEntityInput($event)"
+      />
+      @if (entityDropdownOpen()) {
+        <div class="autocomplete-dropdown">
+          @for (sug of entitySuggestions(); track sug) {
+            <div class="autocomplete-item" (mousedown)="selectEntity(sug, entityInput)">{{ sug }}</div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Topic autocomplete -->
+    <div class="autocomplete-anchor">
+      <input
+        #topicInput
+        class="autocomplete-input"
+        type="text"
+        placeholder="Zoek topic..."
+        (input)="onTopicInput($event)"
+      />
+      @if (topicDropdownOpen()) {
+        <div class="autocomplete-dropdown">
+          @for (sug of topicSuggestions(); track sug) {
+            <div class="autocomplete-item" (mousedown)="selectTopic(sug, topicInput)">{{ sug }}</div>
+          }
+        </div>
+      }
+    </div>
+
+  </div>
+
+  <!-- ── Active filter badges ── -->
+  @if (hasActiveFilters()) {
+    <div class="badge-bar">
+      @for (badge of badges(); track badge.value) {
+        <span class="badge">
+          {{ badge.label }}
+          <button class="badge-remove" (click)="removeBadge(badge)">×</button>
+        </span>
+      }
+    </div>
+  }
+
+  <!-- ── Table header (outside viewport so it stays fixed) ── -->
+  <div class="table-header">
+    <div class="col-name">Bestandsnaam</div>
+    <div class="col-path th-sortable" (click)="onSort('relative_path')">
+      Pad <span class="sort-arrow">{{ sortArrow('relative_path') }}</span>
+    </div>
+    <div class="col-category th-sortable" (click)="onSort('category')">
+      Klasse <span class="sort-arrow">{{ sortArrow('category') }}</span>
+    </div>
+    <div class="col-date th-sortable" (click)="onSort('content_created_at')">
+      Datum <span class="sort-arrow">{{ sortArrow('content_created_at') }}</span>
+    </div>
+  </div>
+
+  <!-- ── Body ── -->
+  @if (loading()) {
+    <div class="state-msg">Laden...</div>
+  } @else if (files().length === 0) {
+    <div class="state-msg">Geen bestanden gevonden.</div>
+  } @else {
+    <cdk-virtual-scroll-viewport
+      class="scroll-viewport"
+      [itemSize]="rowHeight"
+      (scrolledIndexChange)="onScrolledIndexChange($event)"
+    >
+      <div
+        *cdkVirtualFor="let file of files()"
+        class="file-row"
+        [class.selected]="selectedFileId() === file.id"
+        [style.height.px]="rowHeight"
+        (click)="onRowClick(file)"
+      >
+        <div class="col-name" [title]="file.name">{{ file.name }}</div>
+        <div class="col-path" [title]="file.relative_path">{{ formatPath(file.relative_path) }}</div>
+        <div class="col-category">{{ file.category ?? '—' }}</div>
+        <div class="col-date">{{ formatDate(file.content_created_at) }}</div>
+      </div>
+    </cdk-virtual-scroll-viewport>
+  }
+
+  @if (loadingMore()) {
+    <div class="state-msg loading-more">Meer laden...</div>
+  }
+
+</div>

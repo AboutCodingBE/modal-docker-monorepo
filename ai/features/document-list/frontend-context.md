@@ -1,6 +1,6 @@
 # Feature Context — Wiring the archief-detail wireframe (hierarchical + list view)
 
-A static HTML wireframe has been delivered (`wireframe-archief-detail.html`, attached separately —
+A static HTML wireframe has been delivered (`document-list.html`, attached separately —
 not reproduced here). It is **visual/interaction reference only**: every behavior in it is faked with
 in-memory JS state and 5 hardcoded example rows — no real API calls exist anywhere in it. This context
 describes what each part of the wireframe needs to become, backed by real endpoints, referencing the

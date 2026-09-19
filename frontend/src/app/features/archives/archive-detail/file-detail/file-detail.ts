@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ArchiveService, FolderFile, NerResult, TopicsResult } from '../../../../services/archive.service';
 import { AnalysisSummary } from '../analysis-summary/analysis-summary';
 
-type Tab = 'samenvatting' | 'ner' | 'topics';
+type Tab = 'overzicht' | 'samenvatting' | 'ner' | 'topics';
 
 @Component({
   selector: 'app-file-detail',
@@ -20,7 +20,7 @@ export class FileDetail {
 
   private archiveService = inject(ArchiveService);
 
-  activeTab = signal<Tab>('samenvatting');
+  activeTab = signal<Tab>('overzicht');
   nerData = signal<NerResult | null>(null);
   nerLoading = signal(false);
   nerLoaded = signal(false);
@@ -32,7 +32,7 @@ export class FileDetail {
     effect(
       () => {
         this.file(); // track file changes
-        this.activeTab.set('samenvatting');
+        this.activeTab.set('overzicht');
         this.nerData.set(null);
         this.nerLoaded.set(false);
         this.topicsData.set(null);
@@ -50,6 +50,18 @@ export class FileDetail {
     if (tab === 'topics' && !this.topicsLoaded()) {
       this._loadTopics();
     }
+  }
+
+  formatSize(bytes: number | null): string {
+    if (bytes === null || bytes === undefined) return '—';
+    if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return bytes + ' B';
+  }
+
+  formatDate(iso: string | null): string {
+    if (!iso) return '—';
+    return iso.split('T')[0];
   }
 
   private _loadNer(): void {
