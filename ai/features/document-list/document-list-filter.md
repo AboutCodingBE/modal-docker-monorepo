@@ -13,13 +13,14 @@ Phase 2 of 3 for the hierarchical/list views feature. Source requirement (Dutch,
 1. **Phase 1 (separate feature, not this one):** `file_entities`/`file_topics` flat index tables,
    populated as a side effect of NER/topic analysis. Independently useful, ships on its own.
 2. **Phase 2 (this context):** the recursive, sortable, filterable-by-metadata file listing itself —
-   fetch + pagination + frontend rendering. Filtering here is limited to document type/klasse.
+   the fetch and pagination query layer. Filtering here is limited to document type/klasse.
 3. **Phase 3 (future, depends on 1 and 2):** extend phase 2's filtering to topic/NER, using phase 1's
    index tables as the query backend.
 
 **Dashboard as a third "view"** was considered and explicitly deferred — dashboard is archive-scoped
 aggregated content, not another way of looking at folder contents the way hierarchical/list are. Not
-part of this or any current phase; the view switcher only toggles hierarchical ⇄ list.
+part of this or any current phase; this endpoint only needs to support hierarchical and list, not a
+dashboard-scoped variant.
 
 ## What "list view" needs to do
 
@@ -83,20 +84,11 @@ matter (lots of same-day or same-null rows).
   described above for date (path and type are far more likely to have usable tiebreakers or not need
   one, given typical low duplication, but should still pair with `file.id` for consistency and safety).
 
-## Frontend
+## UI / interaction design
 
-- **View switcher**: toggle between hierarchical (existing tree/browser) and list (this feature) —
-  no dashboard tab, per the decision above.
-- **Infinite scroll**, backed by the paginated cursor fetches described above — not "fetch everything,
-  scroll client-side." Each scroll-near-bottom triggers the next page fetch.
-- **Virtualized rendering** (windowing): only the currently-visible rows are actually in the DOM,
-  recycled as the user scrolls. This is what prevents the browser from choking regardless of how many
-  files have been fetched so far — necessary even with pagination, since infinite scroll can still
-  accumulate thousands of fetched rows in memory/DOM over a long scroll session.
-- Column set: filename, path, type/klasse, size, plus the metadata columns already added in the
-  hierarchical view (language, creator, date) — consistent with what's already shown there.
-- Filter controls: type/klasse (dropdown or facet, backed by existing category values — small,
-  bounded set, no autocomplete needed here unlike the future topic/NER filters).
+Deliberately not specified here — covered separately as a UI wireframe. This context covers the query
+and data layer only: the recursive fetch, cursor pagination, sort, and metadata filtering needed to
+support whatever the wireframe specifies.
 
 ## Open questions
 
