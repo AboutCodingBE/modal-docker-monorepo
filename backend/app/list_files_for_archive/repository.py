@@ -9,7 +9,7 @@ from app.shared.models import Archive, File, FileEntity, FileTopic, GenericType,
 
 PAGE_SIZE = 75
 
-_VALID_SORT_FIELDS = {"content_created_at", "relative_path", "category"}
+_VALID_SORT_FIELDS = {"content_created_at", "relative_path", "category", "mime_type"}
 _VALID_SORT_DIRS = {"asc", "desc"}
 
 
@@ -29,8 +29,9 @@ class ListFilesRepository:
         folder_path: str | None,
         sort_by: str,
         sort_dir: str,
-        mime_type_filter: str | None,
-        category_filter: str | None,
+        mime_type_filter: list[str] | None,
+        category_filter: list[str] | None,
+        language_filter: list[str] | None,
         entities: list[str] | None,
         topics: list[str] | None,
         cursor_id: uuid.UUID | None,
@@ -50,21 +51,34 @@ class ListFilesRepository:
             prefix = folder_path.strip().strip("/")
             conditions.append(File.relative_path.like(f"{prefix}/%"))
 
-        if mime_type_filter is not None:
-            conditions.append(TikaAnalysis.mime_type == mime_type_filter)
+        if mime_type_filter:
+            conditions.append(TikaAnalysis.mime_type.in_(mime_type_filter))
 
-        if category_filter is not None:
-            conditions.append(GenericType.generic_type == category_filter)
+        if category_filter:
+            conditions.append(GenericType.generic_type.in_(category_filter))
+
+        if language_filter:
+            conditions.append(TikaAnalysis.language.in_(language_filter))
 
         if entities:
-            entity_subq = (
-                select(FileEntity.file_id)
-                .where(
-                    FileEntity.archive_id == archive_id,
-                    FileEntity.entity_text.in_(entities),
+            pairs = _parse_entity_params(entities)
+            if pairs:
+                entity_subq = (
+                    select(FileEntity.file_id)
+                    .where(
+                        FileEntity.archive_id == archive_id,
+                        or_(
+                            *[
+                                and_(
+                                    FileEntity.entity_type == etype,
+                                    FileEntity.entity_text == etext,
+                                )
+                                for etype, etext in pairs
+                            ]
+                        ),
+                    )
                 )
-            )
-            conditions.append(File.id.in_(entity_subq))
+                conditions.append(File.id.in_(entity_subq))
 
         if topics:
             topic_subq = (
@@ -84,6 +98,10 @@ class ListFilesRepository:
             nullable_sort = False
         elif sort_by == "category":
             sort_col = GenericType.generic_type
+            order_clause = [nullslast(direction(sort_col)), direction(File.id)]
+            nullable_sort = True
+        elif sort_by == "mime_type":
+            sort_col = TikaAnalysis.mime_type
             order_clause = [nullslast(direction(sort_col)), direction(File.id)]
             nullable_sort = True
         else:  # content_created_at
@@ -145,6 +163,8 @@ class ListFilesRepository:
                 next_cursor_value = last["relative_path"]
             elif sort_by == "category":
                 next_cursor_value = last["category"]
+            elif sort_by == "mime_type":
+                next_cursor_value = last["mime_type"]
             else:
                 next_cursor_value = last["content_created_at"]
 
@@ -154,6 +174,19 @@ class ListFilesRepository:
             "next_cursor_id": next_cursor_id,
             "next_cursor_value": next_cursor_value,
         }
+
+
+def _parse_entity_params(entities: list[str]) -> list[tuple[str, str]]:
+    """Parse structured 'type:text' entity filter params into (entity_type, entity_text) pairs.
+
+    Entries that don't contain ':' are silently dropped.
+    """
+    pairs = []
+    for entry in entities:
+        if ":" in entry:
+            etype, etext = entry.split(":", 1)
+            pairs.append((etype.strip(), etext.strip()))
+    return pairs
 
 
 def _parse_cursor_value(sort_by: str, cursor_value: str | None) -> Any:
