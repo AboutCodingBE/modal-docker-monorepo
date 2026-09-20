@@ -7,6 +7,7 @@ import { FolderDetail } from './folder-detail/folder-detail';
 import { FileDetail } from './file-detail/file-detail';
 import { AnalysisSummary } from './analysis-summary/analysis-summary';
 import { ArchiveDashboard } from '../archive-dashboard/archive-dashboard';
+import { ListView } from './list-view/list-view';
 
 interface ArchiveDetailNavigationState {
   selectedFile?: FolderFile | null;
@@ -17,7 +18,7 @@ interface ArchiveDetailNavigationState {
 
 @Component({
   selector: 'app-archive-detail',
-  imports: [CommonModule, FileTable, FolderDetail, FileDetail, AnalysisSummary, ArchiveDashboard],
+  imports: [CommonModule, FileTable, FolderDetail, FileDetail, AnalysisSummary, ArchiveDashboard, ListView],
   templateUrl: './archive-detail.html',
   styleUrl: './archive-detail.css',
 })
@@ -35,6 +36,7 @@ export class ArchiveDetail implements OnInit {
   selectedFile = signal<FolderFile | null>(null);
   rootFolderId = signal<string | null>(null);
   dashboardVisible = signal(false);
+  viewMode = signal<'tree' | 'list'>('tree');
 
   breadcrumbs = computed(() => {
     const path = this.currentPath();

@@ -59,13 +59,32 @@ class TagIndexRepository:
         await self._session.execute(stmt)
         await self._session.flush()
 
-    async def search(self, archive_id: uuid.UUID, prefix: str, top_n: int) -> list[dict]:
+    async def search(
+        self,
+        archive_id: uuid.UUID,
+        prefix: str,
+        top_n: int,
+        source: str | None = None,
+        category: str | None = None,
+    ) -> list[dict]:
         """Prefix-zoekopdracht binnen 1 archief — voor een typeahead-zoekbalk.
 
-        Geeft per match de tag zelf (waarde/source/categorie) terug, samen met het
-        bestand of de map waarin die tag voorkomt (is_directory onderscheidt beide —
-        tag_index bevat ook folder-aggregaten, zie CreateTagIndexForArchive).
+        Optioneel te beperken tot een source ("ner" of "topic_detection") en/of
+        een category ("persons", "locations", ...) — zo kan autocomplete apart
+        zoeken op entiteitstype of enkel op topics.
+
+        Gebruikt unaccent zodat accenten in het zoekprefix of de opgeslagen waarde
+        geen invloed hebben op de match (bv. "Gent" matcht "Gënt").
         """
+        conditions = [
+            TagIndex.archive_id == archive_id,
+            func.unaccent(TagIndex.value).ilike(func.concat(func.unaccent(prefix), "%")),
+        ]
+        if source is not None:
+            conditions.append(TagIndex.source == source)
+        if category is not None:
+            conditions.append(TagIndex.category == category)
+
         stmt = (
             select(
                 TagIndex.value,
@@ -77,7 +96,7 @@ class TagIndexRepository:
                 File.is_directory,
             )
             .join(File, File.id == TagIndex.file_id)
-            .where(TagIndex.archive_id == archive_id, TagIndex.value.ilike(f"{prefix}%"))
+            .where(*conditions)
             .order_by(TagIndex.value)
             .limit(top_n)
         )
@@ -107,7 +126,8 @@ class TagIndexRepository:
 
         # value IN (values) = OR-selectie op rij-niveau: elke rij met 1 van de
         # gevraagde waarden matcht. Bij match="any" is dit de volledige query.
-        filters = [TagIndex.archive_id == archive_id, TagIndex.value.in_(values)]
+        lowered = [v.lower() for v in values]
+        filters = [TagIndex.archive_id == archive_id, func.lower(TagIndex.value).in_(lowered)]
 
         if match == "all":
             # AND op bestand-niveau:
@@ -121,7 +141,7 @@ class TagIndexRepository:
                 select(TagIndex.file_id)
                 .where(*filters)  # nog enkel de 2 basisvoorwaarden hierboven
                 .group_by(TagIndex.file_id)
-                .having(func.count(func.distinct(TagIndex.value)) == len(set(values)))
+                .having(func.count(func.distinct(func.lower(TagIndex.value))) == len(set(lowered)))
             )
             # qualifying_files wordt hier zelf niet uitgevoerd — het wordt als
             # subquery ingeplakt in een 3de filter: "file_id moet in dat lijstje zitten".
