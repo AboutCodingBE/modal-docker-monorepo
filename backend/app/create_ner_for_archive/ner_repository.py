@@ -4,7 +4,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.shared.models import Ner
+from app.shared.models import FileEntity, Ner
 
 
 class NerRepository:
@@ -41,6 +41,21 @@ class NerRepository:
         )
         self._session.add(ner)
         await self._session.flush()
+
+        _CATEGORY_TYPES = ("persons", "locations", "organisations", "misc")
+        entities = [
+            FileEntity(
+                file_id=file_id,
+                archive_id=archive_id,
+                ner_id=ner.id,
+                entity_text=text_value,
+                entity_type=category,
+            )
+            for category in _CATEGORY_TYPES
+            for text_value in ner_result.get(category, [])
+        ]
+        if entities:
+            self._session.add_all(entities)
 
     async def get_entities_for_folder(
         self,
