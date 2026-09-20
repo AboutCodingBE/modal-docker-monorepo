@@ -20,12 +20,19 @@ def upgrade() -> None:
     op.drop_table("file_topics")
     op.drop_table("file_entities")
 
-    # Add a functional btree index on unaccent(value) for fast prefix autocomplete.
+    # unaccent() is STABLE, not IMMUTABLE, so it cannot be used directly in an index
+    # expression. Create a thin IMMUTABLE wrapper so we can index on it.
+    op.execute("""
+        CREATE OR REPLACE FUNCTION immutable_unaccent(text)
+        RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT AS
+        $$ SELECT unaccent($1) $$
+    """)
+
+    # Functional btree index on immutable_unaccent(value) for fast prefix autocomplete.
     # text_pattern_ops lets Postgres use this index for ILIKE 'prefix%' queries.
-    # unaccent extension was already enabled in 0021.
     op.execute(
         "CREATE INDEX ix_tag_index_unaccent_value ON tag_index "
-        "(unaccent(value) text_pattern_ops)"
+        "(immutable_unaccent(value) text_pattern_ops)"
     )
 
 
@@ -34,6 +41,7 @@ def downgrade() -> None:
     from sqlalchemy.dialects.postgresql import UUID
 
     op.execute("DROP INDEX IF EXISTS ix_tag_index_unaccent_value")
+    op.execute("DROP FUNCTION IF EXISTS immutable_unaccent(text)")
 
     op.create_table(
         "file_entities",

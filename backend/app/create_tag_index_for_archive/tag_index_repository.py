@@ -78,7 +78,9 @@ class TagIndexRepository:
         """
         conditions = [
             TagIndex.archive_id == archive_id,
-            func.unaccent(TagIndex.value).ilike(func.concat(func.unaccent(prefix), "%")),
+            func.immutable_unaccent(TagIndex.value).ilike(
+                func.concat(func.immutable_unaccent(prefix), "%")
+            ),
         ]
         if source is not None:
             conditions.append(TagIndex.source == source)
