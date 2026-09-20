@@ -104,7 +104,7 @@ export class ListView implements OnDestroy {
   );
 
   badges = computed<Badge[]>(() => [
-    ...this.activeCategories().map(v => ({ facet: 'category' as const, value: v, label: `Klasse: ${v}` })),
+    ...this.activeCategories().map(v => ({ facet: 'category' as const, value: v, label: `Categorie: ${v}` })),
     ...this.activeLanguages().map(v => ({ facet: 'language' as const, value: v, label: `Taal: ${v}` })),
     ...this.activeEntities().map(v => {
       const [type, ...rest] = v.split(':');

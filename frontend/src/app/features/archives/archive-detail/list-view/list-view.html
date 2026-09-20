@@ -10,7 +10,7 @@
         [class.active]="activeCategories().length > 0"
         (click)="openKlassePopover()"
       >
-        Klasse@if (activeCategories().length > 0) { ({{ activeCategories().length }})} ▾
+        Categorie@if (activeCategories().length > 0) { ({{ activeCategories().length }})} ▾
       </button>
       @if (klassePopoverOpen()) {
         <div class="popover">
@@ -125,7 +125,7 @@
       Pad <span class="sort-arrow">{{ sortArrow('relative_path') }}</span>
     </div>
     <div class="col-category th-sortable" (click)="onSort('category')">
-      Klasse <span class="sort-arrow">{{ sortArrow('category') }}</span>
+      Categorie <span class="sort-arrow">{{ sortArrow('category') }}</span>
     </div>
     <div class="col-language">Taal</div>
     <div class="col-date th-sortable" (click)="onSort('content_created_at')">
