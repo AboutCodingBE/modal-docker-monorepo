@@ -1,7 +1,7 @@
 """add tag_index table
 
-Revision ID: 0019
-Revises: 0018
+Revision ID: 0022
+Revises: 0021
 Create Date: 2026-09-15
 
 """
@@ -11,8 +11,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects.postgresql import UUID
 
-revision: str = "0019"
-down_revision: str | None = "0018"
+revision: str = "0022"
+down_revision: str | None = "0021"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
