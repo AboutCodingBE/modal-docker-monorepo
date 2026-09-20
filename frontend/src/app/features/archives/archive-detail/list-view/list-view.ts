@@ -32,7 +32,7 @@ const ENTITY_LABEL: Record<string, string> = {
   misc: 'Overige',
 };
 
-export const ROW_HEIGHT = 41;
+export const ROW_HEIGHT = 32;
 
 interface Badge {
   facet: 'category' | 'language' | 'entity' | 'topic';

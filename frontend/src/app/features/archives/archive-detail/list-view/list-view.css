@@ -324,6 +324,16 @@
   color: #6b7280;
 }
 
+.col-language {
+  flex: 1;
+  min-width: 60px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #6b7280;
+  font-size: 12px;
+}
+
 .col-date {
   flex: 1;
   min-width: 90px;

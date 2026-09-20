@@ -127,6 +127,7 @@
     <div class="col-category th-sortable" (click)="onSort('category')">
       Klasse <span class="sort-arrow">{{ sortArrow('category') }}</span>
     </div>
+    <div class="col-language">Taal</div>
     <div class="col-date th-sortable" (click)="onSort('content_created_at')">
       Datum <span class="sort-arrow">{{ sortArrow('content_created_at') }}</span>
     </div>
@@ -153,6 +154,7 @@
         <div class="col-name" [title]="file.name">{{ file.name }}</div>
         <div class="col-path" [title]="file.relative_path">{{ formatPath(file.relative_path) }}</div>
         <div class="col-category">{{ file.category ?? '—' }}</div>
+        <div class="col-language">{{ file.language ?? '—' }}</div>
         <div class="col-date">{{ formatDate(file.content_created_at) }}</div>
       </div>
     </cdk-virtual-scroll-viewport>
