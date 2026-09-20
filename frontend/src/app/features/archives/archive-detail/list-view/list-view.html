@@ -152,7 +152,7 @@
         (click)="onRowClick(file)"
       >
         <div class="col-name" [title]="file.name">{{ file.name }}</div>
-        <div class="col-path" [title]="file.relative_path">{{ formatPath(file.relative_path) }}</div>
+        <div class="col-path" [title]="file.relative_path">{{ file.relative_path }}</div>
         <div class="col-category">{{ file.category ?? '—' }}</div>
         <div class="col-language">{{ file.language ?? '—' }}</div>
         <div class="col-date">{{ formatDate(file.content_created_at) }}</div>
