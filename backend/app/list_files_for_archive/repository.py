@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import and_, asc, desc, nullslast, or_, select
+from sqlalchemy import and_, asc, desc, func, nullslast, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.models import Archive, File, FileEntity, FileTopic, GenericType, TikaAnalysis
@@ -71,7 +71,7 @@ class ListFilesRepository:
                             *[
                                 and_(
                                     FileEntity.entity_type == etype,
-                                    FileEntity.entity_text == etext,
+                                    func.lower(FileEntity.entity_text) == etext.lower(),
                                 )
                                 for etype, etext in pairs
                             ]
@@ -81,11 +81,12 @@ class ListFilesRepository:
                 conditions.append(File.id.in_(entity_subq))
 
         if topics:
+            lowered_topics = [t.lower() for t in topics]
             topic_subq = (
                 select(FileTopic.file_id)
                 .where(
                     FileTopic.archive_id == archive_id,
-                    FileTopic.topic_label.in_(topics),
+                    func.lower(FileTopic.topic_label).in_(lowered_topics),
                 )
             )
             conditions.append(File.id.in_(topic_subq))

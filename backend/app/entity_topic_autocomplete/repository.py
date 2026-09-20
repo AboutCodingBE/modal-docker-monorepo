@@ -33,8 +33,8 @@ class EntityTopicAutocompleteRepository:
                     func.concat(func.unaccent(prefix), "%")
                 ),
             )
-            .distinct()
-            .order_by(FileEntity.entity_text)
+            .distinct(func.lower(FileEntity.entity_text))
+            .order_by(func.lower(FileEntity.entity_text), FileEntity.entity_text)
             .limit(SUGGESTION_CAP)
         )
         return result.scalars().all()
@@ -52,8 +52,8 @@ class EntityTopicAutocompleteRepository:
                     func.concat(func.unaccent(prefix), "%")
                 ),
             )
-            .distinct()
-            .order_by(FileTopic.topic_label)
+            .distinct(func.lower(FileTopic.topic_label))
+            .order_by(func.lower(FileTopic.topic_label), FileTopic.topic_label)
             .limit(SUGGESTION_CAP)
         )
         return result.scalars().all()
