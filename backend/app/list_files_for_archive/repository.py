@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import and_, asc, desc, func, nullslast, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.models import Archive, File, FileEntity, FileTopic, GenericType, TikaAnalysis
+from app.shared.models import Archive, File, GenericType, TagIndex, TikaAnalysis
 
 PAGE_SIZE = 75
 
@@ -64,14 +64,15 @@ class ListFilesRepository:
             pairs = _parse_entity_params(entities)
             if pairs:
                 entity_subq = (
-                    select(FileEntity.file_id)
+                    select(TagIndex.file_id)
                     .where(
-                        FileEntity.archive_id == archive_id,
+                        TagIndex.archive_id == archive_id,
+                        TagIndex.source == "ner",
                         or_(
                             *[
                                 and_(
-                                    FileEntity.entity_type == etype,
-                                    func.lower(FileEntity.entity_text) == etext.lower(),
+                                    TagIndex.category == etype,
+                                    func.lower(TagIndex.value) == etext.lower(),
                                 )
                                 for etype, etext in pairs
                             ]
@@ -83,10 +84,11 @@ class ListFilesRepository:
         if topics:
             lowered_topics = [t.lower() for t in topics]
             topic_subq = (
-                select(FileTopic.file_id)
+                select(TagIndex.file_id)
                 .where(
-                    FileTopic.archive_id == archive_id,
-                    func.lower(FileTopic.topic_label).in_(lowered_topics),
+                    TagIndex.archive_id == archive_id,
+                    TagIndex.source == "topic_detection",
+                    func.lower(TagIndex.value).in_(lowered_topics),
                 )
             )
             conditions.append(File.id.in_(topic_subq))

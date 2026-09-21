@@ -1,9 +1,11 @@
 import uuid
 
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.models import Archive, FileEntity, FileTopic
+from app.create_tag_index_for_archive.tag_index_repository import TagIndexRepository
+from app.shared.models import Archive
+
+from sqlalchemy import select
 
 SUGGESTION_CAP = 10
 
@@ -24,36 +26,17 @@ class EntityTopicAutocompleteRepository:
         entity_type: str,
         prefix: str,
     ) -> list[str]:
-        result = await self._session.execute(
-            select(FileEntity.entity_text)
-            .where(
-                FileEntity.archive_id == archive_id,
-                FileEntity.entity_type == entity_type,
-                func.unaccent(FileEntity.entity_text).ilike(
-                    func.concat(func.unaccent(prefix), "%")
-                ),
-            )
-            .distinct(func.lower(FileEntity.entity_text))
-            .order_by(func.lower(FileEntity.entity_text), FileEntity.entity_text)
-            .limit(SUGGESTION_CAP)
+        rows = await TagIndexRepository(self._session).search(
+            archive_id, prefix, top_n=SUGGESTION_CAP, source="ner", category=entity_type
         )
-        return result.scalars().all()
+        return list(dict.fromkeys(r["value"] for r in rows))
 
     async def autocomplete_topics(
         self,
         archive_id: uuid.UUID,
         prefix: str,
     ) -> list[str]:
-        result = await self._session.execute(
-            select(FileTopic.topic_label)
-            .where(
-                FileTopic.archive_id == archive_id,
-                func.unaccent(FileTopic.topic_label).ilike(
-                    func.concat(func.unaccent(prefix), "%")
-                ),
-            )
-            .distinct(func.lower(FileTopic.topic_label))
-            .order_by(func.lower(FileTopic.topic_label), FileTopic.topic_label)
-            .limit(SUGGESTION_CAP)
+        rows = await TagIndexRepository(self._session).search(
+            archive_id, prefix, top_n=SUGGESTION_CAP, source="topic_detection"
         )
-        return result.scalars().all()
+        return list(dict.fromkeys(r["value"] for r in rows))

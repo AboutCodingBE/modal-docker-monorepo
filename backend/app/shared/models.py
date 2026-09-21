@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, BigInteger, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum, text
+from sqlalchemy import Boolean, BigInteger, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -220,6 +220,24 @@ class TopicDetection(Base):
     topics: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
 
 
+class TagIndex(Base):
+    __tablename__ = "tag_index"
+    __table_args__ = (
+        UniqueConstraint("file_id", "source", "category", "value", name="uq_tag_index_file_source_category_value"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
+    analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archive_analysis.id", ondelete="CASCADE"), nullable=False)
+    file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
+
+    source: Mapped[str] = mapped_column(String(20), nullable=False)  # "ner" | "topic_detection"
+    category: Mapped[str | None] = mapped_column(String(20), nullable=True)  # persons/locations/organisations/misc, NULL voor topics
+    value: Mapped[str] = mapped_column(String(500), nullable=False)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
 class ExportSettings(Base):
     __tablename__ = "export_settings"
 
@@ -228,22 +246,3 @@ class ExportSettings(Base):
     content_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=2000)
 
 
-class FileEntity(Base):
-    __tablename__ = "file_entities"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    ner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("ner.id", ondelete="CASCADE"), nullable=False)
-    entity_text: Mapped[str] = mapped_column(String(), nullable=False)
-    entity_type: Mapped[str] = mapped_column(String(), nullable=False)
-
-
-class FileTopic(Base):
-    __tablename__ = "file_topics"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    topic_detection_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("topic_detection.id", ondelete="CASCADE"), nullable=False)
-    topic_label: Mapped[str] = mapped_column(String(), nullable=False)

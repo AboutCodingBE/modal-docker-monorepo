@@ -4,7 +4,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.shared.models import FileTopic, TopicDetection
+from app.shared.models import TopicDetection
 
 
 class TopicDetectionRepository:
@@ -20,6 +20,21 @@ class TopicDetectionRepository:
             )
         )
         return result.scalar_one_or_none() is not None
+
+    async def get_all_for_analysis(self, analysis_id: uuid.UUID) -> list[TopicDetection]:
+        """Alle TopicDetection-rijen van deze analyse — zowel bestanden als folder-
+        aggregaten (persist_folder zet ook een rij weg, met file_id verwijzend naar
+        een map). Gebruikt door CreateTagIndexForArchive om de tag_index te vullen.
+
+        LET OP: laadt alle TopicDetection-rijen van de analyse in één keer in het
+        geheugen (result.scalars().all()) — zie de gelijkaardige noot bij
+        NerRepository.get_all_for_analysis(). Aandachtspunt voor later bij zeer
+        grote archieven: een lazy/streaming iterator i.p.v. alles materialiseren.
+        """
+        result = await self._session.execute(
+            select(TopicDetection).where(TopicDetection.analysis_id == analysis_id)
+        )
+        return list(result.scalars().all())
 
     async def persist(
         self,
@@ -38,18 +53,6 @@ class TopicDetectionRepository:
         )
         self._session.add(topic_detection)
         await self._session.flush()
-
-        file_topics = [
-            FileTopic(
-                file_id=file_id,
-                archive_id=archive_id,
-                topic_detection_id=topic_detection.id,
-                topic_label=label,
-            )
-            for label in topics
-        ]
-        if file_topics:
-            self._session.add_all(file_topics)
 
     async def get_topics_for_folder(
         self,
