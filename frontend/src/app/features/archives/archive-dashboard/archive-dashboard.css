@@ -153,6 +153,30 @@
   background: #fff;
 }
 
+.bar-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.bar-chart-dimension-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #374151;
+  font-size: 12px;
+}
+
+.bar-chart-dimension-control select {
+  padding: 5px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #111827;
+  font: inherit;
+}
+
 .bar-chart-legend {
   display: flex;
   flex-wrap: wrap;
@@ -358,6 +382,105 @@
   pointer-events: none;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
   white-space: nowrap;
+}
+
+.timeline-heatmap-card {
+  margin-top: 20px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.timeline-heatmap-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.timeline-range-control,
+.timeline-axis-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.timeline-range-sliders {
+  position: relative;
+  height: 20px;
+}
+
+.timeline-range-track {
+  position: absolute;
+  inset: 7px 0 auto;
+  height: 6px;
+  border-radius: 3px;
+  background: #e5e7eb;
+}
+
+.timeline-range-sliders input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 7px 0;
+  background: transparent;
+  pointer-events: none;
+  appearance: none;
+}
+
+.timeline-range-sliders input[type="range"]::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #2563eb;
+  pointer-events: auto;
+  appearance: none;
+}
+
+.timeline-range-sliders input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #2563eb;
+  pointer-events: auto;
+}
+
+.timeline-axis-control select {
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.timeline-multiselect-panel {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.timeline-multiselect-option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.timeline-multiselect-option span:nth-child(2) { flex: 1; }
+
+.timeline-heatmap-shell {
+  width: 100%;
+  min-height: 300px;
+}
+
+.timeline-heatmap {
+  width: 100%;
+  height: 420px;
 }
 
 .treemap {

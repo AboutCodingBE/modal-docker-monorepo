@@ -86,24 +86,6 @@
             }
           </div>
         </div>
-        <div class="bar-chart-card">
-          <div class="treemap-title">Bestandsgrootte per bestand</div>
-          <div class="bar-chart-legend">
-            @for (legendItem of barChartLegendItems(); track legendItem.category) {
-              <div class="legend-item" title="{{ legendItem.category }}">
-                <span class="legend-swatch" [style.background]="legendItem.color"></span>
-                <span class="legend-label">{{ legendItem.category }}</span>
-              </div>
-            }
-          </div>
-          @if (barChartItems().length === 0) {
-            <div class="dashboard-empty small">Geen bestanden beschikbaar.</div>
-          } @else {
-            <div class="bar-chart-shell">
-              <svg class="bar-chart" role="img" aria-label="Staafgrafiek met bestandsgrootten per bestand"></svg>
-            </div>
-          }
-        </div>
         <div class="heatmap-card">
           <div class="treemap-title">Heatmap</div>
           <div class="heatmap-toolbar">
@@ -178,6 +160,68 @@
               </div>
             </div>
           </div>
+        </div>
+        <div class="timeline-heatmap-card">
+          <div class="treemap-title">Heatmap per jaar</div>
+          <div class="timeline-heatmap-toolbar">
+            <label class="timeline-range-control">
+              Jaar bereik ({{ timelineRangeMin() }} - {{ timelineRangeMax() }})
+              <div class="timeline-range-sliders">
+                <span class="timeline-range-track" aria-hidden="true"></span>
+                <input type="range" class="timeline-range-min" [min]="timelineAvailableMin()" [max]="timelineAvailableMax()" [value]="timelineRangeMin()" (input)="onTimelineRangeChange('min', $event)" />
+                <input type="range" class="timeline-range-max" [min]="timelineAvailableMin()" [max]="timelineAvailableMax()" [value]="timelineRangeMax()" (input)="onTimelineRangeChange('max', $event)" />
+              </div>
+            </label>
+            <label class="timeline-axis-control">
+              Dimensie
+              <select [value]="timelineYDimension()" (change)="onTimelineDimensionChange($event)">
+                @for (axis of timelineAxisOptions; track axis.value) {
+                  <option [value]="axis.value">{{ axis.label }}</option>
+                }
+              </select>
+            </label>
+            <details class="timeline-multiselect">
+              <summary>Waarden ({{ timelineSelectedCount() }} geselecteerd)</summary>
+              <div class="timeline-multiselect-panel">
+                @for (option of timelineYOptions(); track option.value) {
+                  <label class="timeline-multiselect-option">
+                    <input type="checkbox" [checked]="isTimelineSelected(option.value)" (change)="onTimelineValueToggle(option.value, $event)" />
+                    <span>{{ option.value }}</span>
+                    <span>({{ option.count }})</span>
+                  </label>
+                }
+              </div>
+            </details>
+          </div>
+          <div class="timeline-heatmap-shell">
+            <svg class="timeline-heatmap" role="img" aria-label="Heatmap per jaar"></svg>
+          </div>
+        </div>
+        <div class="bar-chart-card">
+          <div class="bar-chart-header">
+            <div class="treemap-title">{{ barChartDimensionLabel() }} per bestand</div>
+            <label class="bar-chart-dimension-control">
+              Dimensie
+              <select [value]="barChartDimension()" (change)="onBarChartDimensionChange($event)">
+                <option value="persons">Personen</option>
+                <option value="organisations">Organisaties</option>
+                <option value="locations">Locaties</option>
+                <option value="topics">Topics</option>
+              </select>
+            </label>
+          </div>
+          <div class="bar-chart-legend">
+            <div class="legend-item"><span class="legend-swatch" style="background: #2563eb"></span><span class="legend-label">Uniek voor dit bestand</span></div>
+            <div class="legend-item"><span class="legend-swatch" style="background: #f97316"></span><span class="legend-label">In 2-4 bestanden</span></div>
+            <div class="legend-item"><span class="legend-swatch" style="background: #dc2626"></span><span class="legend-label">In 5+ bestanden</span></div>
+          </div>
+          @if (barChartItems().length === 0) {
+            <div class="dashboard-empty small">Geen bestanden beschikbaar.</div>
+          } @else {
+            <div class="bar-chart-shell">
+              <svg class="bar-chart" role="img" aria-label="Gestapelde staafgrafiek met personen die uniek zijn voor een bestand en personen die ook in andere bestanden voorkomen"></svg>
+            </div>
+          }
         </div>
       }
   </div>

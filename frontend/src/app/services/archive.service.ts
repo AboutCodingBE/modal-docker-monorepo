@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Archive } from '../models/archive.model';
 
@@ -80,6 +80,24 @@ export interface TopicsFolderResult {
   model: string | null;
   topics: string[];
   total_topics: number;
+}
+
+export interface TimelineHeatmapCell {
+  year: number;
+  y_value: string;
+  count: number;
+}
+
+export interface TimelineHeatmapResult {
+  folder_id: string;
+  folder_name: string;
+  y_dimension: string;
+  years: number[];
+  available_range: [number | null, number | null];
+  y_values: string[];
+  y_value_counts: Record<string, number>;
+  default_range: [number | null, number | null];
+  cells: TimelineHeatmapCell[];
 }
 
 export interface FolderFilesData {
@@ -173,6 +191,13 @@ export class ArchiveService {
 
   getTopicsForFolder(archiveId: string, folderId: string): Observable<TopicsFolderResult> {
     return this.http.get<TopicsFolderResult>(`/api/archives/${archiveId}/folders/${folderId}/topics`);
+  }
+
+  getTimelineHeatmap(archiveId: string, folderId: string, yDimension: string, rangeMin?: number, rangeMax?: number): Observable<TimelineHeatmapResult> {
+    let params = new HttpParams().set('y_dimension', yDimension);
+    if (rangeMin !== undefined) params = params.set('range_min', String(rangeMin));
+    if (rangeMax !== undefined) params = params.set('range_max', String(rangeMax));
+    return this.http.get<TimelineHeatmapResult>(`/api/archives/${archiveId}/folders/${folderId}/timeline-heatmap`, { params });
   }
 
   getFileContent(fileId: string): Observable<{ file_id: string; content: string | null }> {
