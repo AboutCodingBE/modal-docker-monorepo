@@ -68,7 +68,7 @@ class ArchiveDetailRepository:
             select(Summary, ArchiveAnalysis)
             .join(ArchiveAnalysis, ArchiveAnalysis.id == Summary.analysis_id)
             .where(Summary.file_id == file_id)
-            .order_by(ArchiveAnalysis.date.desc())
+            .order_by(ArchiveAnalysis.analyzed_at.desc())
         )
 
         return {
@@ -78,7 +78,7 @@ class ArchiveDetailRepository:
                 {
                     "analysis_id": str(summary.id),
                     "model": analysis.model,
-                    "date": analysis.date.isoformat(),
+                    "date": analysis.analyzed_at.isoformat(),
                     "result": summary.result,
                 }
                 for summary, analysis in summaries_result.all()
@@ -88,8 +88,16 @@ class ArchiveDetailRepository:
     async def get_root_files(self, archive_id: uuid.UUID) -> dict:
         """Returns all direct non-directory children of the archive root (parent_id IS NULL)."""
         files_result = await self._session.execute(
-            select(File, TikaAnalysis.mime_type)
+            select(
+                File,
+                TikaAnalysis.mime_type,
+                GenericType.generic_type,
+                TikaAnalysis.language,
+                TikaAnalysis.author,
+                TikaAnalysis.content_created_at,
+            )
             .outerjoin(TikaAnalysis, TikaAnalysis.file_id == File.id)
+            .outerjoin(GenericType, GenericType.file_id == File.id)
             .where(
                 and_(
                     File.archive_id == archive_id,
@@ -111,8 +119,12 @@ class ArchiveDetailRepository:
                     "extension": f.extension,
                     "size_bytes": f.size_bytes,
                     "mime_type": mime_type,
+                    "category": generic_type,
+                    "language": language,
+                    "author": author,
+                    "content_created_at": content_created_at.isoformat() if content_created_at else None,
                 }
-                for f, mime_type in files_result.all()
+                for f, mime_type, generic_type, language, author, content_created_at in files_result.all()
             ],
         }
 
@@ -133,7 +145,14 @@ class ArchiveDetailRepository:
             return None
 
         files_result = await self._session.execute(
-            select(File, TikaAnalysis.mime_type, GenericType.generic_type)
+            select(
+                File,
+                TikaAnalysis.mime_type,
+                GenericType.generic_type,
+                TikaAnalysis.language,
+                TikaAnalysis.author,
+                TikaAnalysis.content_created_at,
+            )
             .outerjoin(TikaAnalysis, TikaAnalysis.file_id == File.id)
             .outerjoin(GenericType, GenericType.file_id == File.id)
             .where(
@@ -158,8 +177,11 @@ class ArchiveDetailRepository:
                     "size_bytes": f.size_bytes,
                     "mime_type": mime_type,
                     "category": generic_type,
+                    "language": language,
+                    "author": author,
+                    "content_created_at": content_created_at.isoformat() if content_created_at else None,
                 }
-                for f, mime_type, generic_type in files_result.all()
+                for f, mime_type, generic_type, language, author, content_created_at in files_result.all()
             ],
         }
 

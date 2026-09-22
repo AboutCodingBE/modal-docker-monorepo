@@ -1,7 +1,7 @@
 import uuid
-from datetime import date, datetime
+from datetime import datetime
 
-from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum, text
+from sqlalchemy import Boolean, BigInteger, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -47,6 +47,9 @@ class Archive(Base):
     # Metadata
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Ingest settings
+    ocr_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Calculated statistics
     file_count: Mapped[int] = mapped_column(nullable=False, default=0)
@@ -171,7 +174,7 @@ class ArchiveAnalysis(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
     type: Mapped[AnalysisType] = mapped_column(Enum(AnalysisType, name="analysis_type"), nullable=False)
-    date: Mapped[date] = mapped_column(Date, nullable=False, server_default=func.current_date())
+    analyzed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     model: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[ArchiveAnalysisStatus] = mapped_column(Enum(ArchiveAnalysisStatus, name="archive_analysis_status"), nullable=False)
 
@@ -215,3 +218,31 @@ class TopicDetection(Base):
     file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
 
     topics: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+
+
+class TagIndex(Base):
+    __tablename__ = "tag_index"
+    __table_args__ = (
+        UniqueConstraint("file_id", "source", "category", "value", name="uq_tag_index_file_source_category_value"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archives.id", ondelete="CASCADE"), nullable=False)
+    analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("archive_analysis.id", ondelete="CASCADE"), nullable=False)
+    file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
+
+    source: Mapped[str] = mapped_column(String(20), nullable=False)  # "ner" | "topic_detection"
+    category: Mapped[str | None] = mapped_column(String(20), nullable=True)  # persons/locations/organisations/misc, NULL voor topics
+    value: Mapped[str] = mapped_column(String(500), nullable=False)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class ExportSettings(Base):
+    __tablename__ = "export_settings"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    default_export_path: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    content_char_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=2000)
+
+

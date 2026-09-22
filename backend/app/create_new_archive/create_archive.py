@@ -23,7 +23,7 @@ class CreateArchive:
         self._session = session
         self._folder_analysis = FolderAnalysis()
 
-    async def execute(self, name: str, path: str) -> tuple[Archive, uuid.UUID] | str:
+    async def execute(self, name: str, path: str, ocr_enabled: bool = False) -> tuple[Archive, uuid.UUID] | str:
         if not name or not name.strip():
             return "Archiefnaam mag niet leeg zijn."
         if not path or not path.strip():
@@ -35,7 +35,7 @@ class CreateArchive:
         archive_repo = ArchiveRepository(self._session)
         file_repo = FileRepository(self._session)
 
-        archive = await archive_repo.persist(name, path)
+        archive = await archive_repo.persist(name, path, ocr_enabled)
 
         try:
             entries = await self._folder_analysis.analyze(archive.id, path)
@@ -57,16 +57,16 @@ class CreateArchive:
 
         task = await task_tracker.create_task(self._session, archive.id, file_count, task_type="tika")
 
-        asyncio.create_task(_run_tika(archive.id, task.id))
+        asyncio.create_task(_run_tika(archive.id, task.id, ocr_enabled))
 
         return archive, task.id
 
 
-async def _run_tika(archive_id: uuid.UUID, task_id: uuid.UUID) -> None:
+async def _run_tika(archive_id: uuid.UUID, task_id: uuid.UUID, ocr_enabled: bool = False) -> None:
     async with _session_factory() as session:
         try:
             analyzer = PerformTikaAnalysis(session)
-            await analyzer.execute(archive_id, task_id)
+            await analyzer.execute(archive_id, task_id, ocr_enabled)
         except Exception as e:
             _logger.error(f"Background Tika task failed for archive {archive_id}: {e}")
             try:

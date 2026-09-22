@@ -4,6 +4,8 @@ import {
   DownloadProgressEvent,
   ModelEntry,
 } from '../../../services/configuration.service';
+import { ExportSettingsService } from '../../../services/export-settings.service';
+import { AgentService } from '../../../services/agent.service';
 
 type DownloadState = 'idle' | 'downloading' | 'success' | 'already-added' | 'error';
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
@@ -48,11 +50,22 @@ export class ConfigurationPage implements OnInit, OnDestroy {
   processingLoadError = signal(false);
   processingSaveState = signal<SaveState>('idle');
 
-  constructor(private configService: ConfigurationService) {}
+  // ── Export settings section ──────────────────────────────────────────────
+  exportPath = signal('');
+  exportContentCharLimit = signal(2000);
+  exportLoadError = signal(false);
+  exportSaveState = signal<SaveState>('idle');
+
+  constructor(
+    private configService: ConfigurationService,
+    private exportSettingsService: ExportSettingsService,
+    private agentService: AgentService,
+  ) {}
 
   ngOnInit(): void {
     this._loadModels();
     this._loadProcessingSettings();
+    this._loadExportSettings();
   }
 
   ngOnDestroy(): void {
@@ -189,6 +202,47 @@ export class ConfigurationPage implements OnInit, OnDestroy {
       },
       error: () => this.processingLoadError.set(true),
     });
+  }
+
+  // ── Export settings ──────────────────────────────────────────────────────
+
+  private _loadExportSettings(): void {
+    this.exportSettingsService.getExportSettings().subscribe({
+      next: (s) => {
+        this.exportPath.set(s.default_export_path);
+        this.exportContentCharLimit.set(s.content_char_limit);
+        this.exportLoadError.set(false);
+      },
+      error: () => this.exportLoadError.set(true),
+    });
+  }
+
+  pickExportFolder(): void {
+    this.agentService.pickFolder().subscribe({
+      next: (selection) => this.exportPath.set(selection.path),
+    });
+  }
+
+  saveExportSettings(): void {
+    if (this.exportSaveState() === 'saving') return;
+    this.exportSaveState.set('saving');
+    this.exportSettingsService
+      .updateExportSettings({
+        default_export_path: this.exportPath(),
+        content_char_limit: this.exportContentCharLimit(),
+      })
+      .subscribe({
+        next: (saved) => {
+          this.exportPath.set(saved.default_export_path);
+          this.exportContentCharLimit.set(saved.content_char_limit);
+          this.exportSaveState.set('saved');
+          setTimeout(() => this.exportSaveState.set('idle'), 2000);
+        },
+        error: () => {
+          this.exportSaveState.set('error');
+          setTimeout(() => this.exportSaveState.set('idle'), 3000);
+        },
+      });
   }
 
   saveProcessingSettings(): void {

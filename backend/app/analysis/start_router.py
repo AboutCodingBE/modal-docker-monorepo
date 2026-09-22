@@ -52,6 +52,10 @@ async def start_analysis(
             )
             continue
 
+        # Redo: wipe any previous run(s) of this type for this archive before
+        # creating the new one. Cascades to summary/ner/topic_detection automatically.
+        await analysis_repo.delete_existing(archive_id, normalized_type)
+
         archive_analysis = await analysis_repo.create(archive_id, item.type, item.model)
         task = await task_tracker.create_task(db, archive_id, total_files=0)
         await db.flush()

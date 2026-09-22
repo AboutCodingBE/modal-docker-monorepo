@@ -11,6 +11,9 @@
 
   <!-- Tabs -->
   <div class="tabs">
+    <button class="tab" [class.active]="activeTab() === 'overzicht'" (click)="switchTab('overzicht')">
+      Overzicht
+    </button>
     <button class="tab" [class.active]="activeTab() === 'samenvatting'" (click)="switchTab('samenvatting')">
       Samenvatting
     </button>
@@ -24,6 +27,51 @@
 
   <!-- Tab content -->
   <div class="tab-content">
+
+    @if (activeTab() === 'overzicht') {
+      <dl class="meta-list">
+        <div class="meta-row">
+          <dt>Bestandsnaam</dt>
+          <dd [title]="file().name">{{ file().name }}</dd>
+        </div>
+        <div class="meta-row">
+          <dt>Pad</dt>
+          <dd [title]="file().relative_path">{{ file().relative_path }}</dd>
+        </div>
+        @if (file().extension) {
+          <div class="meta-row">
+            <dt>Extensie</dt>
+            <dd>{{ file().extension }}</dd>
+          </div>
+        }
+        @if (file().mime_type) {
+          <div class="meta-row">
+            <dt>MIME-type</dt>
+            <dd>{{ file().mime_type }}</dd>
+          </div>
+        }
+        <div class="meta-row">
+          <dt>Grootte</dt>
+          <dd>{{ formatSize(file().size_bytes) }}</dd>
+        </div>
+        <div class="meta-row">
+          <dt>Categorie</dt>
+          <dd>{{ file().category ?? '—' }}</dd>
+        </div>
+        <div class="meta-row">
+          <dt>Taal</dt>
+          <dd>{{ file().language ?? '—' }}</dd>
+        </div>
+        <div class="meta-row">
+          <dt>Auteur</dt>
+          <dd>{{ file().author ?? '—' }}</dd>
+        </div>
+        <div class="meta-row">
+          <dt>Datum aangemaakt</dt>
+          <dd>{{ formatDate(file().content_created_at) }}</dd>
+        </div>
+      </dl>
+    }
 
     @if (activeTab() === 'samenvatting') {
       <app-analysis-summary

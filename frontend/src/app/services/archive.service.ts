@@ -39,6 +39,9 @@ export interface FolderFile {
   size_bytes: number | null;
   mime_type: string | null;
   category: string | null;
+  language: string | null;
+  author: string | null;
+  content_created_at: string | null;
 }
 
 export interface NerResult {
@@ -103,6 +106,30 @@ export interface FolderFilesData {
   files: FolderFile[];
 }
 
+export interface ListFilesParams {
+  folder_path?: string;
+  sort_by?: string;
+  sort_dir?: string;
+  mime_types?: string[];
+  categories?: string[];
+  languages?: string[];
+  entities?: string[];
+  topics?: string[];
+  cursor_id?: string;
+  cursor_value?: string;
+}
+
+export interface ListFilesResponse {
+  files: FolderFile[];
+  has_next: boolean;
+  next_cursor_id: string | null;
+  next_cursor_value: string | null;
+}
+
+export interface AutocompleteResponse {
+  suggestions: string[];
+}
+
 export interface AnalysisSummaryEntry {
   analysis_id: string;
   model: string;
@@ -124,8 +151,8 @@ export class ArchiveService {
     return this.http.get<Archive[]>('/api/archives');
   }
 
-  create(name: string, path: string): Observable<Archive> {
-    return this.http.post<Archive>('/api/archives', { name, path });
+  create(name: string, path: string, ocr_enabled: boolean): Observable<Archive> {
+    return this.http.post<Archive>('/api/archives', { name, path, ocr_enabled });
   }
 
   getStats(archiveId: string): Observable<ArchiveStats> {
@@ -171,6 +198,37 @@ export class ArchiveService {
     if (rangeMin !== undefined) params = params.set('range_min', String(rangeMin));
     if (rangeMax !== undefined) params = params.set('range_max', String(rangeMax));
     return this.http.get<TimelineHeatmapResult>(`/api/archives/${archiveId}/folders/${folderId}/timeline-heatmap`, { params });
+  }
+
+  getFileContent(fileId: string): Observable<{ file_id: string; content: string | null }> {
+    return this.http.get<{ file_id: string; content: string | null }>(`/api/files/${fileId}/content`);
+  }
+
+  listFiles(archiveId: string, params: ListFilesParams): Observable<ListFilesResponse> {
+    const httpParams: Record<string, string | string[]> = {};
+    if (params.folder_path) httpParams['folder_path'] = params.folder_path;
+    if (params.sort_by) httpParams['sort_by'] = params.sort_by;
+    if (params.sort_dir) httpParams['sort_dir'] = params.sort_dir;
+    if (params.mime_types?.length) httpParams['mime_types'] = params.mime_types;
+    if (params.categories?.length) httpParams['categories'] = params.categories;
+    if (params.languages?.length) httpParams['languages'] = params.languages;
+    if (params.entities?.length) httpParams['entities'] = params.entities;
+    if (params.topics?.length) httpParams['topics'] = params.topics;
+    if (params.cursor_id) httpParams['cursor_id'] = params.cursor_id;
+    if (params.cursor_value) httpParams['cursor_value'] = params.cursor_value;
+    return this.http.get<ListFilesResponse>(`/api/archives/${archiveId}/files`, { params: httpParams });
+  }
+
+  autocompleteEntities(archiveId: string, entityType: string, prefix: string): Observable<AutocompleteResponse> {
+    return this.http.get<AutocompleteResponse>(`/api/archives/${archiveId}/autocomplete/entities`, {
+      params: { entity_type: entityType, prefix },
+    });
+  }
+
+  autocompleteTopics(archiveId: string, prefix: string): Observable<AutocompleteResponse> {
+    return this.http.get<AutocompleteResponse>(`/api/archives/${archiveId}/autocomplete/topics`, {
+      params: { prefix },
+    });
   }
 
   deleteArchive(archiveId: string): Observable<void> {

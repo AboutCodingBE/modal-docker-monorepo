@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MODAL — Export knop op kaart</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: #f0f2f5;
+          color: #111827;
+          padding: 40px;
+          display: flex;
+          gap: 40px;
+          align-items: flex-start;
+        }
+
+        .state-wrap { display: flex; flex-direction: column; gap: 10px; }
+
+        .state-label {
+          font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+          text-transform: uppercase; color: #6b7280;
+          padding-bottom: 6px; border-bottom: 1px solid #f3f4f6;
+        }
+
+        /* ── Card ── */
+        .card {
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 18px 18px 0;
+          width: 340px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          position: relative;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-top {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+        }
+
+        .card-name { font-size: 15px; font-weight: 700; color: #111827; }
+
+        .btn-export {
+          font-family: inherit;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          background: #ffffff;
+          border: 1px solid #d1d5db;
+          border-radius: 5px;
+          padding: 5px 10px;
+          font-size: 11px;
+          font-weight: 600;
+          color: #374151;
+          cursor: pointer;
+          transition: background 0.15s, border-color 0.15s;
+          position: relative;
+        }
+
+        .btn-export:hover { background: #f9fafb; border-color: #9ca3af; }
+
+        .btn-export svg { width: 13px; height: 13px; }
+
+        .card-meta { display: flex; flex-direction: column; gap: 4px; }
+
+        .meta-item {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 12px; color: #6b7280;
+        }
+
+        .meta-item svg { width: 13px; height: 13px; }
+
+        .analysis-indicators { display: flex; gap: 6px; flex-wrap: wrap; padding-top: 2px; }
+
+        .analysis-chip {
+          font-size: 10px; font-weight: 600; padding: 3px 8px;
+          border-radius: 4px; display: flex; align-items: center; gap: 4px;
+        }
+
+        .analysis-chip.done { background: #dcfce7; color: #166534; }
+        .analysis-chip.done::before { content: '✓'; font-size: 9px; color: #15803d; }
+
+        .analysis-chip.pending {
+          background: #f9fafb; color: #9ca3af; border: 1px dashed #d1d5db;
+        }
+
+        .card-footer {
+          display: flex; align-items: center; gap: 8px;
+          border-top: 1px solid #f3f4f6; padding: 12px 0; margin-top: auto;
+        }
+
+        .btn-explore {
+          flex: 1; font-family: inherit;
+          display: flex; align-items: center; justify-content: center; gap: 6px;
+          background: #eff6ff; color: #1d4ed8; border: 1px solid #eff6ff;
+          padding: 9px 12px; border-radius: 6px;
+          font-size: 12px; font-weight: 600; cursor: pointer;
+          transition: background 0.15s;
+        }
+
+        .btn-explore:hover { background: #dbeafe; }
+
+        .btn-explore svg { width: 13px; height: 13px; }
+
+        .btn-delete {
+          font-family: inherit;
+          display: flex; align-items: center; justify-content: center;
+          background: #ffffff; border: 1px solid #e5e7eb; border-radius: 6px;
+          padding: 8px; color: #9ca3af; cursor: pointer;
+          transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+
+        .btn-delete:hover { color: #b91c1c; border-color: #fecaca; background: #fef2f2; }
+
+        .btn-delete svg { width: 14px; height: 14px; }
+
+        /* ── Export popover ── */
+        .export-popover {
+          position: absolute;
+          top: calc(100% + 6px);
+          right: 0;
+          width: 160px;
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+          z-index: 10;
+          overflow: hidden;
+          display: none;
+          padding: 10px 12px;
+        }
+
+        .export-popover.active { display: block; }
+
+        .popover-header {
+          font-size: 10px; font-weight: 700;
+          letter-spacing: 0.06em; text-transform: uppercase;
+          color: #6b7280; margin-bottom: 8px;
+        }
+
+        .popover-badges {
+          display: flex;
+          gap: 6px;
+        }
+
+        .format-badge-btn {
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          font-size: 11px; font-weight: 700;
+          padding: 5px 14px; border-radius: 5px;
+          background: #e5e7eb; border: 1px solid #d1d5db;
+          color: #374151; cursor: pointer;
+          transition: background 0.15s, border-color 0.15s;
+          text-transform: uppercase;
+        }
+
+        .format-badge-btn:hover { background: #3b6ef5; border-color: #3b6ef5; color: #fff; }
+    </style>
+</head>
+<body>
+
+<!-- Card: closed state -->
+<div class="state-wrap">
+    <div class="state-label">Export knop — gesloten</div>
+    <div class="card">
+        <div class="card-top">
+            <div class="card-name">karltest4</div>
+            <button class="btn-export">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                Export
+            </button>
+        </div>
+        <div class="card-meta">
+            <div class="meta-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>2026-08-29</span>
+            </div>
+            <div class="meta-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                <span>62 bestanden</span>
+            </div>
+        </div>
+        <div class="analysis-indicators">
+            <span class="analysis-chip done">Samenvatting</span>
+            <span class="analysis-chip done">NER</span>
+            <span class="analysis-chip done">Topics</span>
+        </div>
+        <div class="card-footer">
+            <button class="btn-explore">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                Verkennen
+            </button>
+            <button class="btn-delete">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Card: popover open -->
+<div class="state-wrap">
+    <div class="state-label">Export knop — formaat kiezen</div>
+    <div class="card">
+        <div class="card-top">
+            <div class="card-name">karltest4</div>
+            <div style="position:relative;">
+                <button class="btn-export" style="background:#f9fafb;border-color:#9ca3af;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                    Export
+                </button>
+                <div class="export-popover active">
+                    <div class="popover-header">Exporteer als</div>
+                    <div class="popover-badges">
+                        <button class="format-badge-btn">CSV</button>
+                        <button class="format-badge-btn">JSON</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-meta">
+            <div class="meta-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>2026-08-29</span>
+            </div>
+            <div class="meta-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                <span>62 bestanden</span>
+            </div>
+        </div>
+        <div class="analysis-indicators">
+            <span class="analysis-chip done">Samenvatting</span>
+            <span class="analysis-chip done">NER</span>
+            <span class="analysis-chip done">Topics</span>
+        </div>
+        <div class="card-footer">
+            <button class="btn-explore">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                Verkennen
+            </button>
+            <button class="btn-delete">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

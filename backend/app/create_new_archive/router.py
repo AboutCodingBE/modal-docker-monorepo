@@ -14,6 +14,7 @@ router = APIRouter()
 class CreateArchiveRequest(BaseModel):
     name: str
     path: str
+    ocr_enabled: bool = False
 
 
 def _to_response(archive: Archive, task_id: uuid.UUID) -> dict:
@@ -37,7 +38,7 @@ def _to_response(archive: Archive, task_id: uuid.UUID) -> dict:
 
 @router.post("/api/archives", status_code=201)
 async def create_archive(body: CreateArchiveRequest, db: AsyncSession = Depends(get_db)):
-    result = await CreateArchive(db).execute(body.name, body.path)
+    result = await CreateArchive(db).execute(body.name, body.path, body.ocr_enabled)
     if isinstance(result, str):
         raise HTTPException(status_code=400, detail=result)
     archive, task_id = result
