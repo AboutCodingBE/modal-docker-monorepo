@@ -1,7 +1,7 @@
 """add embedding analysis type
 
-Revision ID: 0018
-Revises: 0017
+Revision ID: 0026
+Revises: 0025
 Create Date: 2026-08-26
 
 """
@@ -9,8 +9,8 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = "0018"
-down_revision: str | None = "0017"
+revision: str = "0026"
+down_revision: str | None = "0025"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
