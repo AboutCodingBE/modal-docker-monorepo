@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.analysis import task_tracker
 from app.config import settings
+from app.create_tag_index_for_archive.create_tag_index_for_archive import CreateTagIndexForArchive
 from app.shared.archive_analysis_repository import ArchiveAnalysisRepository
 from app.shared.analysis_engine_registry import classify_ner_engine, get_llm_provider
 from app.shared.llm.provider import LlmProviderUnavailableError
@@ -163,6 +164,14 @@ class CreateNerForArchive:
                 f"Files processed: {processed - folders_processed}, "
                 f"folders aggregated: {folders_processed}, "
                 f"failed: {failed_count}"
+            )
+
+            # Nabewerking: tag_index vullen vanuit de NER-rijen die we net hebben
+            # weggeschreven. Draait ná de COMPLETED-status hierboven — fouten hier
+            # worden intern door CreateTagIndexForArchive gelogd, niet doorgegooid,
+            # en wijzigen dus de net voltooide NER-status niet.
+            await CreateTagIndexForArchive(self._session_factory).execute(
+                archive_id, archive_analysis_id, source="ner"
             )
 
         except Exception as e:

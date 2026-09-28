@@ -11,7 +11,13 @@ class FileRepository:
         self._session = session
 
     async def get_files_with_tika_content(self, archive_id: uuid.UUID) -> list[dict]:
-        """Returns non-directory files that have at least 30 words of Tika-extracted text."""
+        """Returns non-directory files that have at least 30 words of Tika-extracted text.
+
+        LET OP: laadt alle matchende bestanden + hun volledige Tika-tekst in één keer
+        in het geheugen (result.all()). Voor zeer grote archieven kan dit fors oplopen —
+        aandachtspunt voor later: een lazy/streaming iterator (bv. via een server-side
+        cursor of paginering) i.p.v. alles in memory te materialiseren.
+        """
         result = await self._session.execute(
             select(File, TikaAnalysis)
             .join(TikaAnalysis, TikaAnalysis.file_id == File.id)
@@ -34,7 +40,11 @@ class FileRepository:
         ]
 
     async def get_all_folders(self, archive_id: uuid.UUID) -> list[dict]:
-        """Returns all directories including root, sorted deepest-first."""
+        """Returns all directories including root, sorted deepest-first.
+
+        LET OP: laadt alle mappen van het archief in één keer in het geheugen
+        (result.scalars().all()) — zie de noot bij get_files_with_tika_content().
+        """
         result = await self._session.execute(
             select(File).where(
                 File.archive_id == archive_id,

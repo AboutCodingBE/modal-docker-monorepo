@@ -29,7 +29,7 @@ class NerForFileRepository:
             select(Ner, ArchiveAnalysis.model)
             .join(ArchiveAnalysis, ArchiveAnalysis.id == Ner.analysis_id)
             .where(Ner.file_id == file_id)
-            .order_by(ArchiveAnalysis.date.desc())
+            .order_by(ArchiveAnalysis.analyzed_at.desc())
             .limit(1)
         )
         return result.first()

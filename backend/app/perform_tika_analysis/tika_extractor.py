@@ -12,7 +12,7 @@ os.environ['TIKA_SERVER_ENDPOINT'] = settings.tika_url
 from tika import parser, language, detector
 
 
-def TIKA_text_extract(file_content: bytes):
+def TIKA_text_extract(file_content: bytes, ocr_enabled: bool = False):
     """
     Extracts text and metadata from file content bytes using Apache Tika.
 
@@ -22,10 +22,11 @@ def TIKA_text_extract(file_content: bytes):
     try:
         import os
 
+        headers = {} if ocr_enabled else {'X-Tika-OCRskipOcr': 'true'}
         parsed = parser.from_buffer(
             file_content,
             serverEndpoint=settings.tika_url,
-            requestOptions={'timeout': 300},
+            requestOptions={'timeout': 300, 'headers': headers},
         )
 
         raw_content = parsed.get('content')

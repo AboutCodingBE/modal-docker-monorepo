@@ -1,3 +1,10 @@
+@if (contentModalFile()) {
+  <app-file-content-modal
+    [file]="contentModalFile()!"
+    (closed)="closeContentModal()"
+  />
+}
+
 @if (files().length > 0 || loading()) {
   <hr class="section-divider" />
 
@@ -36,6 +43,9 @@
               <th>Bestandsnaam</th>
               <th>Categorie</th>
               <th>Grootte</th>
+              <th>Taal</th>
+              <th>Auteur</th>
+              <th>Datum aangemaakt</th>
             </tr>
           </thead>
           <tbody>
@@ -45,9 +55,14 @@
                 [class.selected]="selectedFileId() === file.id"
                 (click)="selectFile(file)"
               >
-                <td class="file-name">{{ file.name }}</td>
+                <td class="file-name">
+                  <button class="file-name-btn" (click)="openContentModal(file, $event)">{{ file.name }}</button>
+                </td>
                 <td class="file-type">{{ file.category ?? '—' }}</td>
                 <td class="file-size">{{ formatSize(file.size_bytes) }}</td>
+                <td class="file-language">{{ file.language ?? '—' }}</td>
+                <td class="file-author">{{ file.author ?? '—' }}</td>
+                <td class="file-date">{{ formatDate(file.content_created_at) }}</td>
               </tr>
             }
           </tbody>

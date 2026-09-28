@@ -44,6 +44,27 @@
           }
         </div>
 
+        <div class="ocr-row">
+          <div class="ocr-text">
+            <div class="ocr-label">OCR Analyse</div>
+            <div class="ocr-desc">Herken tekst in gescande documenten</div>
+          </div>
+          <div class="pill-toggle">
+            <button
+              class="pill-option"
+              [class.active]="!ocrEnabled()"
+              (click)="onToggleOcr(false)"
+              type="button"
+            >Uit</button>
+            <button
+              class="pill-option"
+              [class.active]="ocrEnabled()"
+              (click)="onToggleOcr(true)"
+              type="button"
+            >Aan</button>
+          </div>
+        </div>
+
         @if (submitError()) {
           <p class="submit-error">{{ submitError() }}</p>
         }

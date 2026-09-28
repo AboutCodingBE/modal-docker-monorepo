@@ -1,12 +1,11 @@
 import uuid
-from datetime import date
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.models import ArchiveAnalysis, ArchiveAnalysisStatus
 
-_BLOCKING_STATUSES = (ArchiveAnalysisStatus.STARTED, ArchiveAnalysisStatus.COMPLETED)
+_BLOCKING_STATUSES = (ArchiveAnalysisStatus.STARTED,)
 
 
 class ArchiveAnalysisRepository:
@@ -22,7 +21,7 @@ class ArchiveAnalysisRepository:
         analysis = ArchiveAnalysis(
             archive_id=archive_id,
             type=analysis_type.upper(),
-            date=date.today(),
+
             model=model,
             status="STARTED",
         )
@@ -40,8 +39,22 @@ class ArchiveAnalysisRepository:
             analysis.status = status
             await self._session.flush()
 
+    async def delete_existing(self, archive_id: uuid.UUID, analysis_type: str) -> None:
+        """Deletes all archive_analysis rows for this (archive_id, type),
+        regardless of status. ON DELETE CASCADE on summary/ner/topic_detection's
+        analysis_id automatically wipes their rows too — no separate deletes
+        needed. Caller must ensure no STARTED row exists for this type first
+        (already guaranteed by the blocking_types check in start_analysis).
+        """
+        await self._session.execute(
+            delete(ArchiveAnalysis).where(
+                ArchiveAnalysis.archive_id == archive_id,
+                ArchiveAnalysis.type == analysis_type,
+            )
+        )
+
     async def get_blocking_types(self, archive_id: uuid.UUID) -> set[str]:
-        """Types with a STARTED or COMPLETED ArchiveAnalysis for this archive.
+        """Types with a STARTED ArchiveAnalysis for this archive.
 
         Values are uppercase (matching AnalysisType enum values), for
         case-normalized comparison against incoming request types.

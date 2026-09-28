@@ -32,6 +32,9 @@ venv/
 .venv/
 /frontend/.angular/
 
+# Windows dev scripts
+*.ps1
+
 # Claude Code
 .claude/
 .DS_Store

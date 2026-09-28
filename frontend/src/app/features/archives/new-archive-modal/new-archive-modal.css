@@ -168,6 +168,53 @@
 .btn-secondary:hover:not(:disabled) { background: #f9fafb; }
 .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.ocr-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ocr-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.ocr-desc {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.pill-toggle {
+  display: flex;
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.pill-option {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 5px 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #6b7280;
+  background: transparent;
+  transition: background 0.15s, color 0.15s;
+}
+
+.pill-option.active {
+  background: #fff;
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 .btn-ghost {
   font-family: inherit;
   background: transparent;

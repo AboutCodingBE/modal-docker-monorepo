@@ -20,10 +20,16 @@ from app.get_ner_for_file.router import router as get_ner_for_file_router
 from app.get_ner_for_folder.router import router as get_ner_for_folder_router
 from app.get_topics_for_file.router import router as get_topics_for_file_router
 from app.get_topics_for_folder.router import router as get_topics_for_folder_router
+from app.get_timeline_heatmap.router import router as get_timeline_heatmap_router
 from app.delete_archive.router import router as delete_archive_router
 from app.add_ollama_model.router import router as add_ollama_model_router
 from app.list_analysis_models.router import router as list_analysis_models_router
 from app.processing_settings.router import router as processing_settings_router
+from app.export_settings.router import router as export_settings_router
+from app.export_archive.router import router as export_archive_router
+from app.get_file_content.router import router as get_file_content_router
+from app.list_files_for_archive.router import router as list_files_for_archive_router
+from app.entity_topic_autocomplete.router import router as entity_topic_autocomplete_router
 from app.search_archive.router import router as search_archive_router
 
 import asyncio
@@ -53,9 +59,15 @@ app.include_router(get_ner_for_folder_router)
 app.include_router(get_topics_for_file_router)
 app.include_router(delete_archive_router)
 app.include_router(get_topics_for_folder_router)
+app.include_router(get_timeline_heatmap_router)
 app.include_router(add_ollama_model_router)
 app.include_router(list_analysis_models_router)
 app.include_router(processing_settings_router)
+app.include_router(export_settings_router)
+app.include_router(export_archive_router)
+app.include_router(get_file_content_router)
+app.include_router(list_files_for_archive_router)
+app.include_router(entity_topic_autocomplete_router)
 app.include_router(search_archive_router)
 
 @app.get("/api/health")

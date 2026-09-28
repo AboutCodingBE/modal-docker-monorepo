@@ -1,0 +1,40 @@
+<div class="modal-overlay" (click)="onBackdrop($event)">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="header-left">
+        <div class="file-name">{{ file().name }}</div>
+        @if (fetchError()) {
+          <div class="fetch-warning">
+            <span class="warn-icon"></span>
+            <span>Niet alle tekst kon worden opgehaald</span>
+          </div>
+        }
+      </div>
+      <div class="header-right">
+        <div class="fulltext-toggle-group">
+          <span class="fulltext-toggle-label">Volledige tekst</span>
+          <div class="switch" [class.on]="fullText()" (click)="toggleFullText()">
+            <div class="switch-knob"></div>
+          </div>
+        </div>
+        <button class="modal-close" (click)="closed.emit()">✕</button>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      @if (loading()) {
+        <div class="state-message">Tekst laden...</div>
+      } @else if (content() === null) {
+        <div class="state-message">Geen geëxtraheerde tekst beschikbaar voor dit bestand.</div>
+      } @else {
+        <div class="text-content" [class.fade-cutoff]="isTruncated()">{{ displayedContent() }}</div>
+      }
+    </div>
+
+    <div class="modal-footer">
+      Geëxtraheerde tekst — mogelijk niet 100% nauwkeurig
+    </div>
+
+  </div>
+</div>

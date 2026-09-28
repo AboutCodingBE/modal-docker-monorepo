@@ -1,7 +1,7 @@
 """Pure string-tests voor pad-normalisatie zoals gebruikt in folder_analysis.py.
 
 Geen DB, geen fixtures, geen Docker — volledig zelfstandig uitvoerbaar:
-  pytest backend/tests/unit/test_path_normalization.py -v
+  pytest backend/tests/unit/test_M1_05_path_normalization.py -v
 
 Context: de Windows-agent stuurt absolute_path met backslashes terug.
 De Linux-container verwerkt die in folder_analysis.py via:

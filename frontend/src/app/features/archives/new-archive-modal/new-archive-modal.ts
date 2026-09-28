@@ -18,6 +18,7 @@ export class NewArchiveModal {
 
   archiveName = signal('');
   folderPath = signal('');
+  ocrEnabled = signal(false);
   agentUnavailable = signal(false);
   selectingFolder = signal(false);
   submitting = signal(false);
@@ -70,7 +71,7 @@ export class NewArchiveModal {
     this.submitting.set(true);
     this.submitError.set(null);
 
-    this.archiveService.create(this.archiveName(), this.folderPath()).subscribe({
+    this.archiveService.create(this.archiveName(), this.folderPath(), this.ocrEnabled()).subscribe({
       next: (archive) => {
         this.archiveCreated.emit(archive);
         this.reset();
@@ -82,9 +83,14 @@ export class NewArchiveModal {
     });
   }
 
+  onToggleOcr(value: boolean): void {
+    this.ocrEnabled.set(value);
+  }
+
   private reset(): void {
     this.archiveName.set('');
     this.folderPath.set('');
+    this.ocrEnabled.set(false);
     this.agentUnavailable.set(false);
     this.submitError.set(null);
     this.submitting.set(false);

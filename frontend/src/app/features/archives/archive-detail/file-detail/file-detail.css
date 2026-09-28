@@ -96,6 +96,46 @@
   padding: 16px;
 }
 
+/* ── Overzicht ── */
+.meta-list {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.meta-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.meta-row:last-child {
+  border-bottom: none;
+}
+
+.meta-row dt {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.meta-row dd {
+  margin: 0;
+  font-size: 13px;
+  color: #111827;
+  word-break: break-all;
+  min-width: 0;
+}
+
 /* ── NER ── */
 .ner-loading,
 .ner-empty {

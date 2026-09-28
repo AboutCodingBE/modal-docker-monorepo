@@ -214,5 +214,64 @@
       </div>
     </div>
 
+    <!-- ── Section 4: Export ── -->
+    <div class="section">
+      <div class="section-title">Export</div>
+      <div class="section-desc">
+        Stel de standaard exportlocatie in voor het exporteren van analyseresultaten.
+      </div>
+
+      @if (exportLoadError()) {
+        <div class="error-box">Kon de exportinstellingen niet laden.</div>
+      } @else {
+        <div class="form-group">
+          <label class="form-label">Doelmap</label>
+          <div class="form-row">
+            <input
+              class="form-input form-input--readonly"
+              type="text"
+              [value]="exportPath()"
+              readonly
+            />
+            <button class="btn-primary" (click)="pickExportFolder()">Map kiezen</button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">Tekens per bestand in export</div>
+            <div class="setting-desc">
+              Het maximaal aantal tekens van de geëxtraheerde tekst dat wordt opgenomen in een export.
+            </div>
+          </div>
+          <div class="setting-input">
+            <input
+              class="form-input-number"
+              type="number"
+              [value]="exportContentCharLimit()"
+              (input)="exportContentCharLimit.set(+$any($event.target).value)"
+              min="1"
+              step="100"
+            />
+          </div>
+        </div>
+      }
+
+      <div class="section-footer">
+        <button
+          class="btn-save"
+          (click)="saveExportSettings()"
+          [disabled]="exportSaveState() === 'saving'"
+          [class.btn-save--saved]="exportSaveState() === 'saved'"
+          [class.btn-save--error]="exportSaveState() === 'error'"
+        >
+          @if (exportSaveState() === 'saving') { Opslaan... }
+          @else if (exportSaveState() === 'saved') { ✓ Opgeslagen }
+          @else if (exportSaveState() === 'error') { Fout bij opslaan }
+          @else { Opslaan }
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>

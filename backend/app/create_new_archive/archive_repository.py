@@ -9,8 +9,8 @@ class ArchiveRepository:
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def persist(self, name: str, root_path: str) -> Archive:
-        archive = Archive(name=name, root_path=root_path)
+    async def persist(self, name: str, root_path: str, ocr_enabled: bool = False) -> Archive:
+        archive = Archive(name=name, root_path=root_path, ocr_enabled=ocr_enabled)
         self._session.add(archive)
         await self._session.flush()
         await self._session.refresh(archive)
