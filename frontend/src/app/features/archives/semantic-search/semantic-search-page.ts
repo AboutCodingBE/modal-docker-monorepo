@@ -2,16 +2,18 @@ import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ArchiveService } from '../../../services/archive.service';
-import { SemanticSearchService, SearchResultGroup, SearchChunk } from '../../../services/semantic-search.service';
+import { ArchiveService, FolderFile } from '../../../services/archive.service';
+import { SemanticSearchService, SearchResultGroup } from '../../../services/semantic-search.service';
 import { SseProgressEvent } from '../../../shared/progress-bar/progress-bar';
+import { FileDetail } from '../archive-detail/file-detail/file-detail';
+import { FileContentModal } from '../archive-detail/file-content-modal/file-content-modal';
 
 type DownloadState = 'idle' | 'downloading' | 'done' | 'error';
 type AnalysisState = 'idle' | 'running' | 'done' | 'error';
 
 @Component({
   selector: 'app-semantic-search-page',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FileDetail, FileContentModal],
   templateUrl: './semantic-search-page.html',
   styleUrl: './semantic-search-page.css',
 })
@@ -67,7 +69,8 @@ export class SemanticSearchPage implements OnInit, OnDestroy {
   searchError = signal(false);
   results = signal<SearchResultGroup[] | null>(null);
   selectedGroup = signal<SearchResultGroup | null>(null);
-  modalChunk = signal<SearchChunk | null>(null);
+  selectedFile = signal<FolderFile | null>(null);
+  modalFile = signal<FolderFile | null>(null);
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('archiveId') ?? '';
@@ -198,15 +201,37 @@ export class SemanticSearchPage implements OnInit, OnDestroy {
   }
 
   selectGroup(group: SearchResultGroup): void {
-    this.selectedGroup.set(group === this.selectedGroup() ? null : group);
+    const isSame = this.selectedGroup()?.file_id === group.file_id;
+    if (isSame) {
+      this.selectedGroup.set(null);
+      this.selectedFile.set(null);
+    } else {
+      this.selectedGroup.set(group);
+      this.selectedFile.set(this._toFolderFile(group));
+    }
   }
 
-  openModal(chunk: SearchChunk): void {
-    this.modalChunk.set(chunk);
+  openModal(group: SearchResultGroup): void {
+    this.modalFile.set(this._toFolderFile(group));
   }
 
   closeModal(): void {
-    this.modalChunk.set(null);
+    this.modalFile.set(null);
+  }
+
+  private _toFolderFile(group: SearchResultGroup): FolderFile {
+    return {
+      id: group.file_id,
+      name: group.name,
+      relative_path: group.relative_path,
+      extension: null,
+      size_bytes: null,
+      mime_type: null,
+      category: null,
+      language: null,
+      author: null,
+      content_created_at: null,
+    };
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

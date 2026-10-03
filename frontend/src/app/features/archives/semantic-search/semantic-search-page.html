@@ -137,7 +137,7 @@
 
               <div class="snippet-list">
                 @for (chunk of group.chunks; track chunk.id) {
-                  <div class="snippet" (click)="openModal(chunk); $event.stopPropagation()">
+                  <div class="snippet" (click)="openModal(group); $event.stopPropagation()">
                     {{ chunk.chunk_text | slice:0:200 }}@if (chunk.chunk_text.length > 200) {<span class="snippet-ellipsis">…</span>}
                   </div>
                 }
@@ -149,18 +149,12 @@
 
       <!-- Side panel -->
       <div class="side-panel">
-        @if (selectedGroup(); as group) {
-          <div class="side-header">
-            <span class="side-filename">{{ group.name }}</span>
-          </div>
-          <div class="side-path">{{ group.relative_path }}</div>
-          <div class="side-section-label">Overeenkomende passages</div>
-          @for (chunk of group.chunks; track chunk.id) {
-            <div class="side-chunk" (click)="openModal(chunk)">
-              <div class="side-chunk-relevance">{{ chunk.relevance }}%</div>
-              <div class="side-chunk-text">{{ chunk.chunk_text | slice:0:120 }}@if (chunk.chunk_text.length > 120) {<span>…</span>}</div>
-            </div>
-          }
+        @if (selectedFile(); as file) {
+          <app-file-detail
+            [archiveId]="archiveId()"
+            [file]="file"
+            (back)="selectedGroup.set(null); selectedFile.set(null)"
+          />
         } @else {
           <div class="side-empty">Klik op een resultaat voor details</div>
         }
@@ -172,15 +166,6 @@
 </div>
 
 <!-- Text modal -->
-@if (modalChunk(); as chunk) {
-  <div class="overlay-backdrop" (click)="closeModal()">
-    <div class="text-modal" (click)="$event.stopPropagation()">
-      <div class="text-modal-header">
-        <span class="text-modal-title">Passage {{ chunk.chunk_index + 1 }}</span>
-        <button class="text-modal-close" (click)="closeModal()">✕</button>
-      </div>
-      <div class="text-modal-body">{{ chunk.chunk_text }}</div>
-      <div class="text-modal-footer">{{ chunk.relevance }}% overeenkomst</div>
-    </div>
-  </div>
+@if (modalFile(); as file) {
+  <app-file-content-modal [file]="file" (closed)="closeModal()" />
 }
