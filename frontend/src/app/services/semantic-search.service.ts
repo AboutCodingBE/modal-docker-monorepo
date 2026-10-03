@@ -38,7 +38,7 @@ export class SemanticSearchService {
   constructor(private http: HttpClient) {}
 
   downloadEmbeddingModel(): Observable<{ download_id: string }> {
-    return this.http.post<{ download_id: string }>('/api/models/ollama', { model: EMBEDDING_MODEL });
+    return this.http.post<{ download_id: string }>('/api/settings/embedding/download-model', {});
   }
 
   startEmbeddingAnalysis(archiveId: string): Observable<{ task_ids: string[] }> {
@@ -46,6 +46,10 @@ export class SemanticSearchService {
       archiveId,
       analysis: [{ type: 'EMBEDDING', model: EMBEDDING_MODEL }],
     });
+  }
+
+  reindexEmbeddings(archiveId: string): Observable<{ task_id: string }> {
+    return this.http.post<{ task_id: string }>(`/api/archives/${archiveId}/embeddings/reindex`, {});
   }
 
   search(archiveId: string, query: string, topN?: number): Observable<SearchChunkRaw[]> {

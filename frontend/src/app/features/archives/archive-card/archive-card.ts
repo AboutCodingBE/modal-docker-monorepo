@@ -11,6 +11,7 @@ const TYPE_LABELS: Record<string, string> = {
   summary: 'Samenvatting',
   ner: 'Entiteitsherkenning',
   topic_detection: 'Onderwerpdetectie',
+  embedding: 'Semantisch zoeken',
 };
 
 @Component({

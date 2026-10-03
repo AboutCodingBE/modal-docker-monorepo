@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ArchiveService, FolderFile } from '../../../services/archive.service';
+import { ConfigurationService } from '../../../services/configuration.service';
 import { SemanticSearchService, SearchResultGroup } from '../../../services/semantic-search.service';
 import { SseProgressEvent } from '../../../shared/progress-bar/progress-bar';
 import { FileDetail } from '../archive-detail/file-detail/file-detail';
@@ -21,6 +22,7 @@ export class SemanticSearchPage implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private archiveService = inject(ArchiveService);
+  private configService = inject(ConfigurationService);
   private searchService = inject(SemanticSearchService);
 
   archiveId = signal('');
@@ -63,6 +65,18 @@ export class SemanticSearchPage implements OnInit, OnDestroy {
     return file ? `${p.processed}/${p.total_files} — ${file}` : `${p.processed}/${p.total_files}`;
   });
 
+  // Reindex
+  reindexState = signal<'idle' | 'running' | 'done' | 'error'>('idle');
+  reindexProgress = signal<SseProgressEvent | null>(null);
+  private reindexSource: EventSource | null = null;
+
+  reindexPercent = computed(() => this.reindexProgress()?.percentage ?? 0);
+  reindexProgressText = computed(() => {
+    const p = this.reindexProgress();
+    if (!p) return '';
+    return `${p.processed}/${p.total_files}`;
+  });
+
   // Search
   query = signal('');
   searching = signal(false);
@@ -81,11 +95,17 @@ export class SemanticSearchPage implements OnInit, OnDestroy {
         this.embeddingReady.set(stats.completed_analysis_types.includes('EMBEDDING'));
       },
     });
+    this.configService.getEmbeddingSettings().subscribe({
+      next: (s) => {
+        if (s.embedding_model_downloaded) this.downloadState.set('done');
+      },
+    });
   }
 
   ngOnDestroy(): void {
     this.downloadSource?.close();
     this.analysisSource?.close();
+    this.reindexSource?.close();
   }
 
   goBack(): void {
@@ -102,7 +122,7 @@ export class SemanticSearchPage implements OnInit, OnDestroy {
 
     this.searchService.downloadEmbeddingModel().subscribe({
       next: ({ download_id }) => {
-        const source = new EventSource(`/api/models/ollama/${download_id}/progress`);
+        const source = new EventSource(`/api/settings/embedding/download-model/${download_id}/progress`);
         this.downloadSource = source;
 
         source.onmessage = (event) => {
@@ -172,6 +192,41 @@ export class SemanticSearchPage implements OnInit, OnDestroy {
         };
       },
       error: () => this.analysisState.set('error'),
+    });
+  }
+
+  // ── Reindex ───────────────────────────────────────────────────────────────
+
+  reindex(): void {
+    if (this.reindexState() === 'running') return;
+    this.reindexState.set('running');
+    this.reindexProgress.set(null);
+    this.reindexSource?.close();
+
+    this.searchService.reindexEmbeddings(this.archiveId()).subscribe({
+      next: ({ task_id }) => {
+        const source = new EventSource(`/api/analysis/tasks/${task_id}/progress`);
+        this.reindexSource = source;
+
+        source.onmessage = (event) => {
+          const data = JSON.parse(event.data) as SseProgressEvent;
+          this.reindexProgress.set(data);
+          if (data.status === 'completed') {
+            this.reindexState.set('done');
+            this.results.set(null);
+            source.close();
+          } else if (data.status === 'failed') {
+            this.reindexState.set('error');
+            source.close();
+          }
+        };
+
+        source.onerror = () => {
+          this.reindexState.set('error');
+          source.close();
+        };
+      },
+      error: () => this.reindexState.set('error'),
     });
   }
 

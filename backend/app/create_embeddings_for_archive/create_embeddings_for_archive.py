@@ -11,7 +11,7 @@ from app.shared.archive_analysis_repository import ArchiveAnalysisRepository
 from app.shared.embedding_settings_repository import EmbeddingSettingsRepository
 from app.shared.file_repository import FileRepository
 from app.shared.logging_config import log_context
-from app.shared.ollama_client import OllamaUnavailableError, embed
+from app.shared.ollama_client import OllamaUnavailableError, embed_batch
 from app.shared.processing_settings_repository import ProcessingSettingsRepository
 
 _logger = logging.getLogger("app")
@@ -105,10 +105,11 @@ class CreateEmbeddingsForArchive:
                     if max_chunks is not None:
                         chunks = chunks[:max_chunks]
 
-                    embedded_chunks: list[tuple[int, str, list[float]]] = []
-                    for chunk_index, chunk in enumerate(chunks):
-                        embedding = await embed(settings.embedding_model, chunk)
-                        embedded_chunks.append((chunk_index, chunk, embedding))
+                    embeddings = await embed_batch(settings.embedding_model, chunks)
+                    embedded_chunks = [
+                        (chunk_index, chunk, embedding)
+                        for chunk_index, (chunk, embedding) in enumerate(zip(chunks, embeddings))
+                    ]
 
                     async with self._session_factory() as session:
                         await EmbeddingRepository(session).persist(file_id, embedded_chunks)

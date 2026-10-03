@@ -95,6 +95,31 @@
 
       <!-- Results column -->
       <div class="results-col">
+
+        <!-- Reindex bar -->
+        @if (reindexState() === 'running') {
+          <div class="reindex-bar">
+            <div class="reindex-bar__label">Opnieuw indexeren... {{ reindexProgressText() }}</div>
+            <div class="reindex-bar__track">
+              <div class="reindex-bar__fill" [style.width.%]="reindexPercent()"></div>
+            </div>
+          </div>
+        } @else if (reindexState() === 'done') {
+          <div class="reindex-bar reindex-bar--done">
+            ✓ Herindexering voltooid.
+            <button class="btn-link" (click)="reindexState.set('idle')">Sluiten</button>
+          </div>
+        } @else if (reindexState() === 'error') {
+          <div class="reindex-bar reindex-bar--error">
+            ✕ Herindexering mislukt.
+            <button class="btn-link btn-link--error" (click)="reindexState.set('idle')">Sluiten</button>
+          </div>
+        } @else {
+          <div class="reindex-hint">
+            <button class="btn-reindex" (click)="reindex()">Opnieuw indexeren</button>
+          </div>
+        }
+
         <div class="search-bar" [class.search-bar--loading]="searching()">
           <span class="search-icon">🔍</span>
           <input

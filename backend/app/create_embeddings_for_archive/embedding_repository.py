@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.models import Embedding, File
@@ -9,6 +9,16 @@ from app.shared.models import Embedding, File
 class EmbeddingRepository:
     def __init__(self, session: AsyncSession):
         self._session = session
+
+    async def delete_for_archive(self, archive_id: uuid.UUID) -> None:
+        """Verwijdert alle embeddings voor een archief (via file_id join)."""
+        await self._session.execute(
+            delete(Embedding).where(
+                Embedding.file_id.in_(
+                    select(File.id).where(File.archive_id == archive_id)
+                )
+            )
+        )
 
     async def exists(self, file_id: uuid.UUID) -> bool:
         """Returns True if this file already has embeddings (resumability check).

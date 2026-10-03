@@ -25,6 +25,11 @@ export const ANALYSIS_TYPE_META: Record<string, AnalysisTypeMeta> = {
     description: 'Identificeert de belangrijkste onderwerpen per bestand.',
     icon: '🏷',
   },
+  EMBEDDING: {
+    label: 'Semantisch zoeken',
+    description: 'Genereert embeddings voor semantisch zoeken op betekenis.',
+    icon: '🔍',
+  },
 };
 
 export interface AnalysisSplit {
