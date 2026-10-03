@@ -21,16 +21,7 @@ def upgrade() -> None:
     with op.get_context().autocommit_block():
         op.execute("ALTER TYPE analysis_type ADD VALUE IF NOT EXISTS 'EMBEDDING'")
 
-    # Seed: EMBEDDING → qwen3-embedding:0.6b (zie settings.embedding_model in app/config.py —
-    # hardcoded i.p.v. geïmporteerd, want een migratie moet reproduceerbaar blijven ongeacht
-    # latere settings-wijzigingen).
-    op.execute(
-        "INSERT INTO analysis_configuration (id, type, model) "
-        "VALUES (gen_random_uuid(), 'EMBEDDING', 'qwen3-embedding:0.6b')"
-    )
-
 
 def downgrade() -> None:
-    # Postgres ondersteunt geen ALTER TYPE ... DROP VALUE — de enum-waarde zelf blijft
-    # dus staan, net als bij TOPIC_DETECTION. Enkel de geseede config-rij wordt verwijderd.
-    op.execute("DELETE FROM analysis_configuration WHERE type = 'EMBEDDING'")
+    # Postgres ondersteunt geen ALTER TYPE ... DROP VALUE — de enum-waarde blijft staan.
+    pass
