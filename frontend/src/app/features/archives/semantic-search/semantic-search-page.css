@@ -192,7 +192,7 @@
 .results-col {
   flex: 1;
   min-width: 0;
-  max-width: 620px;
+  max-width: 65vw;
 }
 
 /* ── Search bar ── */
