@@ -325,6 +325,9 @@
 .side-panel {
   width: 350px;
   flex-shrink: 0;
+  position: sticky;
+  top: 28px;
+  align-self: flex-start;
 }
 
 .side-empty {
