@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.shared.models import Embedding, File
 
 
@@ -68,6 +69,7 @@ class EmbeddingRepository:
             )
             .join(File, File.id == Embedding.file_id)
             .where(File.archive_id == archive_id)
+            .where(distance <= settings.search_max_distance)
             .order_by(distance)
             .limit(top_n)
         )

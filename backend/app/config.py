@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     ner_folder_top_n: int = 25
     topic_folder_top_n: int = 25
     search_top_n: int = 25
+    # Cosine distance drempel: resultaten met distance > deze waarde worden niet teruggegeven.
+    # distance 0.0 = identiek, 1.0 = ongerelateerd. 0.5 = 50% relevantie als ondergrens.
+    search_max_distance: float = 0.7
 
 
     embedding_model: str = "qwen3-embedding:0.6b"
