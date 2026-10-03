@@ -4,6 +4,7 @@ import {
   DownloadProgressEvent,
   ModelEntry,
 } from '../../../services/configuration.service';
+import { EmbeddingSettings } from '../../../services/configuration.service';
 import { ExportSettingsService } from '../../../services/export-settings.service';
 import { AgentService } from '../../../services/agent.service';
 
@@ -50,6 +51,15 @@ export class ConfigurationPage implements OnInit, OnDestroy {
   processingLoadError = signal(false);
   processingSaveState = signal<SaveState>('idle');
 
+  // ── Embedding settings section ───────────────────────────────────────────
+  embeddingChunkSize = signal(512);
+  embeddingMaxChunksNoLimit = signal(true);
+  embeddingMaxChunks = signal<number | null>(null);
+  embeddingMaxDistance = signal(0.7);
+  embeddingTopN = signal(25);
+  embeddingLoadError = signal(false);
+  embeddingSaveState = signal<SaveState>('idle');
+
   // ── Export settings section ──────────────────────────────────────────────
   exportPath = signal('');
   exportContentCharLimit = signal(2000);
@@ -65,6 +75,7 @@ export class ConfigurationPage implements OnInit, OnDestroy {
   ngOnInit(): void {
     this._loadModels();
     this._loadProcessingSettings();
+    this._loadEmbeddingSettings();
     this._loadExportSettings();
   }
 
@@ -202,6 +213,54 @@ export class ConfigurationPage implements OnInit, OnDestroy {
       },
       error: () => this.processingLoadError.set(true),
     });
+  }
+
+  // ── Embedding settings ───────────────────────────────────────────────────
+
+  private _loadEmbeddingSettings(): void {
+    this.configService.getEmbeddingSettings().subscribe({
+      next: (s) => {
+        this.embeddingChunkSize.set(s.embedding_chunk_size);
+        this.embeddingMaxChunks.set(s.embedding_max_chunks_per_file);
+        this.embeddingMaxChunksNoLimit.set(s.embedding_max_chunks_per_file === null);
+        this.embeddingMaxDistance.set(s.search_max_distance);
+        this.embeddingTopN.set(s.search_top_n);
+        this.embeddingLoadError.set(false);
+      },
+      error: () => this.embeddingLoadError.set(true),
+    });
+  }
+
+  onNoLimitChange(noLimit: boolean): void {
+    this.embeddingMaxChunksNoLimit.set(noLimit);
+    if (noLimit) this.embeddingMaxChunks.set(null);
+  }
+
+  saveEmbeddingSettings(): void {
+    if (this.embeddingSaveState() === 'saving') return;
+    this.embeddingSaveState.set('saving');
+    this.configService
+      .updateEmbeddingSettings({
+        embedding_chunk_size: this.embeddingChunkSize(),
+        embedding_max_chunks_per_file: this.embeddingMaxChunksNoLimit() ? null : this.embeddingMaxChunks(),
+        search_max_distance: this.embeddingMaxDistance(),
+        search_top_n: this.embeddingTopN(),
+      })
+      .subscribe({
+        next: (s) => {
+          this.embeddingChunkSize.set(s.embedding_chunk_size);
+          this.embeddingMaxChunks.set(s.embedding_max_chunks_per_file);
+          this.embeddingMaxChunksNoLimit.set(s.embedding_max_chunks_per_file === null);
+          this.embeddingMaxDistance.set(s.search_max_distance);
+          this.embeddingTopN.set(s.search_top_n);
+          this.embeddingSaveState.set('saved');
+          setTimeout(() => this.embeddingSaveState.set('idle'), 2000);
+        },
+        error: () => {
+          this.embeddingSaveState.set('error');
+          setTimeout(() => this.embeddingSaveState.set('idle'), 3000);
+        },
+      });
   }
 
   // ── Export settings ──────────────────────────────────────────────────────

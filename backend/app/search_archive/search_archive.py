@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.create_embeddings_for_archive.embedding_repository import EmbeddingRepository
+from app.shared.embedding_settings_repository import EmbeddingSettingsRepository
 from app.shared.models import Archive
 from app.shared.ollama_client import embed
 
@@ -23,7 +24,7 @@ class SearchArchive:
         self,
         archive_id: uuid.UUID,
         query: str,
-        top_n: int = settings.search_top_n,
+        top_n: int | None = None,
     ) -> list[dict] | None:
         """Geeft None terug als archive_id niet bestaat (router zet dit om naar 404) —
         een bestaand archief zonder resultaten geeft wel gewoon [] terug."""
@@ -31,5 +32,11 @@ class SearchArchive:
         if result.scalar_one_or_none() is None:
             return None
 
+        embedding_settings = await EmbeddingSettingsRepository(self._session).get()
+        resolved_top_n = top_n if top_n is not None else embedding_settings.search_top_n
+        max_distance = embedding_settings.search_max_distance
+
         query_vector = await embed(settings.embedding_model, query)
-        return await EmbeddingRepository(self._session).search(query_vector, top_n, archive_id)
+        return await EmbeddingRepository(self._session).search(
+            query_vector, resolved_top_n, archive_id, max_distance
+        )

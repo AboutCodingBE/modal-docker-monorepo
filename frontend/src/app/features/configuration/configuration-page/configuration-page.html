@@ -214,7 +214,111 @@
       </div>
     </div>
 
-    <!-- ── Section 4: Export ── -->
+    <!-- ── Section 4: Semantisch zoeken ── -->
+    <div class="section">
+      <div class="section-title">Semantisch zoeken</div>
+      <div class="section-desc">
+        Stel de parameters in voor het genereren van embeddings en voor zoekopdrachten op betekenis.
+      </div>
+
+      @if (embeddingLoadError()) {
+        <div class="error-box">Kon de embedding-instellingen niet laden.</div>
+      } @else {
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">Fragmentgrootte</div>
+            <div class="setting-desc">Aantal tekens per fragment.</div>
+          </div>
+          <div class="setting-input">
+            <input
+              class="form-input-number"
+              type="number"
+              [value]="embeddingChunkSize()"
+              (input)="embeddingChunkSize.set(+$any($event.target).value)"
+              min="1"
+              step="64"
+            />
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">Max. fragmenten per bestand</div>
+            <div class="setting-desc">Begrenst het aantal fragmenten per bestand bij het maken van embeddings.</div>
+          </div>
+          <div class="setting-input setting-input--stacked">
+            <input
+              class="form-input-number"
+              type="number"
+              [value]="embeddingMaxChunks() ?? ''"
+              (input)="embeddingMaxChunks.set(+$any($event.target).value || null)"
+              [disabled]="embeddingMaxChunksNoLimit()"
+              min="1"
+              placeholder="—"
+            />
+            <label class="nolimit-toggle">
+              <input
+                type="checkbox"
+                [checked]="embeddingMaxChunksNoLimit()"
+                (change)="onNoLimitChange($any($event.target).checked)"
+              />
+              Geen limiet
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">Maximale afstand</div>
+            <div class="setting-desc">Resultaten met een grotere afstand dan deze waarde worden niet getoond.</div>
+          </div>
+          <div class="setting-input">
+            <input
+              class="form-input-number"
+              type="number"
+              [value]="embeddingMaxDistance()"
+              (input)="embeddingMaxDistance.set(+$any($event.target).value)"
+              min="0"
+              max="2"
+              step="0.05"
+            />
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">Aantal resultaten</div>
+            <div class="setting-desc">Het maximale aantal zoekresultaten dat wordt teruggegeven.</div>
+          </div>
+          <div class="setting-input">
+            <input
+              class="form-input-number"
+              type="number"
+              [value]="embeddingTopN()"
+              (input)="embeddingTopN.set(+$any($event.target).value)"
+              min="1"
+            />
+          </div>
+        </div>
+      }
+
+      <div class="section-footer">
+        <button
+          class="btn-save"
+          (click)="saveEmbeddingSettings()"
+          [disabled]="embeddingSaveState() === 'saving'"
+          [class.btn-save--saved]="embeddingSaveState() === 'saved'"
+          [class.btn-save--error]="embeddingSaveState() === 'error'"
+        >
+          @if (embeddingSaveState() === 'saving') { Opslaan... }
+          @else if (embeddingSaveState() === 'saved') { ✓ Opgeslagen }
+          @else if (embeddingSaveState() === 'error') { Fout bij opslaan }
+          @else { Opslaan }
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Section 5: Export ── -->
     <div class="section">
       <div class="section-title">Export</div>
       <div class="section-desc">

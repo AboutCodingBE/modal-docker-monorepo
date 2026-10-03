@@ -2,8 +2,7 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum, text, UniqueConstraint
-from sqlalchemy import Boolean, BigInteger, Date, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum, UniqueConstraint, text
+from sqlalchemy import Boolean, BigInteger, Date, Float, ForeignKey, Integer, String, Text, DateTime, CheckConstraint, Enum, text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -268,3 +267,14 @@ class Embedding(Base):
     # in app/config.py en de TODO in migratie 0017_add_embeddings_table.py.
     embedding: Mapped[list[float]] = mapped_column(Vector(settings.embedding_dimension), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class EmbeddingSettings(Base):
+    __tablename__ = "embedding_settings"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    embedding_chunk_size: Mapped[int] = mapped_column(Integer, nullable=False, default=512)
+    embedding_max_chunks_per_file: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    search_max_distance: Mapped[float] = mapped_column(Float, nullable=False, default=0.7)
+    search_top_n: Mapped[int] = mapped_column(Integer, nullable=False, default=25)
+    embedding_model_downloaded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

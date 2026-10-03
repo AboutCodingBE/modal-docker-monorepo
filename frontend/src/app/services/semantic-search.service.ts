@@ -48,10 +48,10 @@ export class SemanticSearchService {
     });
   }
 
-  search(archiveId: string, query: string, topN = 25): Observable<SearchChunkRaw[]> {
-    return this.http.get<SearchChunkRaw[]>(`/api/archives/${archiveId}/search`, {
-      params: { q: query, top_n: topN },
-    });
+  search(archiveId: string, query: string, topN?: number): Observable<SearchChunkRaw[]> {
+    const params: Record<string, string | number> = { q: query };
+    if (topN !== undefined) params['top_n'] = topN;
+    return this.http.get<SearchChunkRaw[]>(`/api/archives/${archiveId}/search`, { params });
   }
 
   groupResults(raw: SearchChunkRaw[]): SearchResultGroup[] {
