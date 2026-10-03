@@ -72,6 +72,10 @@ export class ArchiveDetail implements OnInit {
     this.router.navigate(['/archives']);
   }
 
+  openSemanticSearch(): void {
+    this.router.navigate(['/archives', this.archiveId(), 'search']);
+  }
+
   openDashboard(): void {
     this.dashboardVisible.set(true);
   }

@@ -278,11 +278,29 @@
   box-shadow: 0 2px 8px rgba(59, 110, 245, 0.1);
 }
 
-/* ── Detail panel actions ── */
-.detail-panel-actions {
+/* ── Panel actions (view toggle + buttons in browser header) ── */
+.panel-actions {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-semantic-search {
+  font-family: inherit;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-semantic-search:hover {
+  border-color: #9ca3af;
+  color: #374151;
 }
 
 .btn-dashboard {
@@ -290,9 +308,9 @@
   background: #2563eb;
   color: #fff;
   border: 1px solid #2563eb;
-  padding: 8px 12px;
+  padding: 5px 12px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
