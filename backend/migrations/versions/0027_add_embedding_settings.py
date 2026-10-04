@@ -28,7 +28,7 @@ def upgrade() -> None:
     op.execute(
         "INSERT INTO embedding_settings "
         "(id, embedding_chunk_size, embedding_max_chunks_per_file, search_max_distance, search_top_n, embedding_model_downloaded) "
-        "VALUES (gen_random_uuid(), 512, NULL, 0.7, 25, false)"
+        "VALUES (gen_random_uuid(), 512, 1, 0.7, 25, false)"
     )
 
 
