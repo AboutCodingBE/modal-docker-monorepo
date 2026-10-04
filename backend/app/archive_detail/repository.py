@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.models import Archive, ArchiveAnalysis, File, GenericType, Summary, TikaAnalysis
+from app.shared.models import Archive, ArchiveAnalysis, ArchiveAnalysisStatus, File, GenericType, Summary, TikaAnalysis
 
 
 class ArchiveDetailRepository:
@@ -41,6 +41,16 @@ class ArchiveDetailRepository:
             .order_by(func.count().desc())
         )
 
+        completed_result = await self._session.execute(
+            select(ArchiveAnalysis.type)
+            .where(
+                ArchiveAnalysis.archive_id == archive_id,
+                ArchiveAnalysis.status == ArchiveAnalysisStatus.COMPLETED,
+            )
+            .distinct()
+        )
+        completed_types = sorted([row.type.value for row in completed_result.all()])
+
         return {
             "name": archive.name,
             "root_path": archive.root_path,
@@ -51,6 +61,7 @@ class ArchiveDetailRepository:
                 {"mime_type": r.mime_type, "count": r.count}
                 for r in mime_result.all()
             ],
+            "completed_analysis_types": completed_types,
         }
 
     async def get_file_analysis(self, archive_id: uuid.UUID, file_id: uuid.UUID) -> dict | None:

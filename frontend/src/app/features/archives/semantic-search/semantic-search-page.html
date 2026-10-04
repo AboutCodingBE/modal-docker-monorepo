@@ -1,0 +1,196 @@
+<div class="ss-wrapper">
+
+  <!-- Top bar -->
+  <div class="top-bar">
+    <button class="btn-back" (click)="goBack()">← Terug</button>
+    <div class="page-title">
+      Semantisch zoeken
+      @if (archiveName()) {
+        <span class="archive-name">— {{ archiveName() }}</span>
+      }
+    </div>
+  </div>
+
+  <!-- ── SETUP STATE ── -->
+  @if (!embeddingReady()) {
+    <div class="setup-container">
+      <p class="setup-intro">
+        Semantisch zoeken gebruikt AI-embeddings om documenten te vinden op basis van betekenis, niet alleen op trefwoorden.
+        Volg de stappen hieronder om het in te stellen voor dit archief.
+      </p>
+
+      <div class="phase-list">
+
+        <!-- Step 1: Download model -->
+        <div class="phase-row">
+          <div class="status-icon">
+            @if (downloadState() === 'done') {
+              <div class="status-success"><span class="status-check">✓</span></div>
+            } @else if (downloadState() === 'downloading') {
+              <div class="status-running"><div class="status-spinner"></div></div>
+            } @else if (downloadState() === 'error') {
+              <div class="status-error"><span class="status-x">✕</span></div>
+            } @else {
+              <div class="status-pending"><div class="status-dot"></div></div>
+            }
+          </div>
+          <div class="phase-text">
+            <div class="phase-label" [class.dim]="downloadState() === 'idle'">Embedding model downloaden</div>
+            <div class="phase-sublabel">qwen3-embedding:0.6b · ~500 MB · eenmalig</div>
+            @if (downloadState() === 'error' && downloadError()) {
+              <div class="phase-error">{{ downloadError() }}</div>
+            }
+          </div>
+          @if (downloadState() === 'idle' || downloadState() === 'error') {
+            <button class="phase-action" (click)="startDownload()">Download</button>
+          }
+        </div>
+
+        @if (downloadState() === 'downloading') {
+          <div class="progress-detail">
+            <div class="progress-bar"><div class="progress-fill" [style.width.%]="downloadPercent()"></div></div>
+            <div class="progress-text">{{ downloadProgressText() }}</div>
+          </div>
+        }
+
+        <!-- Step 2: Run embedding analysis -->
+        <div class="phase-row" [class.phase-row--disabled]="!step1Done()">
+          <div class="status-icon">
+            @if (analysisState() === 'done') {
+              <div class="status-success"><span class="status-check">✓</span></div>
+            } @else if (analysisState() === 'running') {
+              <div class="status-running"><div class="status-spinner"></div></div>
+            } @else if (analysisState() === 'error') {
+              <div class="status-error"><span class="status-x">✕</span></div>
+            } @else {
+              <div class="status-pending"><div class="status-dot"></div></div>
+            }
+          </div>
+          <div class="phase-text">
+            <div class="phase-label" [class.dim]="!step1Done()">Archief indexeren</div>
+            <div class="phase-sublabel">Alle bestanden worden omgezet naar embeddings</div>
+            @if (analysisState() === 'running' && analysisProgress(); as p) {
+              <div class="phase-sublabel">{{ analysisProgressText() }}</div>
+            }
+          </div>
+          @if ((analysisState() === 'idle' || analysisState() === 'error') && step1Done()) {
+            <button class="phase-action" (click)="startAnalysis()">Start</button>
+          }
+        </div>
+
+        @if (analysisState() === 'running') {
+          <div class="progress-detail">
+            <div class="progress-bar"><div class="progress-fill" [style.width.%]="analysisPercent()"></div></div>
+            <div class="progress-text">{{ analysisPercent() }}%</div>
+          </div>
+        }
+
+      </div>
+    </div>
+  }
+
+  <!-- ── SEARCH STATE ── -->
+  @if (embeddingReady()) {
+    <div class="search-layout">
+
+      <!-- Results column -->
+      <div class="results-col">
+
+        <!-- Reindex bar -->
+        @if (reindexState() === 'running') {
+          <div class="reindex-bar">
+            <div class="reindex-bar__label">Opnieuw indexeren... {{ reindexProgressText() }}</div>
+            <div class="reindex-bar__track">
+              <div class="reindex-bar__fill" [style.width.%]="reindexPercent()"></div>
+            </div>
+          </div>
+        } @else if (reindexState() === 'done') {
+          <div class="reindex-bar reindex-bar--done">
+            ✓ Herindexering voltooid.
+            <button class="btn-link" (click)="reindexState.set('idle')">Sluiten</button>
+          </div>
+        } @else if (reindexState() === 'error') {
+          <div class="reindex-bar reindex-bar--error">
+            ✕ Herindexering mislukt.
+            <button class="btn-link btn-link--error" (click)="reindexState.set('idle')">Sluiten</button>
+          </div>
+        } @else {
+          <div class="reindex-hint">
+            <button class="btn-reindex" (click)="reindex()">Opnieuw indexeren</button>
+          </div>
+        }
+
+        <div class="search-bar" [class.search-bar--loading]="searching()">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Zoek op betekenis..."
+            [ngModel]="query()"
+            (ngModelChange)="query.set($event)"
+            (keydown)="onKeydown($event)"
+            autofocus
+          />
+          <button class="search-btn" (click)="runSearch()" [disabled]="searching()">
+            {{ searching() ? '...' : 'Zoek' }}
+          </button>
+        </div>
+
+        @if (searchError()) {
+          <div class="search-error">Zoeken mislukt. Probeer opnieuw.</div>
+        }
+
+        @if (results(); as groups) {
+          <div class="results-count">
+            {{ groups.length }} bestand{{ groups.length !== 1 ? 'en' : '' }} gevonden
+          </div>
+
+          @if (groups.length === 0) {
+            <div class="no-results">Geen resultaten gevonden voor deze zoekopdracht.</div>
+          }
+
+          @for (group of groups; track group.file_id) {
+            <div
+              class="result-card"
+              [class.result-card--selected]="selectedGroup()?.file_id === group.file_id"
+              (click)="selectGroup(group)"
+            >
+              <div class="result-header">
+                <span class="result-filename">{{ group.name }}</span>
+                <span class="result-match">{{ group.best_relevance }}% overeenkomst</span>
+              </div>
+              <div class="result-path">{{ group.relative_path }}</div>
+
+              <div class="snippet-list">
+                @for (chunk of group.chunks; track chunk.id) {
+                  <div class="snippet" (click)="openModal(group); $event.stopPropagation()">
+                    {{ chunk.chunk_text | slice:0:200 }}@if (chunk.chunk_text.length > 200) {<span class="snippet-ellipsis">…</span>}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      <!-- Side panel -->
+      <div class="side-panel">
+        @if (selectedFile(); as file) {
+          <app-file-detail
+            [archiveId]="archiveId()"
+            [file]="file"
+            (back)="selectedGroup.set(null); selectedFile.set(null)"
+          />
+        } @else {
+          <div class="side-empty">Klik op een resultaat voor details</div>
+        }
+      </div>
+
+    </div>
+  }
+
+</div>
+
+<!-- Text modal -->
+@if (modalFile(); as file) {
+  <app-file-content-modal [file]="file" (closed)="closeModal()" />
+}

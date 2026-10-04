@@ -11,13 +11,14 @@ from app.shared.archive_analysis_repository import ArchiveAnalysisRepository
 from app.create_summaries_for_archive.create_summaries_for_archive import CreateSummariesForArchive
 from app.create_ner_for_archive.create_ner_for_archive import CreateNerForArchive
 from app.create_topic_detection_for_archive.create_topic_detection_for_archive import CreateTopicDetectionForArchive
+from app.create_embeddings_for_archive.create_embeddings_for_archive import CreateEmbeddingsForArchive
 from app.shared.database import _session_factory, get_db
 
 _logger = logging.getLogger("app")
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
-_SUPPORTED_TYPES = {"summary", "ner", "topic_detection"}
+_SUPPORTED_TYPES = {"summary", "ner", "topic_detection", "embedding"}
 
 
 class AnalysisItem(BaseModel):
@@ -83,11 +84,15 @@ async def _run_sequential(
         try:
             if analysis_type.lower() == "ner":
                 runner = CreateNerForArchive(_session_factory)
+                await runner.execute(archive_id, archive_analysis_id, task_id, model)
             elif analysis_type.lower() == "topic_detection":
                 runner = CreateTopicDetectionForArchive(_session_factory)
+                await runner.execute(archive_id, archive_analysis_id, task_id, model)
+            elif analysis_type.lower() == "embedding":
+                await CreateEmbeddingsForArchive(_session_factory).execute(archive_id, archive_analysis_id, task_id)
             else:
                 runner = CreateSummariesForArchive(_session_factory)
-            await runner.execute(archive_id, archive_analysis_id, task_id, model)
+                await runner.execute(archive_id, archive_analysis_id, task_id, model)
         except Exception as e:
             _logger.error(f"Background analysis ({analysis_type}) failed for task {task_id}: {e}")
             try:

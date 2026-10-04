@@ -29,3 +29,32 @@ async def generate(model: str, prompt: str, format: str | None = None) -> str:
         raise OllamaUnavailableError("Ollama service unavailable or timed out") from e
     except httpx.HTTPStatusError as e:
         raise Exception(f"Ollama returned HTTP error status: {e.response.status_code}") from e
+
+
+async def embed(model: str, text: str) -> list[float]:
+    """Send text to Ollama's embedding endpoint and return the embedding vector."""
+    result = await embed_batch(model, [text])
+    return result[0]
+
+
+async def embed_batch(model: str, texts: list[str]) -> list[list[float]]:
+    """Send a batch of texts to Ollama's embedding endpoint in a single call.
+
+    Veel sneller dan losse embed()-aanroepen: Ollama verwerkt de hele batch in
+    één modelrun i.p.v. N aparte HTTP-roundtrips.
+    """
+    payload: dict = {"model": model, "input": texts}
+
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"{settings.ollama_url}/api/embed",
+                json=payload,
+                timeout=300.0,
+            )
+            resp.raise_for_status()
+            return resp.json()["embeddings"]
+    except (httpx.ConnectError, httpx.TimeoutException) as e:
+        raise OllamaUnavailableError("Ollama service unavailable or timed out") from e
+    except httpx.HTTPStatusError as e:
+        raise Exception(f"Ollama returned HTTP error status: {e.response.status_code}") from e

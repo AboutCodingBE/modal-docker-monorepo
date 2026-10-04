@@ -12,7 +12,7 @@ class AnalysisConfigurationRepository:
 
     async def model_exists(self, model: str) -> bool:
         result = await self._session.execute(
-            select(AnalysisConfiguration.id).where(AnalysisConfiguration.model == model)
+            select(AnalysisConfiguration.id).where(AnalysisConfiguration.model == model).limit(1)
         )
         return result.scalar_one_or_none() is not None
 

@@ -71,19 +71,23 @@
         <div class="panel browser-panel" [class.browser-panel--list]="viewMode() === 'list'">
           <div class="panel-title-row">
             <span class="panel-title">Archief browser</span>
-            <div class="view-toggle">
-              <button
-                class="view-btn"
-                [class.active]="viewMode() === 'tree'"
-                (click)="viewMode.set('tree')"
-                title="Mappenstructuur"
-              >Per map</button>
-              <button
-                class="view-btn"
-                [class.active]="viewMode() === 'list'"
-                (click)="viewMode.set('list')"
-                title="Lijst van alle bestanden"
-              >Lijst</button>
+            <div class="panel-actions">
+              <div class="view-toggle">
+                <button
+                  class="view-btn"
+                  [class.active]="viewMode() === 'tree'"
+                  (click)="viewMode.set('tree')"
+                  title="Mappenstructuur"
+                >Per map</button>
+                <button
+                  class="view-btn"
+                  [class.active]="viewMode() === 'list'"
+                  (click)="viewMode.set('list')"
+                  title="Lijst van alle bestanden"
+                >Lijst</button>
+              </div>
+              <button class="btn-semantic-search" (click)="openSemanticSearch()" title="Semantisch zoeken">🔍 Semantisch zoeken</button>
+              <button class="btn-dashboard" (click)="openDashboard()">📊 Dashboard</button>
             </div>
           </div>
 
@@ -137,10 +141,6 @@
 
       <!-- Pane 3: Detail panel -->
       <div class="side-right">
-        <div class="detail-panel-actions">
-          <button class="btn-dashboard" (click)="openDashboard()">📊 Dashboard</button>
-        </div>
-
         @if (selectedFile(); as file) {
           <app-file-detail
             [archiveId]="archiveId()"

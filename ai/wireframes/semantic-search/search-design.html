@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semantisch zoeken — Wireframe</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          background: #f0f2f5;
+          color: #111827;
+          padding: 32px;
+        }
+
+        .page { max-width: 1300px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+        /* ── Screen switcher (wireframe-only, not part of the product) ── */
+        .screen-switcher {
+          display: flex; gap: 8px; margin-bottom: 8px;
+        }
+        .screen-switch-btn {
+          font-family: inherit; font-size: 12px; font-weight: 600;
+          padding: 7px 14px; border: 1px solid #d1d5db; border-radius: 6px;
+          background: #ffffff; cursor: pointer; color: #6b7280;
+        }
+        .screen-switch-btn.active { background: #3b6ef5; color: #ffffff; border-color: #3b6ef5; }
+        .screen { display: none; }
+        .screen.visible { display: block; }
+
+        /* ── Top bar ── */
+        .topbar { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+
+        .btn-back {
+          font-family: inherit; font-size: 12px; font-weight: 600;
+          padding: 7px 12px; border: 1px solid #d1d5db; border-radius: 6px;
+          background: #ffffff; color: #374151; cursor: pointer;
+          transition: background 0.15s, border-color 0.15s;
+        }
+        .btn-back:hover { background: #f9fafb; border-color: #9ca3af; }
+
+        .page-title { font-size: 22px; font-weight: 700; color: #111827; }
+        .page-meta { font-size: 12px; color: #6b7280; }
+        .page-meta b { color: #374151; }
+
+        /* ── Stats card ── */
+        .stats-card {
+          background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px;
+          padding: 20px; display: flex; gap: 24px; margin-bottom: 16px;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+        .stats-numbers { display: flex; gap: 24px; padding-right: 24px; border-right: 1px solid #f3f4f6; }
+        .stat { text-align: center; }
+        .stat .num { font-size: 22px; font-weight: 700; color: #111827; }
+        .stat .lbl { font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; }
+        .summary-box { flex: 1; }
+        .summary-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; }
+        .summary-text { font-size: 13px; color: #374151; line-height: 1.6; }
+
+        /* ── Browser card: faithful copy of the real archief browser layout ── */
+        .main-row { display: flex; gap: 16px; align-items: flex-start; }
+
+        .browser-card { flex: 1; min-width: 0; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); }
+
+        .browser-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .browser-title { font-size: 16px; font-weight: 700; color: #111827; }
+
+        .header-actions { display: flex; align-items: center; gap: 10px; }
+
+        .view-tabs { display: flex; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden; }
+        .view-tab { font-family: inherit; font-size: 11px; font-weight: 600; padding: 6px 14px; border: none; background: #ffffff; color: #6b7280; cursor: pointer; transition: background 0.15s, color 0.15s; }
+        .view-tab:hover:not(.active) { background: #f9fafb; }
+        .view-tab + .view-tab { border-left: 1px solid #d1d5db; }
+        .view-tab.active { background: #3b6ef5; color: #ffffff; }
+
+        .btn-semantic-search {
+          font-family: inherit; font-size: 12px; font-weight: 600;
+          padding: 7px 14px; border: 1px solid #d1d5db; border-radius: 6px;
+          background: #ffffff; color: #9ca3af; cursor: pointer;
+          transition: border-color 0.15s, color 0.15s;
+        }
+        .btn-semantic-search:hover { border-color: #9ca3af; color: #6b7280; }
+        .btn-semantic-search.unlocked { color: #374151; border-color: #d1d5db; }
+        .btn-semantic-search.unlocked:hover { border-color: #3b6ef5; color: #1d4ed8; }
+
+        .btn-dashboard {
+          font-family: inherit; font-size: 12px; font-weight: 700;
+          padding: 8px 14px; border: none; border-radius: 6px;
+          background: #3b6ef5; color: #ffffff; cursor: pointer;
+          transition: background 0.15s;
+        }
+        .btn-dashboard:hover { background: #2d5ce0; }
+
+        .breadcrumb { display: flex; align-items: center; gap: 4px; font-size: 12px; margin-bottom: 12px; }
+        .crumb { padding: 4px 9px; background: #f1f5f9; color: #374151; border-radius: 5px; font-weight: 600; }
+
+        .direct-chip {
+          display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280;
+          border: 1px solid #e5e7eb; padding: 8px 12px; border-radius: 6px; margin-bottom: 16px;
+        }
+
+        .submappen-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; margin-bottom: 8px; }
+        .submappen-list { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .folder-chip {
+          display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #374151;
+          border: 1px solid #3b6ef5; border-radius: 6px; padding: 8px 14px; background: #ffffff;
+        }
+
+        .divider { border-top: 1px solid #f3f4f6; margin-bottom: 16px; }
+        .section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; margin-bottom: 10px; }
+
+        .table-controls { display: flex; gap: 10px; margin-bottom: 14px; }
+        .search-input { flex: 1; font-family: inherit; font-size: 13px; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 6px; color: #111827; }
+        .type-select { font-family: inherit; font-size: 13px; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 6px; background: #ffffff; color: #374151; min-width: 140px; }
+
+        .browser-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .browser-table thead th {
+          text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+          color: #6b7280; padding: 0 10px 10px 0;
+        }
+        .browser-table tbody tr { border-top: 1px solid #f3f4f6; }
+        .browser-table tbody td { padding: 10px; color: #374151; }
+        .browser-table .filename-cell { color: #1d4ed8; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+        .browser-table .dim-cell { color: #9ca3af; }
+
+        /* ── Side panel (file/folder metadata, matches real layout) ── */
+        .detail-panel { width: 300px; flex-shrink: 0; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); }
+        .detail-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .detail-name { font-size: 14px; font-weight: 700; color: #111827; }
+        .detail-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; color: #6b7280; border: 1px solid #e5e7eb; border-radius: 4px; padding: 2px 6px; }
+        .detail-tabs { display: flex; gap: 14px; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px; margin-bottom: 14px; }
+        .detail-tab { font-size: 12px; font-weight: 600; color: #6b7280; padding-bottom: 8px; }
+        .detail-tab.active { color: #111827; border-bottom: 2px solid #3b6ef5; }
+        .detail-metric-row { display: flex; gap: 10px; margin-bottom: 14px; }
+        .detail-metric { flex: 1; text-align: center; background: #f1f5f9; border-radius: 6px; padding: 12px 8px; }
+        .detail-metric .num { font-size: 18px; font-weight: 700; color: #111827; }
+        .detail-metric .lbl { font-size: 9px; color: #6b7280; text-transform: uppercase; }
+        .detail-cats-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #6b7280; margin-bottom: 8px; }
+        .detail-cat-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #374151; border: 1px solid #e5e7eb; border-radius: 5px; padding: 4px 8px; }
+
+        /* ── Setup page ── */
+        .setup-container { max-width: 640px; margin: 0 auto; }
+
+        .setup-intro { font-size: 13px; color: #374151; line-height: 1.6; margin-bottom: 18px; }
+
+        .phase-list {
+          background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px;
+          overflow: hidden; margin-bottom: 16px;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .phase-row {
+          display: flex; align-items: center; gap: 12px;
+          padding: 14px 18px; border-bottom: 1px solid #f3f4f6;
+        }
+        .phase-row:last-child { border-bottom: none; }
+
+        .status-icon { width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+
+        .status-pending .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #d1d5db; }
+
+        .status-running .status-spinner {
+          width: 16px; height: 16px; border: 2px solid #bfdbfe; border-top-color: #3b6ef5;
+          border-radius: 50%; animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .status-success .status-check {
+          width: 18px; height: 18px; border-radius: 50%; background: #22c55e;
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; font-size: 11px; font-weight: 700;
+        }
+
+        .phase-text { flex: 1; min-width: 0; }
+        .phase-label { font-size: 13px; font-weight: 600; color: #111827; }
+        .phase-label.dim { color: #9ca3af; }
+        .phase-sublabel { font-size: 11px; color: #6b7280; }
+
+        .phase-detail { font-size: 11px; color: #6b7280; flex-shrink: 0; margin-right: 10px; }
+
+        .phase-action {
+          font-family: inherit; font-size: 12px; font-weight: 600;
+          padding: 6px 14px; border: 1px solid #d1d5db; border-radius: 6px;
+          background: #ffffff; color: #374151; cursor: pointer; flex-shrink: 0;
+          transition: background 0.15s, border-color 0.15s;
+        }
+        .phase-action:hover:not(:disabled) { background: #f9fafb; border-color: #9ca3af; }
+        .phase-action:disabled { color: #d1d5db; border-color: #e5e7eb; cursor: default; }
+
+        .progress-detail { padding: 0 18px 14px 52px; border-bottom: 1px solid #f3f4f6; }
+        .progress-bar { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+        .progress-fill { height: 100%; width: 0%; background: #3b6ef5; border-radius: 3px; transition: width 0.2s; }
+        .progress-text { font-size: 11px; color: #6b7280; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .progress-text .note { color: #9ca3af; }
+
+        /* ── Zoekresultaten screen ── */
+        .search-row { display: flex; gap: 16px; align-items: flex-start; }
+
+        .results-col { flex: 1; min-width: 0; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); }
+
+        .search-bar {
+          display: flex; align-items: center; gap: 8px;
+          border: 1px solid #d1d5db; border-radius: 8px; padding: 11px 14px; margin-bottom: 10px;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .search-bar:focus-within { border-color: #3b6ef5; box-shadow: 0 0 0 3px rgba(59, 110, 245, 0.12); }
+        .search-bar input { flex: 1; border: none; outline: none; font-family: inherit; font-size: 13px; color: #111827; }
+
+        .results-count { font-size: 11px; color: #9ca3af; margin-bottom: 14px; }
+
+        .result-card {
+          border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; cursor: default;
+        }
+
+        .result-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+        .result-filename { font-size: 13px; font-weight: 600; color: #1d4ed8; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+        .result-match { font-size: 11px; color: #6b7280; flex-shrink: 0; }
+        .result-path { font-size: 11px; color: #9ca3af; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-bottom: 10px; }
+
+        .snippet-list { display: flex; flex-direction: column; gap: 8px; }
+        .snippet {
+          font-size: 12px; color: #374151; line-height: 1.5;
+          padding-left: 10px; border-left: 2px solid #e5e7eb; cursor: pointer;
+          transition: border-color 0.15s;
+        }
+        .snippet:hover { border-left-color: #3b6ef5; }
+        .snippet mark { background: #fef3c7; color: #92400e; padding: 0 1px; }
+
+        /* ── Side panel (reused pattern) ── */
+        .side-panel { width: 300px; flex-shrink: 0; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); }
+        .side-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .side-filename { font-size: 14px; font-weight: 700; color: #111827; }
+        .side-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; color: #6b7280; border: 1px solid #e5e7eb; border-radius: 4px; padding: 2px 6px; }
+        .side-tabs { display: flex; gap: 14px; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px; margin-bottom: 14px; }
+        .side-tab { font-size: 12px; font-weight: 600; color: #6b7280; cursor: pointer; padding-bottom: 8px; }
+        .side-tab.active { color: #111827; border-bottom: 2px solid #3b6ef5; }
+        .side-placeholder { font-size: 12px; color: #9ca3af; font-style: italic; }
+        .side-empty { font-size: 12px; color: #9ca3af; font-style: italic; text-align: center; padding: 20px 0; }
+
+        /* ── Text overlay modal (reused pattern, simplified) ── */
+        .overlay-backdrop {
+          position: fixed; inset: 0; background: rgba(17, 24, 39, 0.45);
+          display: none; align-items: center; justify-content: center; z-index: 50; padding: 40px;
+        }
+        .overlay-backdrop.open { display: flex; }
+
+        .text-modal {
+          background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px;
+          width: 100%; max-width: 760px; max-height: 80vh;
+          display: flex; flex-direction: column; overflow: hidden;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+        .text-modal-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid #f3f4f6; }
+        .text-modal-filename { font-size: 16px; font-weight: 700; color: #111827; }
+        .text-modal-close { font-size: 18px; color: #9ca3af; background: none; border: none; cursor: pointer; transition: color 0.15s; }
+        .text-modal-close:hover { color: #111827; }
+        .text-modal-body { padding: 24px 28px; overflow-y: auto; flex: 1; font-size: 14px; line-height: 1.7; color: #374151; }
+        .text-modal-body mark { background: #fef3c7; color: #92400e; padding: 0 1px; }
+        .text-modal-footer { padding: 12px 24px; border-top: 1px solid #f3f4f6; font-size: 11px; color: #9ca3af; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="page">
+
+    <!-- Wireframe-only screen switcher -->
+    <div class="screen-switcher">
+        <button class="screen-switch-btn active" data-screen="screen-detail">1. Archief detail (vergrendeld)</button>
+        <button class="screen-switch-btn" data-screen="screen-setup">2. Setup</button>
+        <button class="screen-switch-btn" data-screen="screen-results">3. Zoekresultaten</button>
+    </div>
+
+    <!-- ══════════ SCREEN 1: Archief detail, button locked ══════════ -->
+    <div class="screen visible" id="screen-detail">
+
+        <div class="topbar">
+            <button class="btn-back">&larr; Overzicht</button>
+            <div class="page-title">karltest4</div>
+            <div class="page-meta">/Users/dragonfly/Downloads/test-archieven/karl-test4 &nbsp;&nbsp; Aangemaakt: <b>2026-09-19</b></div>
+        </div>
+
+        <div class="stats-card">
+            <div class="stats-numbers">
+                <div class="stat"><div class="num">62</div><div class="lbl">Bestanden</div></div>
+                <div class="stat"><div class="num">5</div><div class="lbl">Types</div></div>
+                <div class="stat"><div class="num">13</div><div class="lbl">Mappen</div></div>
+            </div>
+            <div class="summary-box">
+                <div class="summary-label">Archief samenvatting</div>
+                <div class="summary-text">Deze map bevat een verzameling documenten met name gerelateerd aan de carrière-inspanningen van Karl Vermaercke...</div>
+            </div>
+        </div>
+
+        <div class="main-row">
+
+            <div class="browser-card">
+                <div class="browser-header">
+                    <div class="browser-title">Archief browser</div>
+                    <div class="header-actions">
+                        <div class="view-tabs">
+                            <button class="view-tab active">Per map</button>
+                            <button class="view-tab">Lijst</button>
+                        </div>
+                        <button class="btn-semantic-search" id="semanticSearchBtn">Semantisch zoeken</button>
+                        <button class="btn-dashboard">Dashboard</button>
+                    </div>
+                </div>
+
+                <div class="breadcrumb"><div class="crumb">/</div></div>
+
+                <div class="direct-chip">1 bestand direct in deze map</div>
+
+                <div class="submappen-label">5 submappen</div>
+                <div class="submappen-list">
+                    <div class="folder-chip">JOB</div>
+                    <div class="folder-chip">L&amp;K</div>
+                    <div class="folder-chip">VARIA</div>
+                    <div class="folder-chip">VU</div>
+                    <div class="folder-chip">VUJO</div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section-label">Bestanden in deze map (1 van 1)</div>
+                <div class="table-controls">
+                    <input class="search-input" placeholder="Zoek op bestandsnaam...">
+                    <select class="type-select"><option>Alle types</option></select>
+                </div>
+                <table class="browser-table">
+                    <thead>
+                    <tr><th>Bestandsnaam</th><th>Categorie</th><th>Grootte</th><th>Taal</th><th>Auteur</th><th>Datum aangemaakt</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td class="filename-cell">.DS_Store</td>
+                        <td>andere</td>
+                        <td>6.0 KB</td>
+                        <td class="dim-cell">&mdash;</td>
+                        <td class="dim-cell">&mdash;</td>
+                        <td class="dim-cell">&mdash;</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="detail-panel">
+                <div class="detail-header">
+                    <div class="detail-name">.</div>
+                    <div class="detail-tag">MAP</div>
+                </div>
+                <div class="detail-tabs">
+                    <div class="detail-tab active">Overzicht</div>
+                    <div class="detail-tab">Samenvatting</div>
+                    <div class="detail-tab">NER</div>
+                    <div class="detail-tab">Topics</div>
+                </div>
+                <div class="detail-metric-row">
+                    <div class="detail-metric"><div class="num">1</div><div class="lbl">Bestanden</div></div>
+                    <div class="detail-metric"><div class="num">1</div><div class="lbl">Types</div></div>
+                </div>
+                <div class="detail-cats-label">Bestandscategorieën</div>
+                <div class="detail-cat-chip">andere 1</div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ══════════ SCREEN 2: Setup page ══════════ -->
+    <div class="screen" id="screen-setup">
+
+        <div class="topbar">
+            <button class="btn-back" id="setupBackBtn">&larr; karltest4</button>
+            <div class="page-title">Semantisch zoeken</div>
+        </div>
+
+        <div class="setup-container">
+            <div class="setup-intro">
+                Semantisch zoeken vindt documenten op betekenis, niet alleen op exacte woorden.
+                Er is nog geen embeddingsmodel gedownload en er zijn nog geen embeddings voor dit archief.
+                Doorloop de onderstaande stap(pen) om te ontgrendelen.
+            </div>
+
+            <div class="phase-list">
+
+                <div class="phase-row" id="modelRow">
+                    <div class="status-icon status-pending" id="modelStatusIcon"><div class="status-dot"></div></div>
+                    <div class="phase-text">
+                        <div class="phase-label" id="modelLabel">Embeddingsmodel downloaden</div>
+                        <div class="phase-sublabel">Eenmalige download, daarna altijd beschikbaar</div>
+                    </div>
+                    <button class="phase-action" id="modelActionBtn">Downloaden</button>
+                </div>
+                <div class="progress-detail" id="modelProgressDetail" style="display:none;">
+                    <div class="progress-bar"><div class="progress-fill" id="modelProgressFill"></div></div>
+                    <div class="progress-text" id="modelProgressText">modelnaam — 0 MB / 815 MB (0%) · <span class="note">Eenmalige download</span></div>
+                </div>
+
+                <div class="phase-row" id="analysisRow">
+                    <div class="status-icon status-pending" id="analysisStatusIcon"><div class="status-dot"></div></div>
+                    <div class="phase-text">
+                        <div class="phase-label dim" id="analysisLabel">Bestanden analyseren</div>
+                        <div class="phase-sublabel">Beschikbaar na download · 62 bestanden</div>
+                    </div>
+                    <button class="phase-action" id="analysisActionBtn" disabled>Analyseren</button>
+                </div>
+                <div class="progress-detail" id="analysisProgressDetail" style="display:none;">
+                    <div class="progress-bar"><div class="progress-fill" id="analysisProgressFill"></div></div>
+                    <div class="progress-text" id="analysisProgressText">0 / 62 bestanden (0%)</div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ══════════ SCREEN 3: Zoekresultaten ══════════ -->
+    <div class="screen" id="screen-results">
+
+        <div class="topbar">
+            <button class="btn-back">&larr; karltest4</button>
+            <div class="page-title">Semantisch zoeken</div>
+        </div>
+
+        <div class="search-row">
+
+            <div class="results-col">
+                <div class="search-bar">
+                    <span class="search-icon">&#128269;</span>
+                    <input type="text" value="financiele afspraken Herentals" placeholder="Zoek op betekenis...">
+                </div>
+                <div class="results-count">8 bestanden gevonden</div>
+
+                <div class="result-card" data-file="Fuif_begroting_2026.pdf">
+                    <div class="result-header">
+                        <div class="result-filename" data-action="open-side">Fuif_begroting_2026.pdf</div>
+                        <div class="result-match">97% match</div>
+                    </div>
+                    <div class="result-path">VARIA/Fuif/Fuif_begroting_2026.pdf</div>
+                    <div class="snippet-list">
+                        <div class="snippet" data-action="open-overlay">...de <mark>financiële afspraken</mark> voor de fuif in <mark>Herentals</mark> zijn vastgelegd in bijlage C...</div>
+                        <div class="snippet" data-action="open-overlay">...de verdeling van de kosten tussen VZW en de lokale gemeenschap wordt hieronder toegelicht...</div>
+                    </div>
+                </div>
+
+                <div class="result-card" data-file="correspondentie_kristin.pdf">
+                    <div class="result-header">
+                        <div class="result-filename" data-action="open-side">correspondentie_kristin.pdf</div>
+                        <div class="result-match">84% match</div>
+                    </div>
+                    <div class="result-path">L&amp;K/correspondentie_kristin.pdf</div>
+                    <div class="snippet-list">
+                        <div class="snippet" data-action="open-overlay">...zoals besproken dekt de VZW de kosten niet volledig, dus is er een <mark>extra bijdrage</mark> nodig...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="side-panel" id="sidePanel">
+                <div class="side-empty" id="sideEmptyState">Selecteer een bestand om details te zien</div>
+                <div id="sideContent" style="display:none;">
+                    <div class="side-header">
+                        <div class="side-filename" id="sideFilename">Fuif_begroting_2026.pdf</div>
+                        <div class="side-tag">BESTAND</div>
+                    </div>
+                    <div class="side-tabs">
+                        <div class="side-tab active">Overzicht</div>
+                        <div class="side-tab">Samenvatting</div>
+                        <div class="side-tab">NER</div>
+                        <div class="side-tab">Topics</div>
+                    </div>
+                    <div class="side-placeholder">(bestaand side panel — overzicht, samenvatting, NER, topics — ongewijzigd)</div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Text overlay modal (shared across screens) -->
+<div class="overlay-backdrop" id="overlayBackdrop">
+    <div class="text-modal">
+        <div class="text-modal-header">
+            <div class="text-modal-filename" id="overlayFilename">Fuif_begroting_2026.pdf</div>
+            <button class="text-modal-close" id="overlayCloseBtn">&#10005;</button>
+        </div>
+        <div class="text-modal-body" id="overlayBody">
+            ...de volledige begroting voor de fuif in Herentals wordt hieronder toegelicht. De <mark>financiële afspraken</mark> voor de fuif in <mark>Herentals</mark> zijn vastgelegd in bijlage C, inclusief de verdeling van kosten tussen de VZW en de lokale gemeenschap. Elk lid draagt naar rato bij...
+        </div>
+        <div class="text-modal-footer">Geëxtraheerde tekst — geopend bij het relevante fragment</div>
+    </div>
+</div>
+
+<script>
+    // ── Screen switcher (wireframe navigation only) ──
+    const switchBtns = document.querySelectorAll('.screen-switch-btn');
+    const screens = document.querySelectorAll('.screen');
+    function showScreen(id) {
+      screens.forEach(s => s.classList.toggle('visible', s.id === id));
+      switchBtns.forEach(b => b.classList.toggle('active', b.dataset.screen === id));
+    }
+    switchBtns.forEach(btn => {
+      btn.addEventListener('click', () => showScreen(btn.dataset.screen));
+    });
+
+    // ── Screen 1: locked button -> go to setup ──
+    document.getElementById('semanticSearchBtn').addEventListener('click', () => showScreen('screen-setup'));
+    document.getElementById('setupBackBtn').addEventListener('click', () => showScreen('screen-detail'));
+
+    // ── Screen 2: setup flow simulation ──
+    const modelActionBtn = document.getElementById('modelActionBtn');
+    const modelProgressDetail = document.getElementById('modelProgressDetail');
+    const modelProgressFill = document.getElementById('modelProgressFill');
+    const modelProgressText = document.getElementById('modelProgressText');
+    const modelStatusIcon = document.getElementById('modelStatusIcon');
+    const modelLabel = document.getElementById('modelLabel');
+
+    const analysisActionBtn = document.getElementById('analysisActionBtn');
+    const analysisProgressDetail = document.getElementById('analysisProgressDetail');
+    const analysisProgressFill = document.getElementById('analysisProgressFill');
+    const analysisProgressText = document.getElementById('analysisProgressText');
+    const analysisStatusIcon = document.getElementById('analysisStatusIcon');
+    const analysisLabel = document.getElementById('analysisLabel');
+
+    modelActionBtn.addEventListener('click', () => {
+      modelActionBtn.style.display = 'none';
+      modelStatusIcon.className = 'status-icon status-running';
+      modelStatusIcon.innerHTML = '<div class="status-spinner"></div>';
+      modelProgressDetail.style.display = 'block';
+      let pct = 0;
+      const totalMB = 815;
+      const interval = setInterval(() => {
+        pct += 8;
+        if (pct >= 100) { pct = 100; clearInterval(interval); }
+        modelProgressFill.style.width = pct + '%';
+        const mb = Math.round(totalMB * pct / 100);
+        modelProgressText.innerHTML = 'modelnaam — ' + mb + ' MB / ' + totalMB + ' MB (' + pct + '%) · <span class="note">Eenmalige download</span>';
+        if (pct === 100) {
+          modelStatusIcon.className = 'status-icon status-success';
+          modelStatusIcon.innerHTML = '<div class="status-check">&#10003;</div>';
+          modelProgressDetail.style.display = 'none';
+          analysisActionBtn.disabled = false;
+          analysisLabel.classList.remove('dim');
+        }
+      }, 180);
+    });
+
+    analysisActionBtn.addEventListener('click', () => {
+      if (analysisActionBtn.disabled) return;
+      analysisActionBtn.style.display = 'none';
+      analysisStatusIcon.className = 'status-icon status-running';
+      analysisStatusIcon.innerHTML = '<div class="status-spinner"></div>';
+      analysisProgressDetail.style.display = 'block';
+      let done = 0;
+      const total = 62;
+      const interval = setInterval(() => {
+        done += 5;
+        if (done >= total) { done = total; clearInterval(interval); }
+        const pct = Math.round(done / total * 100);
+        analysisProgressFill.style.width = pct + '%';
+        analysisProgressText.textContent = done + ' / ' + total + ' bestanden (' + pct + '%)';
+        if (done === total) {
+          analysisStatusIcon.className = 'status-icon status-success';
+          analysisStatusIcon.innerHTML = '<div class="status-check">&#10003;</div>';
+          analysisProgressDetail.style.display = 'none';
+          setTimeout(() => {
+            showScreen('screen-results');
+            document.getElementById('semanticSearchBtn').classList.add('unlocked');
+            document.getElementById('semanticSearchBtn').textContent = 'Semantisch zoeken';
+          }, 400);
+        }
+      }, 150);
+    });
+
+    // ── Screen 3: filename -> side panel, snippet -> overlay ──
+    document.querySelectorAll('[data-action="open-side"]').forEach(el => {
+      el.addEventListener('click', () => {
+        const file = el.closest('.result-card').dataset.file;
+        document.getElementById('sideEmptyState').style.display = 'none';
+        document.getElementById('sideContent').style.display = 'block';
+        document.getElementById('sideFilename').textContent = file;
+      });
+    });
+
+    const overlayBackdrop = document.getElementById('overlayBackdrop');
+    document.querySelectorAll('[data-action="open-overlay"]').forEach(el => {
+      el.addEventListener('click', () => {
+        const file = el.closest('.result-card').dataset.file;
+        document.getElementById('overlayFilename').textContent = file;
+        overlayBackdrop.classList.add('open');
+      });
+    });
+    document.getElementById('overlayCloseBtn').addEventListener('click', () => overlayBackdrop.classList.remove('open'));
+    overlayBackdrop.addEventListener('click', (e) => { if (e.target === overlayBackdrop) overlayBackdrop.classList.remove('open'); });
+</script>
+
+</body>
+</html>

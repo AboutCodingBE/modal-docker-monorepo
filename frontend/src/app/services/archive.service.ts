@@ -15,6 +15,7 @@ export interface ArchiveStats {
   total_files: number;
   total_folders: number;
   mime_types: MimeTypeCount[];
+  completed_analysis_types: string[];
 }
 
 export interface CategoryCount {

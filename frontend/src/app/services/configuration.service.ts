@@ -15,6 +15,14 @@ export interface ProcessingSettings {
   minimum_text_length: number;
 }
 
+export interface EmbeddingSettings {
+  embedding_chunk_size: number;
+  embedding_max_chunks_per_file: number | null;
+  search_max_distance: number;
+  search_top_n: number;
+  embedding_model_downloaded: boolean;
+}
+
 export interface DownloadProgressEvent {
   status: string;
   completed_bytes: number | null;
@@ -50,5 +58,18 @@ export class ConfigurationService {
     minimum_text_length: number;
   }): Observable<ProcessingSettings> {
     return this.http.put<ProcessingSettings>('/api/settings/processing', settings);
+  }
+
+  getEmbeddingSettings(): Observable<EmbeddingSettings> {
+    return this.http.get<EmbeddingSettings>('/api/settings/embedding');
+  }
+
+  updateEmbeddingSettings(settings: {
+    embedding_chunk_size: number;
+    embedding_max_chunks_per_file: number | null;
+    search_max_distance: number;
+    search_top_n: number;
+  }): Observable<EmbeddingSettings> {
+    return this.http.put<EmbeddingSettings>('/api/settings/embedding', settings);
   }
 }

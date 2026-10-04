@@ -9,7 +9,8 @@ Story: "Extraheert Tika tekst en metadata correct uit een gewone PDF?"
 Vereisten om deze test te draaien:
   - PostgreSQL bereikbaar op DATABASE_URL_SYNC (zie backend/.env)
   - Apache Tika-server bereikbaar op TIKA_URL (zie backend/.env, standaard http://localhost:7777)
-  - De mock-agent geeft de fixture-PDF terug, zodat geen echte agent-server nodig is.
+  - De lokale agent bereikbaar op AGENT_URL (losse desktop-component, niet onderdeel
+    van docker-compose — moet apart lokaal draaien, zie requires_agent)
 
 Wat we testen:
   Het systeem stuurt een echte leesbare PDF naar de Tika-server en slaat de geëxtraheerde
@@ -28,12 +29,14 @@ Wat we testen:
   └─────────────────────┴──────────────────────────────────────────────────────┘
 
 Teststrategie:
+  - ECHT, niets gemocked: de HTTP-aanroep naar de agent (bestandsbytes ophalen) gaat
+    naar de échte lokale agent — files.full_path wijst naar het echte fixture-PDF op
+    schijf, zodat de agent het ook echt kan serveren.
   - ECHT:  Tika-aanroep gaat naar de echte Tika Docker container (via TIKA_URL).
-  - MOCK:  De HTTP-aanroep naar de agent (bestandsbytes ophalen) is gemocked —
-           we geven de fixture-bytes direct terug als response.content.
   - ECHT:  DB-INSERT via TikaRepository (echte PostgreSQL-transactie).
   - session.commit() is als no-op gemocked zodat de async_db_session-fixture
-    aan het einde via rollback alle testdata schoonmaakt.
+    aan het einde via rollback alle testdata schoonmaakt — dit is testopzet/cleanup,
+    geen mock van een externe service.
 
 Fixture-PDF (backend/tests/fixtures/normaal_document.pdf):
   - Minimale geldige PDF 1.4 met Nederlandstalige tekst in de content stream.
@@ -44,7 +47,7 @@ Fixture-PDF (backend/tests/fixtures/normaal_document.pdf):
 
 import uuid
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from sqlalchemy import text
@@ -58,24 +61,21 @@ FIXTURE_PDF = Path(__file__).parent.parent / "testdata" / "data_M2" / "normaal_d
 
 
 @pytest.mark.asyncio
-async def test_tika_extraheert_tekst_en_metadata_uit_normale_pdf(async_db_session, requires_tika):
+async def test_tika_extraheert_tekst_en_metadata_uit_normale_pdf(async_db_session, requires_tika, requires_agent):
     """Stuurt een echte leesbare PDF naar de Tika Docker container via
     PerformTikaAnalysis en controleert dat alle geëxtraheerde velden correct
     worden opgeslagen in de tabel tika_analyses.
 
-    De HTTP-aanroep naar de agent (ophalen van bestandsbytes) is gemocked:
-    we geven de fixture-PDF-bytes terug zonder een echte agent-server.
-    De Tika-aanroep zelf gaat naar de echte Tika-server (TIKA_URL).
+    Niets gemocked: de agent haalt de bestandsbytes echt op van schijf (files.full_path
+    wijst naar het echte fixture-PDF), en stuurt ze door naar de echte Tika-server.
     """
     archive_id = uuid.uuid4()
     file_id = uuid.uuid4()
     task_id = uuid.uuid4()
     root_path = f"/tmp/test-archief-{archive_id}"
-    file_path = f"{root_path}/rapport.pdf"
-
-    # Laad de fixture-PDF-bytes — dit zijn de bytes die de mock-agent teruggeeft,
-    # zodat Tika een echte PDF te verwerken krijgt zonder dat de agent draait.
-    pdf_bytes = FIXTURE_PDF.read_bytes()
+    # full_path wijst naar het ECHTE fixture-bestand op schijf, zodat de echte lokale
+    # agent het straks ook echt kan opvragen en teruggeven.
+    file_path = str(FIXTURE_PDF.resolve())
 
     # --- DB-prerequisites: archief, bestand en analyse-taak ---
     # PerformTikaAnalysis.execute() verwacht drie aanwezige rijen:
@@ -111,34 +111,15 @@ async def test_tika_extraheert_tekst_en_metadata_uit_normale_pdf(async_db_sessio
     )
     await async_db_session.flush()
 
-    # mock_response — het nep HTTP-antwoord van de agent.
-    #   response.content bevat de fixture-PDF-bytes die naar Tika worden doorgestuurd.
-    #   raise_for_status() is een no-op (gesimuleerde 200 OK).
-    mock_response = MagicMock()
-    mock_response.raise_for_status = MagicMock()
-    mock_response.content = pdf_bytes
-
-    # mock_client — de nep httpx.AsyncClient waarmee de agent wordt aangeroepen.
-    #   client.get(...) geeft mock_response terug in plaats van een echte HTTP-aanroep.
-    mock_client = AsyncMock()
-    mock_client.get = AsyncMock(return_value=mock_response)
-
-    with (
-        # patch: vervangt httpx.AsyncClient in de perform_tika_analysis-module
-        #        door onze mock — zo gaat het bestandsophalen via mock_client.
-        patch("app.perform_tika_analysis.perform_tika_analysis.httpx.AsyncClient") as MockAsyncClient,
-        # patch: session.commit() als no-op zodat de testdata flushed (zichtbaar
-        #        binnen de transactie) maar nooit gecommit wordt — de rollback in
-        #        async_db_session verwijdert alles schoon na de test.
-        patch.object(async_db_session, "commit", new_callable=AsyncMock),
-    ):
-        MockAsyncClient.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-        MockAsyncClient.return_value.__aexit__ = AsyncMock(return_value=False)
-
-        # Voer de volledige Tika-analysepipeline uit:
+    # patch: session.commit() als no-op zodat de testdata flushed (zichtbaar binnen de
+    # transactie) maar nooit gecommit wordt — de rollback in async_db_session verwijdert
+    # alles schoon na de test. Dit is testopzet/cleanup-mechaniek, geen mock van een
+    # externe service (agent/Tika blijven hieronder volledig ongemockt).
+    with patch.object(async_db_session, "commit", new_callable=AsyncMock):
+        # Voer de volledige Tika-analysepipeline uit, niets gemocked:
         #   1. task_tracker.start_task()          — zet status op 'running'
         #   2. FileRepository.get_by_archive()    — haalt de bestandslijst op uit de DB
-        #   3. httpx.AsyncClient().get(agent_url) — GEMOCKED: geeft fixture-bytes terug
+        #   3. httpx.AsyncClient().get(agent_url) — ECHT: haalt bytes op via de lokale agent
         #   4. TIKA_text_extract(pdf_bytes)       — ECHT: stuurt bytes naar Tika-server
         #   5. normalize_newlines() / get_word_count() — tekstverwerking
         #   6. TikaRepository.persist()           — slaat resultaten op in tika_analyses
