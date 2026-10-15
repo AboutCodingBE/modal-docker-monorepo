@@ -1,0 +1,98 @@
+<div class="ls-wrapper">
+
+  <!-- Top bar -->
+  <div class="top-bar">
+    <button class="btn-back" (click)="goBack()">← Terug</button>
+    <div class="page-title">
+      Exact zoeken
+      @if (archiveName()) {
+        <span class="archive-name">— {{ archiveName() }}</span>
+      }
+    </div>
+  </div>
+
+  <div class="search-layout">
+
+    <!-- Results column -->
+    <div class="results-col">
+
+      <div class="search-bar" [class.search-bar--loading]="searching()">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          placeholder="Zoek op exacte tekst..."
+          [ngModel]="query()"
+          (ngModelChange)="query.set($event)"
+          (keydown)="onKeydown($event)"
+          autofocus
+        />
+        <button class="search-btn" (click)="runSearch()" [disabled]="searching()">
+          {{ searching() ? '...' : 'Zoek' }}
+        </button>
+      </div>
+
+      @if (searchError()) {
+        <div class="search-error">Zoeken mislukt. Probeer opnieuw.</div>
+      }
+
+      @if (results(); as files) {
+        <div class="results-count">
+          {{ files.length }} bestand{{ files.length !== 1 ? 'en' : '' }} gevonden
+        </div>
+
+        @if (files.length === 0) {
+          <div class="no-results">Geen resultaten gevonden voor deze zoekopdracht.</div>
+        }
+
+        @for (result of files; track result.id) {
+          <div
+            class="result-card"
+            [class.result-card--selected]="selectedResult()?.id === result.id"
+            (click)="selectResult(result)"
+          >
+            <div class="result-header">
+              <span class="result-filename">{{ result.name }}</span>
+            </div>
+            <div class="result-path">{{ result.relative_path }}</div>
+
+            <div class="snippet-list">
+              @for (snippet of result.snippets; track snippet.match_offset) {
+                <div class="snippet" (click)="openModal(result); $event.stopPropagation()">
+                  {{ snippet.text.slice(0, snippet.highlight_start) }}<mark class="snippet-mark">{{ snippet.text.slice(snippet.highlight_start, snippet.highlight_end) }}</mark>{{ snippet.text.slice(snippet.highlight_end) }}
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (hasNext()) {
+          <div class="load-more-row">
+            <button class="btn-load-more" (click)="loadMore()" [disabled]="loadingMore()">
+              {{ loadingMore() ? 'Laden...' : 'Laad meer' }}
+            </button>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Side panel -->
+    <div class="side-panel">
+      @if (selectedFile(); as file) {
+        <app-file-detail
+          [archiveId]="archiveId()"
+          [file]="file"
+          (back)="selectedResult.set(null); selectedFile.set(null)"
+        />
+      } @else {
+        <div class="side-empty">Klik op een resultaat voor details</div>
+      }
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Text modal -->
+@if (modalFile(); as file) {
+  <app-file-content-modal [file]="file" (closed)="closeModal()" />
+}

@@ -1,0 +1,214 @@
+.ls-wrapper {
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Top bar ── */
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-back {
+  font-family: inherit;
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 9px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.btn-back:hover { background: #f9fafb; }
+
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.archive-name {
+  font-weight: 400;
+  color: #6b7280;
+}
+
+/* ── Search layout ── */
+.search-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.results-col {
+  flex: 1;
+  min-width: 0;
+  max-width: 65vw;
+}
+
+/* ── Search bar ── */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 11px 14px;
+  margin-bottom: 10px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+.search-bar:focus-within {
+  border-color: #3b6ef5;
+  box-shadow: 0 0 0 3px rgba(59, 110, 245, 0.12);
+}
+
+.search-icon { font-size: 14px; flex-shrink: 0; }
+
+.search-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: #111827;
+  background: transparent;
+}
+
+.search-btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #3b6ef5;
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.search-btn:hover:not(:disabled) { background: #2d5ce0; }
+.search-btn:disabled { opacity: 0.5; cursor: default; }
+
+.search-error {
+  font-size: 13px;
+  color: #ef4444;
+  margin-bottom: 10px;
+}
+
+.results-count {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-bottom: 14px;
+}
+
+.no-results {
+  font-size: 13px;
+  color: #9ca3af;
+  font-style: italic;
+  padding: 20px 0;
+}
+
+/* ── Result cards ── */
+.result-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+.result-card:hover { border-color: #c7d2fe; }
+.result-card--selected { border-color: #3b6ef5; box-shadow: 0 0 0 3px rgba(59, 110, 245, 0.1); }
+
+.result-header {
+  margin-bottom: 2px;
+}
+
+.result-filename {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d4ed8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.result-path {
+  font-size: 11px;
+  color: #9ca3af;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  margin-bottom: 10px;
+}
+
+.snippet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.snippet {
+  font-size: 12px;
+  color: #374151;
+  line-height: 1.5;
+  padding-left: 10px;
+  border-left: 2px solid #e5e7eb;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.snippet:hover { border-left-color: #3b6ef5; }
+
+.snippet-mark {
+  background: #fef08a;
+  color: #111827;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* ── Load more ── */
+.load-more-row {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 4px;
+}
+
+.btn-load-more {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 20px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-load-more:hover:not(:disabled) { background: #f9fafb; border-color: #9ca3af; }
+.btn-load-more:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Side panel ── */
+.side-panel {
+  width: 350px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 28px;
+  align-self: flex-start;
+}
+
+.side-empty {
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
+  text-align: center;
+  padding: 20px 0;
+}

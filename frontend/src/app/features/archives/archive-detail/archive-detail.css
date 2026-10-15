@@ -285,6 +285,24 @@
   gap: 8px;
 }
 
+.btn-exact-search {
+  font-family: inherit;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-exact-search:hover {
+  border-color: #9ca3af;
+  color: #374151;
+}
+
 .btn-semantic-search {
   font-family: inherit;
   background: #fff;

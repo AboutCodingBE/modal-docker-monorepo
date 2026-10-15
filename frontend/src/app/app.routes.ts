@@ -4,6 +4,7 @@ import { ArchiveDetail } from './features/archives/archive-detail/archive-detail
 import { ArchiveDashboard } from './features/archives/archive-dashboard/archive-dashboard';
 import { ConfigurationPage } from './features/configuration/configuration-page/configuration-page';
 import { SemanticSearchPage } from './features/archives/semantic-search/semantic-search-page';
+import { LiteralSearchPage } from './features/archives/literal-search/literal-search-page';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'archives', pathMatch: 'full' },
@@ -11,5 +12,6 @@ export const routes: Routes = [
   { path: 'archives/:id', component: ArchiveDetail },
   { path: 'archives/:archiveId/dashboard', component: ArchiveDashboard },
   { path: 'archives/:archiveId/search', component: SemanticSearchPage },
+  { path: 'archives/:archiveId/exact-search', component: LiteralSearchPage },
   { path: 'config', component: ConfigurationPage },
 ];

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archief detail — Exact zoeken knop</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          background: #f0f2f5;
+          color: #111827;
+          padding: 32px;
+        }
+
+        .page { max-width: 1300px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+        .topbar { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+
+        .btn-back {
+          font-family: inherit; font-size: 12px; font-weight: 600;
+          padding: 7px 12px; border: 1px solid #d1d5db; border-radius: 6px;
+          background: #ffffff; color: #374151; cursor: pointer;
+        }
+
+        .page-title { font-size: 22px; font-weight: 700; color: #111827; }
+        .page-meta { font-size: 12px; color: #6b7280; }
+        .page-meta b { color: #374151; }
+
+        .stats-card {
+          background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px;
+          padding: 20px; display: flex; gap: 24px;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+        .stats-numbers { display: flex; gap: 24px; padding-right: 24px; border-right: 1px solid #f3f4f6; }
+        .stat { text-align: center; }
+        .stat .num { font-size: 22px; font-weight: 700; color: #111827; }
+        .stat .lbl { font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; }
+        .summary-box { flex: 1; }
+        .summary-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; }
+        .summary-text { font-size: 13px; color: #9ca3af; font-style: italic; line-height: 1.6; }
+
+        .main-row { display: flex; gap: 16px; align-items: flex-start; }
+
+        .browser-card { flex: 1; min-width: 0; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); }
+
+        .browser-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+        .browser-title { font-size: 16px; font-weight: 700; color: #111827; }
+
+        .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+        .view-tabs { display: flex; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden; }
+        .view-tab { font-family: inherit; font-size: 11px; font-weight: 600; padding: 6px 14px; border: none; background: #ffffff; color: #6b7280; cursor: pointer; }
+        .view-tab + .view-tab { border-left: 1px solid #d1d5db; }
+        .view-tab.active { background: #3b6ef5; color: #ffffff; }
+
+        .btn-exact-search,
+        .btn-semantic-search {
+          display: flex; align-items: center; gap: 6px;
+          font-family: inherit; font-size: 12px; font-weight: 600;
+          padding: 7px 14px; border: 1px solid #d1d5db; border-radius: 6px;
+          background: #ffffff; color: #374151; cursor: pointer;
+        }
+
+        .btn-icon { font-size: 13px; color: #6b7280; }
+
+        .btn-dashboard {
+          font-family: inherit; font-size: 12px; font-weight: 700;
+          padding: 8px 14px; border: none; border-radius: 6px;
+          background: #3b6ef5; color: #ffffff; cursor: pointer;
+        }
+
+        .breadcrumb { display: flex; align-items: center; gap: 4px; font-size: 12px; margin-bottom: 12px; }
+        .crumb { padding: 4px 9px; background: #f1f5f9; color: #374151; border-radius: 5px; font-weight: 600; }
+
+        .direct-chip {
+          display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280;
+          border: 1px solid #e5e7eb; padding: 8px 12px; border-radius: 6px; margin-bottom: 16px;
+        }
+
+        .submappen-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; margin-bottom: 8px; }
+        .submappen-list { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .folder-chip {
+          display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #374151;
+          border: 1px solid #3b6ef5; border-radius: 6px; padding: 8px 14px; background: #ffffff;
+        }
+
+        .divider { border-top: 1px solid #f3f4f6; margin-bottom: 16px; }
+        .section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; margin-bottom: 10px; }
+
+        .table-controls { display: flex; gap: 10px; margin-bottom: 14px; }
+        .search-input { flex: 1; font-family: inherit; font-size: 13px; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 6px; color: #111827; }
+        .type-select { font-family: inherit; font-size: 13px; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 6px; background: #ffffff; color: #374151; min-width: 140px; }
+
+        .browser-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .browser-table thead th {
+          text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+          color: #6b7280; padding: 0 10px 10px 0;
+        }
+        .browser-table tbody tr { border-top: 1px solid #f3f4f6; }
+        .browser-table tbody td { padding: 10px; color: #374151; }
+        .browser-table .filename-cell { color: #1d4ed8; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+        .browser-table .dim-cell { color: #9ca3af; }
+
+        .detail-panel { width: 300px; flex-shrink: 0; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); }
+        .detail-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .detail-name { font-size: 14px; font-weight: 700; color: #111827; }
+        .detail-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; color: #6b7280; border: 1px solid #e5e7eb; border-radius: 4px; padding: 2px 6px; }
+        .detail-tabs { display: flex; gap: 14px; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px; margin-bottom: 14px; }
+        .detail-tab { font-size: 12px; font-weight: 600; color: #6b7280; padding-bottom: 8px; }
+        .detail-tab.active { color: #111827; border-bottom: 2px solid #3b6ef5; }
+        .detail-metric-row { display: flex; gap: 10px; margin-bottom: 14px; }
+        .detail-metric { flex: 1; text-align: center; background: #f1f5f9; border-radius: 6px; padding: 12px 8px; }
+        .detail-metric .num { font-size: 18px; font-weight: 700; color: #111827; }
+        .detail-metric .lbl { font-size: 9px; color: #6b7280; text-transform: uppercase; }
+        .detail-cats-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #6b7280; margin-bottom: 8px; }
+        .detail-cat-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #374151; border: 1px solid #e5e7eb; border-radius: 5px; padding: 4px 8px; margin: 0 6px 6px 0; }
+    </style>
+</head>
+<body>
+
+<div class="page">
+
+    <div class="topbar">
+        <button class="btn-back">&larr; Overzicht</button>
+        <div class="page-title">specific-test5</div>
+        <div class="page-meta">/Users/dragonfly/Downloads/test-archieven/specific-test5 &nbsp;&nbsp; Aangemaakt: <b>2026-10-03</b></div>
+    </div>
+
+    <div class="stats-card">
+        <div class="stats-numbers">
+            <div class="stat"><div class="num">5</div><div class="lbl">Bestanden</div></div>
+            <div class="stat"><div class="num">3</div><div class="lbl">Types</div></div>
+            <div class="stat"><div class="num">2</div><div class="lbl">Mappen</div></div>
+        </div>
+        <div class="summary-box">
+            <div class="summary-label">Archief samenvatting</div>
+            <div class="summary-text">Geen samenvatting beschikbaar.</div>
+        </div>
+    </div>
+
+    <div class="main-row">
+
+        <div class="browser-card">
+            <div class="browser-header">
+                <div class="browser-title">Archief browser</div>
+                <div class="header-actions">
+                    <div class="view-tabs">
+                        <button class="view-tab active">Per map</button>
+                        <button class="view-tab">Lijst</button>
+                    </div>
+                    <button class="btn-exact-search">
+                        <span class="btn-icon">&#128269;</span> Exact zoeken
+                    </button>
+                    <button class="btn-semantic-search">
+                        <span class="btn-icon">&#128269;</span> Semantisch zoeken
+                    </button>
+                    <button class="btn-dashboard">Dashboard</button>
+                </div>
+            </div>
+
+            <div class="breadcrumb"><div class="crumb">/</div></div>
+
+            <div class="direct-chip">4 bestanden direct in deze map</div>
+
+            <div class="submappen-label">1 submappen</div>
+            <div class="submappen-list">
+                <div class="folder-chip">story</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section-label">Bestanden in deze map (4 van 4)</div>
+            <div class="table-controls">
+                <input class="search-input" placeholder="Zoek op bestandsnaam...">
+                <select class="type-select"><option>Alle types</option></select>
+            </div>
+            <table class="browser-table">
+                <thead>
+                <tr><th>Bestandsnaam</th><th>Categorie</th><th>Grootte</th><th>Taal</th><th>Auteur</th><th>Datum aangemaakt</th></tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td class="filename-cell">.DS_Store</td>
+                    <td>andere</td>
+                    <td>6.0 KB</td>
+                    <td class="dim-cell">&mdash;</td>
+                    <td class="dim-cell">&mdash;</td>
+                    <td class="dim-cell">&mdash;</td>
+                </tr>
+                <tr>
+                    <td class="filename-cell">report.html</td>
+                    <td>tekstbestand</td>
+                    <td>59.9 KB</td>
+                    <td>en</td>
+                    <td class="dim-cell">&mdash;</td>
+                    <td class="dim-cell">&mdash;</td>
+                </tr>
+                <tr>
+                    <td class="filename-cell">siegfried.csv</td>
+                    <td>gegevensbestand</td>
+                    <td>772.2 KB</td>
+                    <td class="dim-cell">&mdash;</td>
+                    <td class="dim-cell">&mdash;</td>
+                    <td class="dim-cell">&mdash;</td>
+                </tr>
+                <tr>
+                    <td class="filename-cell">tree.txt</td>
+                    <td>tekstbestand</td>
+                    <td>230.6 KB</td>
+                    <td>en</td>
+                    <td class="dim-cell">&mdash;</td>
+                    <td class="dim-cell">&mdash;</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="detail-panel">
+            <div class="detail-header">
+                <div class="detail-name">.</div>
+                <div class="detail-tag">MAP</div>
+            </div>
+            <div class="detail-tabs">
+                <div class="detail-tab active">Overzicht</div>
+                <div class="detail-tab">Samenvatting</div>
+                <div class="detail-tab">NER</div>
+                <div class="detail-tab">Topics</div>
+            </div>
+            <div class="detail-metric-row">
+                <div class="detail-metric"><div class="num">4</div><div class="lbl">Bestanden</div></div>
+                <div class="detail-metric"><div class="num">3</div><div class="lbl">Types</div></div>
+            </div>
+            <div class="detail-cats-label">Bestandscategorieën</div>
+            <div class="detail-cat-chip">tekstbestand 2</div>
+            <div class="detail-cat-chip">andere 1</div>
+            <div class="detail-cat-chip">gegevensbestand 1</div>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

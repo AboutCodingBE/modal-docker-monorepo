@@ -32,6 +32,7 @@ from app.list_files_for_archive.router import router as list_files_for_archive_r
 from app.entity_topic_autocomplete.router import router as entity_topic_autocomplete_router
 from app.search_archive.router import router as search_archive_router
 from app.embedding_settings.router import router as embedding_settings_router
+from app.search_files_for_archive.router import router as search_files_for_archive_router
 
 import asyncio
 import sys
@@ -71,6 +72,7 @@ app.include_router(list_files_for_archive_router)
 app.include_router(entity_topic_autocomplete_router)
 app.include_router(search_archive_router)
 app.include_router(embedding_settings_router)
+app.include_router(search_files_for_archive_router)
 
 @app.get("/api/health")
 async def health():
