@@ -7,8 +7,13 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.perform_tika_analysis.correspondents_repository import CorrespondentsRepository
 from app.perform_tika_analysis.file_repository import FileRepository
-from app.perform_tika_analysis.tika_extractor import TIKA_text_extract
+from app.perform_tika_analysis.tika_extractor import (
+    EMAIL_MIME_TYPES,
+    TIKA_text_extract,
+    extract_correspondents_from_metadata,
+)
 from app.perform_tika_analysis.tika_repository import TikaRepository
 from app.perform_tika_analysis.text_functions import normalize_newlines, get_word_count, path_filter
 from app.analysis import task_tracker
@@ -24,6 +29,7 @@ class PerformTikaAnalysis:
         self._session = session
         self._file_repo = FileRepository(session)
         self._tika_repo = TikaRepository(session)
+        self._correspondents_repo = CorrespondentsRepository(session)
 
     def _ensure_single_value(self, value):
         """Reduces lists to their first element; converts empty strings to None."""
@@ -85,7 +91,7 @@ class PerformTikaAnalysis:
 
                 tika = await asyncio.to_thread(TIKA_text_extract, file_content, ocr_enabled)
 
-                if not isinstance(tika, (tuple, list)) or len(tika) < 6:
+                if not isinstance(tika, (tuple, list)) or len(tika) < 7:
                     _logger.warning(f"{log_context(archive_id, file_name)}Invalid Tika output, skipping.")
                     failed_count += 1
                     continue
@@ -97,6 +103,7 @@ class PerformTikaAnalysis:
                 lang = self._ensure_single_value(tika[3])
                 creation_date = self._parse_datetime(tika[4])
                 creator = self._ensure_single_value(tika[5])
+                metadata = tika[6] if isinstance(tika[6], dict) else {}
 
                 if content and len(str(content).strip()) > 0:
                     clean_content = normalize_newlines(content)
@@ -116,6 +123,12 @@ class PerformTikaAnalysis:
                         creator,
                         creation_date,
                     )
+
+                    if mime_type in EMAIL_MIME_TYPES:
+                        correspondents = extract_correspondents_from_metadata(metadata, file_id)
+                        if correspondents:
+                            await self._correspondents_repo.bulk_insert(file_id, archive_id, correspondents)
+
                     processed += 1
                     _logger.info(f"{log_context(archive_id, file_name)}Extraction saved.")
                 except Exception as e:

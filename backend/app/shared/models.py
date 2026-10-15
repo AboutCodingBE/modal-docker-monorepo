@@ -278,3 +278,18 @@ class EmbeddingSettings(Base):
     search_max_distance: Mapped[float] = mapped_column(Float, nullable=False, default=0.7)
     search_top_n: Mapped[int] = mapped_column(Integer, nullable=False, default=25)
     embedding_model_downloaded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+
+class FileCorrespondent(Base):
+    __tablename__ = "file_correspondents"
+    __table_args__ = (
+        CheckConstraint("email IS NOT NULL OR name IS NOT NULL", name="ck_file_correspondents_email_or_name"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    file_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
+    archive_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    role: Mapped[str] = mapped_column(String(10), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(320), nullable=True)
+    name: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

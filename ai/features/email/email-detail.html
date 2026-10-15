@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bestand detail — E-mail correspondenten</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          background: #f0f2f5;
+          color: #111827;
+          padding: 40px;
+          display: flex;
+          justify-content: center;
+        }
+
+        /* ── Detail panel (matches the real right-hand panel) ── */
+        .detail-panel {
+          width: 320px;
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 18px;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .detail-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .detail-name { font-size: 14px; font-weight: 700; color: #111827; }
+        .detail-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; color: #6b7280; border: 1px solid #e5e7eb; border-radius: 4px; padding: 2px 6px; }
+        .detail-close { font-size: 16px; color: #9ca3af; background: none; border: none; cursor: pointer; }
+
+        .detail-tabs { display: flex; gap: 14px; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px; margin-bottom: 16px; }
+        .detail-tab { font-size: 12px; font-weight: 600; color: #6b7280; padding-bottom: 8px; cursor: pointer; }
+        .detail-tab.active { color: #111827; border-bottom: 2px solid #3b6ef5; }
+
+        /* ── Plain metadata rows (bestandsnaam, pad, extensie, ...) ── */
+        .meta-table { width: 100%; font-size: 12px; margin-bottom: 20px; }
+        .meta-table tr { vertical-align: top; }
+        .meta-table td { padding: 7px 0; }
+        .meta-table .meta-label {
+          font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+          color: #9ca3af; width: 90px; padding-right: 10px;
+        }
+        .meta-table .meta-value { color: #374151; }
+
+        /* ── E-mail correspondenten: same table pattern as the rest of Overzicht,
+             just with a wider label column so label and value aren't cramped ── */
+        .correspondents-table { width: 100%; font-size: 12px; border-top: 1px solid #f3f4f6; padding-top: 4px; }
+        .correspondents-table tr { vertical-align: top; }
+        .correspondents-table td { padding: 10px 0; }
+        .correspondents-table .meta-label {
+          font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+          color: #9ca3af; width: 110px; padding-right: 16px;
+        }
+        .correspondents-table .meta-value { font-size: 13px; color: #374151; line-height: 1.6; }
+
+        .corr-more {
+          display: inline-block;
+          margin-left: 4px;
+          font-size: 12px;
+          font-weight: 600;
+          color: #1d4ed8;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .corr-more:hover { text-decoration: underline; }
+
+        /* ── Overlay modal for full recipient list ── */
+        .overlay-backdrop {
+          position: fixed; inset: 0; background: rgba(17, 24, 39, 0.45);
+          display: none; align-items: center; justify-content: center; z-index: 50; padding: 40px;
+        }
+        .overlay-backdrop.open { display: flex; }
+
+        .corr-modal {
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          width: 100%;
+          max-width: 420px;
+          max-height: 70vh;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .corr-modal-header {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 16px 20px; border-bottom: 1px solid #f3f4f6;
+        }
+        .corr-modal-title { font-size: 15px; font-weight: 700; color: #111827; }
+        .corr-modal-close { font-size: 18px; color: #9ca3af; background: none; border: none; cursor: pointer; }
+        .corr-modal-close:hover { color: #111827; }
+
+        .corr-modal-body { padding: 10px 20px; overflow-y: auto; flex: 1; }
+
+        .corr-modal-row {
+          font-size: 13px; color: #374151;
+          padding: 7px 0;
+          border-bottom: 1px solid #f9fafb;
+        }
+        .corr-modal-row:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+<div class="detail-panel">
+    <div class="detail-header">
+        <div class="detail-name">Nieuwsbrief_okt.eml</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div class="detail-tag">BESTAND</div>
+            <button class="detail-close">&#10005;</button>
+        </div>
+    </div>
+
+    <div class="detail-tabs">
+        <div class="detail-tab active">Overzicht</div>
+        <div class="detail-tab">Samenvatting</div>
+        <div class="detail-tab">NER</div>
+        <div class="detail-tab">Topics</div>
+    </div>
+
+    <table class="meta-table">
+        <tr><td class="meta-label">Bestandsnaam</td><td class="meta-value">Nieuwsbrief_okt.eml</td></tr>
+        <tr><td class="meta-label">Pad</td><td class="meta-value">2026/nieuwsbrieven/Nieuwsbrief_okt.eml</td></tr>
+        <tr><td class="meta-label">Extensie</td><td class="meta-value">.eml</td></tr>
+        <tr><td class="meta-label">Mime-type</td><td class="meta-value">message/rfc822</td></tr>
+        <tr><td class="meta-label">Grootte</td><td class="meta-value">412.0 KB</td></tr>
+    </table>
+
+    <table class="correspondents-table">
+        <tr>
+            <td class="meta-label">Van</td>
+            <td class="meta-value">redactie@bijdeburen.be</td>
+        </tr>
+        <tr>
+            <td class="meta-label">Aan (100)</td>
+            <td class="meta-value">jan@mail.be, lies@mail.be <span class="corr-more" data-field="aan">+ 98 meer</span></td>
+        </tr>
+        <tr>
+            <td class="meta-label">CC (12)</td>
+            <td class="meta-value">tom@mail.be, eva@mail.be <span class="corr-more" data-field="cc">+ 10 meer</span></td>
+        </tr>
+        <tr>
+            <td class="meta-label">BCC (2)</td>
+            <td class="meta-value">kris@mail.be, nina@mail.be</td>
+        </tr>
+    </table>
+</div>
+
+<!-- Overlay modal: full recipient list -->
+<div class="overlay-backdrop" id="corrOverlay">
+    <div class="corr-modal">
+        <div class="corr-modal-header">
+            <div class="corr-modal-title" id="corrModalTitle">Aan (100)</div>
+            <button class="corr-modal-close" id="corrModalClose">&#10005;</button>
+        </div>
+        <div class="corr-modal-body" id="corrModalBody">
+            <!-- populated by JS -->
+        </div>
+    </div>
+</div>
+
+<script>
+    const sampleRecipients = [
+      'jan@mail.be', 'lies@mail.be', 'tom@mail.be', 'eva@mail.be', 'ben@mail.be',
+      'kris@mail.be', 'nina@mail.be', 'sofie@mail.be', 'wout@mail.be', 'ine@mail.be',
+      'bram@mail.be', 'elke@mail.be', 'dries@mail.be', 'anke@mail.be', 'lotte@mail.be'
+    ];
+
+    const fieldTitles = { aan: 'Aan (100)', cc: 'CC (12)' };
+    const overlay = document.getElementById('corrOverlay');
+    const modalBody = document.getElementById('corrModalBody');
+    const modalTitle = document.getElementById('corrModalTitle');
+
+    document.querySelectorAll('.corr-more').forEach(link => {
+      link.addEventListener('click', () => {
+        const field = link.dataset.field;
+        modalTitle.textContent = fieldTitles[field];
+        modalBody.innerHTML = sampleRecipients.map(r => '<div class="corr-modal-row">' + r + '</div>').join('')
+          + '<div class="corr-modal-row" style="color:#9ca3af;">... en nog meer</div>';
+        overlay.classList.add('open');
+      });
+    });
+
+    document.getElementById('corrModalClose').addEventListener('click', () => overlay.classList.remove('open'));
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
+</script>
+
+</body>
+</html>

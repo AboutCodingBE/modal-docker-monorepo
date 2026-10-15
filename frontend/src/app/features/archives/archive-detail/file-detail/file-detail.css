@@ -238,6 +238,87 @@
   font-weight: 700;
 }
 
+/* ── Correspondents ── */
+.corr-list {
+  margin-top: 4px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 4px;
+}
+
+.corr-more {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #3b6ef5;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.corr-more:hover {
+  text-decoration: underline;
+}
+
+/* ── Correspondent modal ── */
+.corr-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 40px;
+}
+
+.corr-modal {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.corr-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f3f4f6;
+  flex-shrink: 0;
+}
+
+.corr-modal-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.corr-modal-body {
+  padding: 8px 18px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.corr-modal-row {
+  font-size: 13px;
+  color: #374151;
+  padding: 7px 0;
+  border-bottom: 1px solid #f9fafb;
+}
+
+.corr-modal-row:last-child {
+  border-bottom: none;
+}
+
 .analysis-section-header {
   display: flex;
   align-items: center;

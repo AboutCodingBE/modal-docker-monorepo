@@ -1,0 +1,10 @@
+From: "Dupont, Marie" <marie.dupont@example.com>
+To: "Vermaercke, Karl" <karl.vermaercke@example.com>, "Peeters; An" <an.peeters@example.com>
+Cc: =?UTF-8?Q?=C3=89l=C3=A9onore_Lef=C3=A8vre?= <eleonore.lefevre@example.com>
+Subject: Test email 3 - special names
+Date: Thu, 15 Oct 2026 10:02:00 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+Names with commas, semicolons, and non-ASCII characters.
+Expected: "Vermaercke, Karl" stays one name; "Peeters; An" stays one name; accents intact.

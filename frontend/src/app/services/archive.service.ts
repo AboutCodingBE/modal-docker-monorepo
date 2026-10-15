@@ -138,10 +138,18 @@ export interface AnalysisSummaryEntry {
   result: string;
 }
 
+export interface Correspondent {
+  role: 'from' | 'to' | 'cc' | 'bcc';
+  email: string | null;
+  name: string | null;
+  position: number;
+}
+
 export interface FileAnalysis {
   file_id: string;
   type: 'file' | 'folder';
   summaries: AnalysisSummaryEntry[];
+  correspondents: Correspondent[] | null;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -71,6 +71,24 @@
           <dd>{{ formatDate(file().content_created_at) }}</dd>
         </div>
       </dl>
+
+      @if (correspondents() && correspondents()!.length > 0) {
+        <dl class="meta-list corr-list">
+          @for (role of ['from', 'to', 'cc', 'bcc']; track role) {
+            @if (corrForRole(role).length > 0) {
+              <div class="meta-row">
+                <dt>{{ corrLabel(role) }}</dt>
+                <dd>
+                  {{ corrPreview(role) }}
+                  @if (corrMoreCount(role) > 0) {
+                    <button class="corr-more" (click)="openModal(role)">+ {{ corrMoreCount(role) }} meer</button>
+                  }
+                </dd>
+              </div>
+            }
+          }
+        </dl>
+      }
     }
 
     @if (activeTab() === 'samenvatting') {
@@ -181,3 +199,19 @@
   </div>
 
 </div>
+
+@if (modalOpen()) {
+  <div class="corr-overlay" (click)="closeModal()">
+    <div class="corr-modal" (click)="$event.stopPropagation()">
+      <div class="corr-modal-header">
+        <span class="corr-modal-title">{{ modalTitle() }}</span>
+        <button class="btn-close" (click)="closeModal()">×</button>
+      </div>
+      <div class="corr-modal-body">
+        @for (item of modalItems(); track item) {
+          <div class="corr-modal-row">{{ item }}</div>
+        }
+      </div>
+    </div>
+  </div>
+}
