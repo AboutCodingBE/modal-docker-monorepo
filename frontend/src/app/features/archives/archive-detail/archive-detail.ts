@@ -72,6 +72,10 @@ export class ArchiveDetail implements OnInit {
     this.router.navigate(['/archives']);
   }
 
+  openExactSearch(): void {
+    this.router.navigate(['/archives', this.archiveId(), 'exact-search']);
+  }
+
   openSemanticSearch(): void {
     this.router.navigate(['/archives', this.archiveId(), 'search']);
   }
