@@ -64,7 +64,7 @@ class CreateSummariesForArchive:
 
                 file_repo = FileRepository(session)
                 files = await file_repo.get_files_with_tika_content(archive_id, categories)
-                folders = await file_repo.get_all_folders(archive_id)
+                folders = await file_repo.get_all_folders(archive_id) if categories is None else []
 
                 if processing_settings.minimum_text_length > 0:
                     files = [
