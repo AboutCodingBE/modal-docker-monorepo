@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.models import Archive, ArchiveAnalysis, ArchiveAnalysisStatus, File, GenericType, Summary, TikaAnalysis
+from app.shared.models import Archive, ArchiveAnalysis, ArchiveAnalysisStatus, File, FileCorrespondent, GenericType, Summary, TikaAnalysis
 
 
 class ArchiveDetailRepository:
@@ -82,6 +82,13 @@ class ArchiveDetailRepository:
             .order_by(ArchiveAnalysis.analyzed_at.desc())
         )
 
+        correspondents_result = await self._session.execute(
+            select(FileCorrespondent)
+            .where(FileCorrespondent.file_id == file_id)
+            .order_by(FileCorrespondent.role, FileCorrespondent.position)
+        )
+        correspondents = correspondents_result.scalars().all()
+
         return {
             "file_id": str(file.id),
             "type": "folder" if file.is_directory else "file",
@@ -94,6 +101,15 @@ class ArchiveDetailRepository:
                 }
                 for summary, analysis in summaries_result.all()
             ],
+            "correspondents": [
+                {
+                    "role": c.role,
+                    "email": c.email,
+                    "name": c.name,
+                    "position": c.position,
+                }
+                for c in correspondents
+            ] if correspondents else None,
         }
 
     async def get_root_files(self, archive_id: uuid.UUID) -> dict:

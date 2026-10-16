@@ -1,9 +1,11 @@
 import { Component, effect, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ArchiveService, FolderFile, NerResult, TopicsResult } from '../../../../services/archive.service';
+import { ArchiveService, Correspondent, FolderFile, NerResult, TopicsResult } from '../../../../services/archive.service';
 import { AnalysisSummary } from '../analysis-summary/analysis-summary';
 
 type Tab = 'overzicht' | 'samenvatting' | 'ner' | 'topics';
+
+const PREVIEW_LIMIT = 2;
 
 @Component({
   selector: 'app-file-detail',
@@ -28,15 +30,25 @@ export class FileDetail {
   topicsLoading = signal(false);
   topicsLoaded = signal(false);
 
+  correspondents = signal<Correspondent[] | null>(null);
+  modalOpen = signal(false);
+  modalRole = signal<string | null>(null);
+
   constructor() {
     effect(
       () => {
-        this.file(); // track file changes
+        const file = this.file();
+        const archiveId = this.archiveId();
         this.activeTab.set('overzicht');
         this.nerData.set(null);
         this.nerLoaded.set(false);
         this.topicsData.set(null);
         this.topicsLoaded.set(false);
+        this.correspondents.set(null);
+        this.modalOpen.set(false);
+        if (archiveId && file) {
+          this._loadCorrespondents(archiveId, file.id);
+        }
       },
       { allowSignalWrites: true },
     );
@@ -62,6 +74,65 @@ export class FileDetail {
   formatDate(iso: string | null): string {
     if (!iso) return '—';
     return iso.split('T')[0];
+  }
+
+  formatCorrespondent(c: Correspondent): string {
+    return c.name || c.email || '';
+  }
+
+  corrForRole(role: string): Correspondent[] {
+    return (this.correspondents() ?? []).filter(c => c.role === role);
+  }
+
+  corrLabel(role: string): string {
+    const items = this.corrForRole(role);
+    const labels: Record<string, string> = { from: 'Van', to: 'Aan', cc: 'CC', bcc: 'BCC' };
+    const base = labels[role] ?? role;
+    return items.length > 1 ? `${base} (${items.length})` : base;
+  }
+
+  corrPreview(role: string): string {
+    return this.corrForRole(role)
+      .slice(0, PREVIEW_LIMIT)
+      .map(c => this.formatCorrespondent(c))
+      .filter(Boolean)
+      .join(', ');
+  }
+
+  corrMoreCount(role: string): number {
+    return Math.max(0, this.corrForRole(role).length - PREVIEW_LIMIT);
+  }
+
+  openModal(role: string): void {
+    this.modalRole.set(role);
+    this.modalOpen.set(true);
+  }
+
+  closeModal(): void {
+    this.modalOpen.set(false);
+  }
+
+  modalTitle(): string {
+    const role = this.modalRole();
+    return role ? this.corrLabel(role) : '';
+  }
+
+  modalItems(): string[] {
+    const role = this.modalRole();
+    if (!role) return [];
+    return this.corrForRole(role)
+      .map(c => {
+        if (c.name && c.email) return `${c.name} <${c.email}>`;
+        return c.name || c.email || '';
+      })
+      .filter(Boolean);
+  }
+
+  private _loadCorrespondents(archiveId: string, fileId: string): void {
+    this.archiveService.getFileAnalysis(archiveId, fileId).subscribe({
+      next: (data) => this.correspondents.set(data.correspondents ?? null),
+      error: () => this.correspondents.set(null),
+    });
   }
 
   private _loadNer(): void {
