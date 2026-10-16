@@ -40,7 +40,7 @@
             @if (ocrStep() === 'idle' || ocrStep() === 'verify_failed') {
               Tekstherkenning op afbeeldingen en gescande PDF's via Tesseract. Vereist de originele bestanden.
             } @else if (ocrStep() === 'verifying') {
-              Mapkeuze geopend — selecteer de archiefmap...
+              Locatie Archief — selecteer de archiefmap...
             } @else if (ocrStep() === 'verified') {
               Bronmap geverifieerd. Klaar om te starten.
             } @else if (ocrStep() === 'starting') {
@@ -152,12 +152,12 @@
         <!-- OCR step 1: verify -->
         <button class="btn-primary" (click)="verifyOcr()" [disabled]="!canVerify()">
           @if (ocrStep() === 'verifying') {
-            Mapkeuze geopend...
+            Locatie Archief...
           } @else {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
             </svg>
-            Verifieer Bron
+            Verifieer
           }
         </button>
       } @else if (ocrStep() === 'verify_failed') {
