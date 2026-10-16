@@ -123,6 +123,7 @@ class AnalysisTask(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    outcome: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
 class TikaAnalysis(Base):

@@ -138,6 +138,15 @@ export interface AnalysisSummaryEntry {
   result: string;
 }
 
+export interface OcrVerifyResult {
+  ok: boolean;
+  matched?: number;
+  total?: number;
+  mismatches?: string[];
+  root_path?: string;
+  reason?: string;
+}
+
 export interface Correspondent {
   role: 'from' | 'to' | 'cc' | 'bcc';
   email: string | null;
@@ -252,6 +261,14 @@ export class ArchiveService {
       archiveId,
       analysis,
     });
+  }
+
+  verifyOcrSource(archiveId: string): Observable<OcrVerifyResult> {
+    return this.http.post<OcrVerifyResult>(`/api/ocr/${archiveId}/verify`, {});
+  }
+
+  startOcr(archiveId: string): Observable<{ task_id: string }> {
+    return this.http.post<{ task_id: string }>(`/api/ocr/${archiveId}/start`, {});
   }
 
 }

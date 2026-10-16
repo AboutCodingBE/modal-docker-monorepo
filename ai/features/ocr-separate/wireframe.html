@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse Configureren — Wireframe</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          background: #f0f2f5;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px;
+        }
+
+        .backdrop { position: relative; width: 100%; max-width: 700px; }
+
+        .overlay-scrim {
+          position: absolute;
+          inset: -40px;
+          background: rgba(17, 24, 39, 0.45);
+          border-radius: 4px;
+        }
+
+        .modal {
+          position: relative;
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 14px;
+          width: 100%;
+          max-width: 640px;
+          margin: 0 auto;
+          padding: 28px 32px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          margin-bottom: 18px;
+        }
+
+        .modal-title { font-size: 24px; font-weight: 700; color: #111827; margin-bottom: 6px; }
+        .modal-subtitle { font-size: 14px; color: #6b7280; }
+        .modal-subtitle b { color: #111827; }
+
+        .modal-close { font-size: 20px; color: #9ca3af; background: none; border: none; cursor: pointer; transition: color 0.15s; }
+        .modal-close:hover { color: #111827; }
+
+        .divider { border-top: 1px solid #f3f4f6; margin-bottom: 18px; }
+
+        /* ── OCR row: separate, special — amber to set it apart from the other tools ── */
+        .ocr-row {
+          border: 1px solid #fde68a;
+          background: #fef3c7;
+          border-radius: 10px;
+          padding: 14px 16px;
+          margin-bottom: 8px;
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .ocr-row input[type="checkbox"] { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; accent-color: #b45309; }
+
+        .ocr-text { flex: 1; }
+        .ocr-title { font-size: 16px; font-weight: 700; color: #92400e; margin-bottom: 2px; }
+        .ocr-desc { font-size: 13px; color: #92400e; }
+
+        .ocr-status {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 12px; color: #b45309; font-weight: 600; margin-top: 8px;
+        }
+        .ocr-status .status-icon { font-size: 12px; }
+
+        .ocr-note {
+          font-size: 12px; color: #9ca3af; margin-bottom: 18px;
+        }
+
+        /* ── Analysis tool rows (unchanged structure, keeps model + gear) ── */
+        .tool-row {
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 16px 18px;
+          margin-bottom: 10px;
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          transition: opacity 0.15s, border-color 0.15s, background 0.15s;
+        }
+
+        .tool-row:has(.other-check:checked) { border-color: #3b6ef5; background: #eff6ff; }
+
+        .tool-row input[type="checkbox"] { width: 18px; height: 18px; margin-top: 4px; flex-shrink: 0; accent-color: #3b6ef5; }
+
+        .tool-icon {
+          width: 40px; height: 40px;
+          border-radius: 8px;
+          background: #f1f5f9;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 18px;
+          flex-shrink: 0;
+        }
+
+        .tool-text { flex: 1; min-width: 0; }
+        .tool-title { font-size: 16px; font-weight: 700; color: #111827; margin-bottom: 2px; }
+        .tool-desc { font-size: 13px; color: #6b7280; line-height: 1.4; }
+
+        .tool-model { flex-shrink: 0; display: flex; align-items: flex-end; gap: 8px; }
+
+        .model-col { display: flex; flex-direction: column; gap: 4px; }
+
+        .model-label {
+          font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+          color: #6b7280; text-align: left;
+        }
+
+        .model-select {
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          font-size: 13px;
+          padding: 8px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          background: #ffffff;
+          color: #374151;
+          min-width: 130px;
+        }
+
+        .btn-settings {
+          width: 36px; height: 36px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          background: #ffffff;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 15px;
+          color: #9ca3af;
+          cursor: pointer;
+          flex-shrink: 0;
+          transition: border-color 0.15s, color 0.15s;
+        }
+        .btn-settings:hover { border-color: #9ca3af; color: #374151; }
+
+        /* ── Footer ── */
+        .modal-footer {
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
+          gap: 20px;
+          border-top: 1px solid #f3f4f6;
+          padding-top: 18px;
+          margin-top: 6px;
+        }
+
+        .btn-cancel {
+          font-family: inherit; font-size: 14px; font-weight: 700;
+          background: none; border: none; color: #6b7280; cursor: pointer;
+          transition: color 0.15s;
+        }
+        .btn-cancel:hover { color: #111827; }
+
+        .btn-start {
+          display: flex; align-items: center; gap: 8px;
+          font-family: inherit; font-size: 14px; font-weight: 700;
+          padding: 12px 22px; border: none; border-radius: 8px;
+          background: #111827; color: #ffffff; cursor: pointer;
+          transition: background 0.15s;
+        }
+        .btn-start:hover { background: #1f2937; }
+    </style>
+</head>
+<body>
+
+<div class="backdrop">
+    <div class="overlay-scrim"></div>
+
+    <div class="modal">
+
+        <div class="modal-header">
+            <div>
+                <div class="modal-title">Analyse Configureren</div>
+                <div class="modal-subtitle">Selecteer tools voor <b>mail</b>.</div>
+            </div>
+            <button class="modal-close">&#10005;</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- OCR: separate, mutually exclusive with the rest -->
+        <div class="ocr-row">
+            <input type="checkbox" id="ocrCheck">
+            <div class="ocr-text">
+                <div class="ocr-title">OCR</div>
+                <div class="ocr-desc">Herkent tekst in gescande afbeeldingen en documenten.</div>
+                <div class="ocr-status" id="ocrStatus">
+                    <span class="status-icon">&#9888;</span>
+                    <span>OCR is nog niet uitgevoerd op dit archief</span>
+                </div>
+            </div>
+        </div>
+        <div class="ocr-note">OCR kan niet gecombineerd worden met andere analyses.</div>
+
+        <!-- Other analysis tools: unchanged, keep model select + settings gear -->
+        <div class="tool-row" id="toolRow1">
+            <input type="checkbox" class="other-check" checked>
+            <div class="tool-icon">&#128269;</div>
+            <div class="tool-text">
+                <div class="tool-title">Entiteitsherkenning</div>
+                <div class="tool-desc">Detecteert personen, locaties en organisaties in de tekst.</div>
+            </div>
+            <div class="tool-model">
+                <div class="model-col">
+                    <div class="model-label">Model</div>
+                    <div class="model-select">gemma3:1b</div>
+                </div>
+                <button class="btn-settings">&#9881;</button>
+            </div>
+        </div>
+
+        <div class="tool-row" id="toolRow2">
+            <input type="checkbox" class="other-check" checked>
+            <div class="tool-icon">&#128221;</div>
+            <div class="tool-text">
+                <div class="tool-title">Samenvatting</div>
+                <div class="tool-desc">AI-gegenereerde samenvattingen per bestand en map.</div>
+            </div>
+            <div class="tool-model">
+                <div class="model-col">
+                    <div class="model-label">Model</div>
+                    <div class="model-select">smollm2:135m</div>
+                </div>
+                <button class="btn-settings">&#9881;</button>
+            </div>
+        </div>
+
+        <div class="tool-row" id="toolRow3">
+            <input type="checkbox" class="other-check" checked>
+            <div class="tool-icon">&#127991;</div>
+            <div class="tool-text">
+                <div class="tool-title">Onderwerpdetectie</div>
+                <div class="tool-desc">Identificeert de belangrijkste onderwerpen per bestand.</div>
+            </div>
+            <div class="tool-model">
+                <div class="model-col">
+                    <div class="model-label">Model</div>
+                    <div class="model-select">gemma3:1b</div>
+                </div>
+                <button class="btn-settings">&#9881;</button>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-cancel">Annuleren</button>
+            <button class="btn-start">&#9654; Start Analyse</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const ocrCheck = document.getElementById('ocrCheck');
+    const otherChecks = document.querySelectorAll('.other-check');
+    const toolRows = [document.getElementById('toolRow1'), document.getElementById('toolRow2'), document.getElementById('toolRow3')];
+
+    ocrCheck.addEventListener('change', () => {
+      if (ocrCheck.checked) {
+        otherChecks.forEach(c => { c.checked = false; c.disabled = true; });
+        toolRows.forEach(r => r.style.opacity = '0.5');
+      } else {
+        otherChecks.forEach(c => { c.disabled = false; });
+        toolRows.forEach(r => r.style.opacity = '1');
+      }
+    });
+
+    otherChecks.forEach(c => {
+      c.addEventListener('change', () => {
+        const anyChecked = Array.from(otherChecks).some(x => x.checked);
+        ocrCheck.disabled = anyChecked;
+      });
+    });
+</script>
+
+</body>
+</html>

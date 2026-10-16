@@ -42,15 +42,24 @@ _TIKA_KEYS = {
 _EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
 
-def TIKA_text_extract(file_content: bytes, ocr_enabled: bool = False):
+def TIKA_text_extract(
+    file_content: bytes,
+    ocr_enabled: bool = False,
+    ocr_language: str | None = None,
+):
     """
     Extracts text and metadata from file content bytes using Apache Tika.
 
     Returns a tuple of (mime_type, text, tika_parser, text_language,
     creation_date, creator, metadata), or None if extraction fails.
+
+    ocr_language: Tesseract language string (e.g. 'nld+eng') sent as
+    X-Tika-OCRLanguage. Only used when ocr_enabled is True.
     """
     try:
         headers = {} if ocr_enabled else {'X-Tika-OCRskipOcr': 'true'}
+        if ocr_enabled and ocr_language:
+            headers['X-Tika-OCRLanguage'] = ocr_language
         parsed = parser.from_buffer(
             file_content,
             serverEndpoint=settings.tika_url,

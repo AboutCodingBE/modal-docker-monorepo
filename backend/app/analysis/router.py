@@ -22,12 +22,14 @@ def _task_to_event(task) -> str:
 
     payload = {
         "task_id": str(task.id),
+        "task_type": task.task_type,
         "status": task.status,
         "total_files": task.total_files,
         "processed": task.processed,
         "failed_count": task.failed_count,
         "current_file": task.current_file,
         "percentage": percentage,
+        "outcome": task.outcome,
     }
     return f"data: {json.dumps(payload)}\n\n"
 

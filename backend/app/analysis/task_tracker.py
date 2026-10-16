@@ -63,12 +63,47 @@ async def complete_task(session: AsyncSession, task_id: uuid.UUID) -> None:
         await session.flush()
 
 
+async def complete_task_with_outcome(
+    session: AsyncSession, task_id: uuid.UUID, outcome: dict
+) -> None:
+    task = await _get(session, task_id)
+    if task:
+        task.status = "completed"
+        task.completed_at = datetime.now(timezone.utc)
+        task.outcome = outcome
+        await session.flush()
+
+
 async def fail_task(session: AsyncSession, task_id: uuid.UUID) -> None:
     task = await _get(session, task_id)
     if task:
         task.status = "failed"
         task.completed_at = datetime.now(timezone.utc)
         await session.flush()
+
+
+async def fail_task_with_outcome(
+    session: AsyncSession, task_id: uuid.UUID, outcome: dict
+) -> None:
+    task = await _get(session, task_id)
+    if task:
+        task.status = "failed"
+        task.completed_at = datetime.now(timezone.utc)
+        task.outcome = outcome
+        await session.flush()
+
+
+async def get_running_ocr_task(
+    session: AsyncSession, archive_id: uuid.UUID
+) -> "AnalysisTask | None":
+    result = await session.execute(
+        select(AnalysisTask).where(
+            AnalysisTask.archive_id == archive_id,
+            AnalysisTask.task_type == "ocr",
+            AnalysisTask.status.in_(["pending", "running"]),
+        )
+    )
+    return result.scalar_one_or_none()
 
 
 async def get_task(session: AsyncSession, task_id: uuid.UUID) -> AnalysisTask | None:

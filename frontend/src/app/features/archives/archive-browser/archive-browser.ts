@@ -30,6 +30,9 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
   // Track which task IDs belong to AI analysis (vs Tika ingestion)
   private analysisTaskIds = new Set<string>();
 
+  // Track which task IDs belong to OCR runs
+  private ocrTaskIds = new Set<string>();
+
   // Per-archive queue of task IDs not yet subscribed to SSE
   private taskQueues = new Map<string, string[]>();
 
@@ -137,11 +140,17 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
     );
   }
 
+  onOcrStarted(event: { archiveId: string; taskId: string }): void {
+    this.ocrTaskIds.add(event.taskId);
+    this.taskProgress.track(event.archiveId, event.taskId);
+  }
+
   // ── SSE updates ────────────────────────────────────────────────────────────
 
   private _subscribeToUpdates(): void {
     this.updatesSub = this.taskProgress.updates$.subscribe((update) => {
       const isAiAnalysis = this.analysisTaskIds.has(update.event.task_id);
+      const isOcr = this.ocrTaskIds.has(update.event.task_id);
       const { status, percentage } = update.event;
       const isCompleted = status === 'completed';
       const isFailed = status === 'failed';
@@ -170,6 +179,14 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
               status: completedStatus,
               analysisEvent: enrichedEvent,
               completed_analysis_types: completedTypes,
+            };
+          } else if (isOcr) {
+            // OCR task: show progress bar, on completed set ocr_enabled = true
+            return {
+              ...a,
+              progress: isCompleted ? 100 : percentage,
+              status: isCompleted || isFailed ? a.status : 'in_progress' as const,
+              ocr_enabled: isCompleted ? true : a.ocr_enabled,
             };
           } else {
             // Tika ingestion: completed → 'ingested', active → progress bar
@@ -208,6 +225,12 @@ export class ArchiveBrowser implements OnInit, OnDestroy {
 
         // Tika tasks: subscribe immediately
         for (const task of tasks.filter(t => t.task_type === 'tika')) {
+          this.taskProgress.track(task.archive_id, task.task_id);
+        }
+
+        // OCR tasks: subscribe immediately (progress only, no analysis type tracking)
+        for (const task of tasks.filter(t => t.task_type === 'ocr')) {
+          this.ocrTaskIds.add(task.task_id);
           this.taskProgress.track(task.archive_id, task.task_id);
         }
 
