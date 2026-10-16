@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse Configureren — met instellingenpaneel — Wireframe</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          background: #f0f2f5;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px;
+        }
+
+        .backdrop { position: relative; width: 100%; max-width: 980px; }
+
+        .overlay-scrim {
+          position: absolute;
+          inset: -40px;
+          background: rgba(17, 24, 39, 0.45);
+          border-radius: 4px;
+        }
+
+        /* ── Outer shell: modal + attached pane sit side by side ── */
+        .shell {
+          position: relative;
+          display: flex;
+          align-items: flex-start;
+          width: fit-content;
+          margin: 0 auto;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+          border-radius: 14px;
+        }
+
+        .modal {
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 14px 0 0 14px;
+          width: 640px;
+          padding: 28px 32px;
+        }
+
+        .modal.pane-open { border-right: none; }
+
+        .modal-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          margin-bottom: 18px;
+        }
+
+        .modal-title { font-size: 24px; font-weight: 700; color: #111827; margin-bottom: 6px; }
+        .modal-subtitle { font-size: 14px; color: #6b7280; }
+        .modal-subtitle b { color: #111827; }
+
+        .modal-close { font-size: 20px; color: #9ca3af; background: none; border: none; cursor: pointer; transition: color 0.15s; }
+        .modal-close:hover { color: #111827; }
+
+        .divider { border-top: 1px solid #f3f4f6; margin-bottom: 18px; }
+
+        .ocr-row {
+          border: 1px solid #fde68a;
+          background: #fef3c7;
+          border-radius: 10px;
+          padding: 14px 16px;
+          margin-bottom: 8px;
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+        }
+        .ocr-row input[type="checkbox"] { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; accent-color: #b45309; }
+        .ocr-text { flex: 1; }
+        .ocr-title { font-size: 16px; font-weight: 700; color: #92400e; margin-bottom: 2px; }
+        .ocr-desc { font-size: 13px; color: #92400e; }
+        .ocr-status { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #b45309; margin-top: 8px; }
+        .ocr-note { font-size: 12px; color: #9ca3af; margin-bottom: 18px; }
+
+        .tool-row {
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 16px 18px;
+          margin-bottom: 10px;
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          transition: opacity 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+        }
+
+        .tool-row:has(.other-check:checked) { border-color: #3b6ef5; background: #eff6ff; }
+
+        .tool-row.linked { border-color: #1d4ed8; box-shadow: 0 0 0 2px rgba(59, 110, 245, 0.15); }
+
+        .tool-row input[type="checkbox"] { width: 18px; height: 18px; margin-top: 4px; flex-shrink: 0; accent-color: #3b6ef5; }
+
+        .tool-icon {
+          width: 40px; height: 40px; border-radius: 8px; background: #f1f5f9;
+          display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+        }
+
+        .tool-text { flex: 1; min-width: 0; }
+        .tool-title { font-size: 16px; font-weight: 700; color: #111827; margin-bottom: 2px; }
+        .tool-desc { font-size: 13px; color: #6b7280; line-height: 1.4; }
+
+        .tool-model { flex-shrink: 0; display: flex; align-items: flex-end; gap: 8px; }
+        .model-col { display: flex; flex-direction: column; gap: 4px; }
+        .model-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; }
+        .model-select { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; background: #ffffff; color: #374151; min-width: 130px; }
+
+        .btn-settings {
+          width: 36px; height: 36px; border: 1px solid #d1d5db; border-radius: 6px; background: #ffffff;
+          display: flex; align-items: center; justify-content: center; font-size: 15px; color: #9ca3af; cursor: pointer; flex-shrink: 0;
+          transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+        .btn-settings:hover { border-color: #9ca3af; color: #374151; }
+        .btn-settings.active { background: #3b6ef5; color: #ffffff; border-color: #3b6ef5; }
+
+        .modal-footer {
+          display: flex; justify-content: flex-end; align-items: center; gap: 20px;
+          border-top: 1px solid #f3f4f6; padding-top: 18px; margin-top: 6px;
+        }
+        .btn-cancel { font-family: inherit; font-size: 14px; font-weight: 700; background: none; border: none; color: #6b7280; cursor: pointer; transition: color 0.15s; }
+        .btn-cancel:hover { color: #111827; }
+        .btn-start {
+          display: flex; align-items: center; gap: 8px; font-family: inherit; font-size: 14px; font-weight: 700;
+          padding: 12px 22px; border: none; border-radius: 8px; background: #111827; color: #ffffff; cursor: pointer;
+          transition: background 0.15s;
+        }
+        .btn-start:hover { background: #1f2937; }
+
+        /* ── Attached settings pane ── */
+        .settings-pane {
+          width: 0;
+          overflow: hidden;
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-left: none;
+          border-radius: 0 14px 14px 0;
+          transition: width 0.18s ease;
+        }
+
+        .settings-pane.open { width: 280px; }
+
+        .pane-inner { width: 280px; padding: 28px 24px; }
+
+        .pane-title { font-size: 13px; font-weight: 700; color: #111827; margin-bottom: 18px; }
+
+        .pane-section-label {
+          font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+          color: #6b7280; margin-bottom: 8px;
+        }
+
+        .pane-model-dropdown {
+          width: 100%;
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          font-size: 13px;
+          padding: 9px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          background: #ffffff;
+          color: #111827;
+          margin-bottom: 22px;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .pane-model-dropdown:focus {
+          outline: none;
+          border-color: #3b6ef5;
+          box-shadow: 0 0 0 3px rgba(59, 110, 245, 0.12);
+        }
+
+        .filetype-list { display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
+
+        .filetype-option {
+          display: flex; align-items: center; gap: 8px;
+          font-size: 13px; color: #374151; padding: 7px 0; cursor: pointer;
+        }
+
+        .filetype-option.select-all {
+          font-weight: 700;
+          color: #111827;
+          border-bottom: 1px solid #e5e7eb;
+          padding-bottom: 10px;
+          margin-bottom: 6px;
+        }
+
+        .filetype-option input[type="checkbox"] { width: 15px; height: 15px; accent-color: #3b6ef5; }
+
+        .filetype-hint { font-size: 11px; color: #9ca3af; margin-top: 10px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+<div class="backdrop">
+    <div class="overlay-scrim"></div>
+
+    <div class="shell">
+
+        <div class="modal" id="modal">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">Analyse Configureren</div>
+                    <div class="modal-subtitle">Selecteer tools voor <b>vea260</b>.</div>
+                </div>
+                <button class="modal-close">&#10005;</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="ocr-row">
+                <input type="checkbox" id="ocrCheck">
+                <div class="ocr-text">
+                    <div class="ocr-title">OCR</div>
+                    <div class="ocr-desc">Herkent tekst in gescande afbeeldingen en documenten.</div>
+                    <div class="ocr-status"><span>&#9888;</span><span>OCR is nog niet uitgevoerd op dit archief</span></div>
+                </div>
+            </div>
+            <div class="ocr-note">OCR kan niet gecombineerd worden met andere analyses.</div>
+
+            <div class="tool-row" id="toolRow1" data-tool="ner">
+                <input type="checkbox" class="other-check" checked>
+                <div class="tool-icon">&#128269;</div>
+                <div class="tool-text">
+                    <div class="tool-title">Entiteitsherkenning</div>
+                    <div class="tool-desc">Detecteert personen, locaties en organisaties in de tekst.</div>
+                </div>
+                <div class="tool-model">
+                    <div class="model-col">
+                        <div class="model-label">Model</div>
+                        <div class="model-select">gemma3:1b</div>
+                    </div>
+                    <button class="btn-settings" data-tool="ner">&#9881;</button>
+                </div>
+            </div>
+
+            <div class="tool-row" id="toolRow2" data-tool="samenvatting">
+                <input type="checkbox" class="other-check" checked>
+                <div class="tool-icon">&#128221;</div>
+                <div class="tool-text">
+                    <div class="tool-title">Samenvatting</div>
+                    <div class="tool-desc">AI-gegenereerde samenvattingen per bestand en map.</div>
+                </div>
+                <div class="tool-model">
+                    <div class="model-col">
+                        <div class="model-label">Model</div>
+                        <div class="model-select">smollm2:135m</div>
+                    </div>
+                    <button class="btn-settings" data-tool="samenvatting">&#9881;</button>
+                </div>
+            </div>
+
+            <div class="tool-row" id="toolRow3" data-tool="topics">
+                <input type="checkbox" class="other-check" checked>
+                <div class="tool-icon">&#127991;</div>
+                <div class="tool-text">
+                    <div class="tool-title">Onderwerpdetectie</div>
+                    <div class="tool-desc">Identificeert de belangrijkste onderwerpen per bestand.</div>
+                </div>
+                <div class="tool-model">
+                    <div class="model-col">
+                        <div class="model-label">Model</div>
+                        <div class="model-select">gemma3:1b</div>
+                    </div>
+                    <button class="btn-settings" data-tool="topics">&#9881;</button>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-cancel">Annuleren</button>
+                <button class="btn-start">&#9654; Start Analyse</button>
+            </div>
+        </div>
+
+        <!-- Attached settings pane: appears to the right when a gear is clicked -->
+        <div class="settings-pane" id="settingsPane">
+            <div class="pane-inner">
+                <div class="pane-title" id="paneTitle">Entiteitsherkenning</div>
+
+                <div class="pane-section-label">Model</div>
+                <select class="pane-model-dropdown" id="paneModelDropdown">
+                    <option>gemma3:1b</option>
+                    <option>nl_core_news_lg</option>
+                    <option>qwen3-embedding:0.6b</option>
+                </select>
+
+                <div class="pane-section-label">Bestandstypen</div>
+                <div class="filetype-list" id="filetypeList">
+                    <label class="filetype-option select-all">
+                        <input type="checkbox" id="selectAllTypes" checked>
+                        Alle types
+                    </label>
+                    <label class="filetype-option"><input type="checkbox" class="filetype-check" checked value="tekstbestand"> tekstbestand</label>
+                    <label class="filetype-option"><input type="checkbox" class="filetype-check" checked value="beeldbestand"> beeldbestand</label>
+                    <label class="filetype-option"><input type="checkbox" class="filetype-check" checked value="gegevensbestand"> gegevensbestand</label>
+                    <label class="filetype-option"><input type="checkbox" class="filetype-check" checked value="andere"> andere</label>
+                </div>
+                <div class="filetype-hint">Er moet minstens één bestandstype geselecteerd blijven.</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // ── OCR / other tools mutual exclusivity (unchanged) ──
+    const ocrCheck = document.getElementById('ocrCheck');
+    const otherChecks = document.querySelectorAll('.other-check');
+    const toolRows = [document.getElementById('toolRow1'), document.getElementById('toolRow2'), document.getElementById('toolRow3')];
+
+    ocrCheck.addEventListener('change', () => {
+      if (ocrCheck.checked) {
+        otherChecks.forEach(c => { c.checked = false; c.disabled = true; });
+        toolRows.forEach(r => r.style.opacity = '0.5');
+        closePane();
+      } else {
+        otherChecks.forEach(c => { c.disabled = false; });
+        toolRows.forEach(r => r.style.opacity = '1');
+      }
+    });
+
+    otherChecks.forEach(c => {
+      c.addEventListener('change', () => {
+        const anyChecked = Array.from(otherChecks).some(x => x.checked);
+        ocrCheck.disabled = anyChecked;
+      });
+    });
+
+    // ── Settings pane open/close, attached to the gear that was clicked ──
+    const modal = document.getElementById('modal');
+    const pane = document.getElementById('settingsPane');
+    const paneTitle = document.getElementById('paneTitle');
+    const settingsBtns = document.querySelectorAll('.btn-settings');
+
+    const toolLabels = {
+      ner: 'Entiteitsherkenning',
+      samenvatting: 'Samenvatting',
+      topics: 'Onderwerpdetectie'
+    };
+
+    let activeTool = null;
+
+    function openPane(tool) {
+      activeTool = tool;
+      paneTitle.textContent = toolLabels[tool];
+      pane.classList.add('open');
+      modal.classList.add('pane-open');
+      settingsBtns.forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+      toolRows.forEach(r => r.classList.toggle('linked', r.dataset.tool === tool));
+    }
+
+    function closePane() {
+      activeTool = null;
+      pane.classList.remove('open');
+      modal.classList.remove('pane-open');
+      settingsBtns.forEach(b => b.classList.remove('active'));
+      toolRows.forEach(r => r.classList.remove('linked'));
+    }
+
+    settingsBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (activeTool === btn.dataset.tool) {
+          closePane();
+        } else {
+          openPane(btn.dataset.tool);
+        }
+      });
+    });
+
+    // ── File type checklist: "select all" + at-least-one-required ──
+    const selectAll = document.getElementById('selectAllTypes');
+    const typeChecks = document.querySelectorAll('.filetype-check');
+
+    selectAll.addEventListener('change', () => {
+      typeChecks.forEach(c => c.checked = selectAll.checked);
+      enforceMinimum();
+    });
+
+    typeChecks.forEach(c => {
+      c.addEventListener('change', () => {
+        const allChecked = Array.from(typeChecks).every(x => x.checked);
+        selectAll.checked = allChecked;
+        enforceMinimum();
+      });
+    });
+
+    function enforceMinimum() {
+      const checkedCount = Array.from(typeChecks).filter(x => x.checked).length;
+      if (checkedCount === 0) {
+        typeChecks[0].checked = true;
+      }
+    }
+</script>
+
+</body>
+</html>
