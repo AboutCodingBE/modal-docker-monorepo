@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.models import Archive, ArchiveAnalysis, ArchiveAnalysisStatus, File, FileCorrespondent, GenericType, Summary, TikaAnalysis
@@ -313,3 +313,40 @@ class ArchiveDetailRepository:
             "mime_types": mime_types,
             "categories": categories,
         }
+
+    async def get_archive_categories(self, archive_id: uuid.UUID) -> list[dict]:
+        """Return all file categories present in this archive with file counts.
+
+        Each entry is {category: str | None, count: int}.  None means the file
+        has no generic_type row (or a null generic_type value).  The None entry
+        is only included when count > 0.  Results are sorted by count descending.
+        """
+        # Named categories (non-null)
+        cat_result = await self._session.execute(
+            select(GenericType.generic_type, func.count(GenericType.file_id).label("cnt"))
+            .join(File, File.id == GenericType.file_id)
+            .where(
+                GenericType.archive_id == archive_id,
+                File.is_directory == False,  # noqa: E712
+                GenericType.generic_type.isnot(None),
+            )
+            .group_by(GenericType.generic_type)
+            .order_by(func.count(GenericType.file_id).desc())
+        )
+        result = [{"category": row[0], "count": row[1]} for row in cat_result.all()]
+
+        # Files without a category (no row in generic_types OR null generic_type)
+        no_cat_result = await self._session.execute(
+            select(func.count(File.id))
+            .outerjoin(GenericType, GenericType.file_id == File.id)
+            .where(
+                File.archive_id == archive_id,
+                File.is_directory == False,  # noqa: E712
+                or_(GenericType.file_id.is_(None), GenericType.generic_type.is_(None)),
+            )
+        )
+        no_cat_count = no_cat_result.scalar() or 0
+        if no_cat_count > 0:
+            result.append({"category": None, "count": no_cat_count})
+
+        return result

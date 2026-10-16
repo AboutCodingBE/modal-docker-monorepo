@@ -58,6 +58,14 @@ async def archive_folder_files(
     return result
 
 
+@router.get("/{archive_id}/categories")
+async def archive_categories(archive_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    repo = ArchiveDetailRepository(db)
+    if await repo.get_archive(archive_id) is None:
+        raise HTTPException(status_code=404, detail="Archive not found")
+    return await repo.get_archive_categories(archive_id)
+
+
 @router.get("/{archive_id}/folder")
 async def archive_folder(
     archive_id: uuid.UUID,

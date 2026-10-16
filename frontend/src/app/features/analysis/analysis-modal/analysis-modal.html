@@ -1,182 +1,240 @@
 <div class="modal-overlay" (click)="onBackdrop($event)">
-  <div class="modal" (click)="closePopovers()">
+  <div class="modal-shell">
 
-    <div class="modal-header">
-      <div>
-        <h2>Analyse Configureren</h2>
-        <p>Selecteer tools voor <strong>{{ archive().name }}</strong>.</p>
-      </div>
-      <button class="btn-close" (click)="close()" [disabled]="submitting() || ocrBusy()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 6 6 18"/><path d="M6 6 18 18"/>
-        </svg>
-      </button>
-    </div>
+    <!-- ── Main modal panel ─────────────────────────────────────────────── -->
+    <div class="modal" (click)="closePane()">
 
-    <div class="modal-body">
-
-      <!-- OCR section -->
-      <div class="section-label">Voorverwerking</div>
-      <div
-        class="tool-row ocr-row"
-        [class.tool-row--checked]="ocrSelected()"
-        [class.ocr-row--verified]="ocrStep() === 'verified'"
-      >
-        <input
-          type="checkbox"
-          class="tool-checkbox"
-          [checked]="ocrSelected()"
-          (change)="toggleOcr()"
-        />
-        <div class="tool-icon">🔎</div>
-        <div class="tool-info">
-          <div class="tool-name">
-            OCR
-            @if (!archive().ocr_enabled) {
-              <span class="ocr-not-done">Nog niet uitgevoerd</span>
-            }
-          </div>
-          <div class="tool-desc">
-            @if (ocrStep() === 'idle' || ocrStep() === 'verify_failed') {
-              Tekstherkenning op afbeeldingen en gescande PDF's via Tesseract. Vereist de originele bestanden.
-            } @else if (ocrStep() === 'verifying') {
-              Locatie Archief — selecteer de archiefmap...
-            } @else if (ocrStep() === 'verified') {
-              Bronmap geverifieerd. Klaar om te starten.
-            } @else if (ocrStep() === 'starting') {
-              OCR wordt gestart...
-            }
-          </div>
-          @if (ocrWarning()) {
-            <div class="ocr-warning">
-              Let op: dit archief heeft al voltooide analyses. Na OCR zijn samenvattingen, entiteiten en onderwerpen mogelijk gebaseerd op de oude tekst.
-            </div>
-          }
-          @if (ocrError()) {
-            <div class="ocr-error">{{ ocrError() }}</div>
-          }
+      <div class="modal-header">
+        <div>
+          <h2>Analyse Configureren</h2>
+          <p>Selecteer tools voor <strong>{{ archive().name }}</strong>.</p>
         </div>
-        @if (ocrSelected()) {
-          <div class="ocr-status-area">
-            @if (ocrStep() === 'idle') {
-              <span class="ocr-badge ocr-badge--pending">Stap 1/2</span>
-            } @else if (ocrStep() === 'verifying') {
-              <span class="ocr-badge ocr-badge--active">Wachten...</span>
-            } @else if (ocrStep() === 'verified') {
-              <span class="ocr-badge ocr-badge--ok">✓ Geverifieerd</span>
-            } @else if (ocrStep() === 'verify_failed') {
-              <span class="ocr-badge ocr-badge--error">Mislukt</span>
-            }
-          </div>
-        }
+        <button class="btn-close" (click)="close()" [disabled]="submitting() || ocrBusy()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18"/><path d="M6 6 18 18"/>
+          </svg>
+        </button>
       </div>
 
-      <!-- Separator -->
-      <div class="section-label section-label--analyses">Analyses</div>
+      <div class="modal-body">
 
-      <!-- Regular analysis types -->
-      @for (t of types(); track t.type) {
+        <!-- OCR section -->
+        <div class="section-label">Voorverwerking</div>
         <div
-          class="tool-row"
-          [class.tool-row--checked]="isChecked(t.type)"
-          [class.tool-row--disabled]="ocrSelected()"
+          class="tool-row ocr-row"
+          [class.tool-row--checked]="ocrSelected()"
+          [class.ocr-row--verified]="ocrStep() === 'verified'"
         >
           <input
             type="checkbox"
             class="tool-checkbox"
-            [checked]="isChecked(t.type)"
-            [disabled]="ocrSelected()"
-            (change)="toggle(t.type)"
+            [checked]="ocrSelected()"
+            (change)="toggleOcr()"
           />
-          <div class="tool-icon">{{ t.icon }}</div>
+          <div class="tool-icon">🔎</div>
           <div class="tool-info">
-            <div class="tool-name">{{ t.label }}</div>
-            <div class="tool-desc">{{ t.description }}</div>
-          </div>
-          <div class="tool-model-area" (click)="$event.stopPropagation()">
-            <div class="model-badge-wrap">
-              <div class="model-label">Model</div>
-              <span class="model-badge">{{ getModel(t.type) }}</span>
+            <div class="tool-name">
+              OCR
+              @if (!archive().ocr_enabled) {
+                <span class="ocr-not-done">Nog niet uitgevoerd</span>
+              }
             </div>
-            @if (modelOptions()[t.type].length > 1) {
+            <div class="tool-desc">
+              @if (ocrStep() === 'idle' || ocrStep() === 'verify_failed') {
+                Tekstherkenning op afbeeldingen en gescande PDF's via Tesseract. Vereist de originele bestanden.
+              } @else if (ocrStep() === 'verifying') {
+                Locatie Archief — selecteer de archiefmap...
+              } @else if (ocrStep() === 'verified') {
+                Bronmap geverifieerd. Klaar om te starten.
+              } @else if (ocrStep() === 'starting') {
+                OCR wordt gestart...
+              }
+            </div>
+            @if (ocrWarning()) {
+              <div class="ocr-warning">
+                Let op: dit archief heeft al voltooide analyses. Na OCR zijn samenvattingen, entiteiten en onderwerpen mogelijk gebaseerd op de oude tekst.
+              </div>
+            }
+            @if (ocrError()) {
+              <div class="ocr-error">{{ ocrError() }}</div>
+            }
+          </div>
+          @if (ocrSelected()) {
+            <div class="ocr-status-area">
+              @if (ocrStep() === 'idle') {
+                <span class="ocr-badge ocr-badge--pending">Stap 1/2</span>
+              } @else if (ocrStep() === 'verifying') {
+                <span class="ocr-badge ocr-badge--active">Wachten...</span>
+              } @else if (ocrStep() === 'verified') {
+                <span class="ocr-badge ocr-badge--ok">✓ Geverifieerd</span>
+              } @else if (ocrStep() === 'verify_failed') {
+                <span class="ocr-badge ocr-badge--error">Mislukt</span>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Separator -->
+        <div class="section-label section-label--analyses">Analyses</div>
+
+        <!-- Regular analysis types -->
+        @for (t of types(); track t.type) {
+          <div
+            class="tool-row"
+            [class.tool-row--checked]="isChecked(t.type)"
+            [class.tool-row--disabled]="ocrSelected()"
+            [class.tool-row--linked]="paneOpen() === t.type"
+          >
+            <input
+              type="checkbox"
+              class="tool-checkbox"
+              [checked]="isChecked(t.type)"
+              [disabled]="ocrSelected()"
+              (change)="toggle(t.type)"
+            />
+            <div class="tool-icon">{{ t.icon }}</div>
+            <div class="tool-info">
+              <div class="tool-name">{{ t.label }}</div>
+              <div class="tool-desc">{{ t.description }}</div>
+            </div>
+            <div class="tool-right" (click)="$event.stopPropagation()">
+              <div class="model-badge-wrap">
+                <div class="model-label">Model</div>
+                <span class="model-badge">{{ getModel(t.type) }}</span>
+              </div>
+              @if (isNarrower(t.type)) {
+                <span class="narrower-badge" title="Gefilterd op bestandstypen">
+                  {{ selectedCategoryCount(t.type) }}/{{ categories().length }}
+                </span>
+              }
               <button
                 class="btn-config"
-                [class.btn-config--active]="openPopover() === t.type"
+                [class.btn-config--active]="paneOpen() === t.type"
                 [disabled]="ocrSelected()"
-                (click)="togglePopover(t.type, $event)"
-                title="Kies model"
+                (click)="togglePane(t.type, $event)"
+                title="Instellingen"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
                 </svg>
               </button>
-              @if (openPopover() === t.type) {
-                <div class="model-popover">
-                  <div class="popover-header">Kies model</div>
-                  <ul class="popover-list">
-                    @for (m of modelOptions()[t.type]; track m) {
-                      <li
-                        [class.popover-item--selected]="getModel(t.type) === m"
-                        (click)="pickModel(t.type, m)"
-                      >{{ m }}</li>
-                    }
-                  </ul>
-                </div>
-              }
-            }
+            </div>
           </div>
-        </div>
-      }
+        }
 
-      @if (error()) {
-        <p class="submit-error">{{ error() }}</p>
-      }
+        @if (error()) {
+          <p class="submit-error">{{ error() }}</p>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="close()" [disabled]="submitting() || ocrBusy()">Annuleren</button>
+
+        @if (!ocrSelected()) {
+          <!-- Normal analysis mode -->
+          <button class="btn-primary" (click)="submit()" [disabled]="!canStart()">
+            @if (submitting()) {
+              Bezig met starten...
+            } @else {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="6 3 20 12 6 21 6 3"/>
+              </svg>
+              Start Analyse
+            }
+          </button>
+        } @else if (ocrStep() === 'idle' || ocrStep() === 'verifying') {
+          <!-- OCR step 1: verify -->
+          <button class="btn-primary" (click)="verifyOcr()" [disabled]="!canVerify()">
+            @if (ocrStep() === 'verifying') {
+              Locatie Archief...
+            } @else {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
+              </svg>
+              Verifieer
+            }
+          </button>
+        } @else if (ocrStep() === 'verify_failed') {
+          <!-- OCR verify failed: retry -->
+          <button class="btn-primary" (click)="retryVerify()">
+            Opnieuw Verifiëren
+          </button>
+        } @else {
+          <!-- OCR step 2: start -->
+          <button class="btn-primary" (click)="submitOcr()" [disabled]="!canStartOcr()">
+            @if (ocrStep() === 'starting') {
+              Bezig met starten...
+            } @else {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="6 3 20 12 6 21 6 3"/>
+              </svg>
+              Start OCR
+            }
+          </button>
+        }
+      </div>
+
     </div>
 
-    <div class="modal-footer">
-      <button class="btn-ghost" (click)="close()" [disabled]="submitting() || ocrBusy()">Annuleren</button>
+    <!-- ── Settings side pane ────────────────────────────────────────────── -->
+    <div class="settings-pane" [class.settings-pane--open]="paneOpen() !== null" (click)="$event.stopPropagation()">
+      @for (t of types(); track t.type) {
+        @if (paneOpen() === t.type) {
+          <div class="pane-inner">
 
-      @if (!ocrSelected()) {
-        <!-- Normal analysis mode -->
-        <button class="btn-primary" (click)="submit()" [disabled]="!canStart()">
-          @if (submitting()) {
-            Bezig met starten...
-          } @else {
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="6 3 20 12 6 21 6 3"/>
-            </svg>
-            Start Analyse
-          }
-        </button>
-      } @else if (ocrStep() === 'idle' || ocrStep() === 'verifying') {
-        <!-- OCR step 1: verify -->
-        <button class="btn-primary" (click)="verifyOcr()" [disabled]="!canVerify()">
-          @if (ocrStep() === 'verifying') {
-            Locatie Archief...
-          } @else {
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
-            </svg>
-            Verifieer
-          }
-        </button>
-      } @else if (ocrStep() === 'verify_failed') {
-        <!-- OCR verify failed: retry -->
-        <button class="btn-primary" (click)="retryVerify()">
-          Opnieuw Verifiëren
-        </button>
-      } @else {
-        <!-- OCR step 2: start -->
-        <button class="btn-primary" (click)="submitOcr()" [disabled]="!canStartOcr()">
-          @if (ocrStep() === 'starting') {
-            Bezig met starten...
-          } @else {
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="6 3 20 12 6 21 6 3"/>
-            </svg>
-            Start OCR
-          }
-        </button>
+            <div class="pane-header">
+              <span class="pane-title">{{ t.icon }} {{ t.label }}</span>
+              <button class="pane-close" (click)="closePane()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 6 6 18"/><path d="M6 6 18 18"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Model selection -->
+            @if ((modelOptions()[t.type]?.length ?? 0) > 1) {
+              <div class="pane-section">
+                <div class="pane-section-label">Model</div>
+                <ul class="pane-model-list">
+                  @for (m of modelOptions()[t.type]; track m) {
+                    <li
+                      class="pane-model-item"
+                      [class.pane-model-item--selected]="getModel(t.type) === m"
+                      (click)="pickModel(t.type, m)"
+                    >{{ m }}</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            <!-- Category filter -->
+            @if (categories().length > 0) {
+              <div class="pane-section">
+                <div class="pane-section-label">Bestandstypen</div>
+                <label class="pane-check pane-check--all">
+                  <input
+                    type="checkbox"
+                    [checked]="isAllCategoriesSelected(t.type)"
+                    (change)="toggleSelectAll(t.type)"
+                  />
+                  <span>Alle types</span>
+                </label>
+                @for (cat of categories(); track cat.category) {
+                  <label class="pane-check">
+                    <input
+                      type="checkbox"
+                      [checked]="isCategoryChecked(t.type, cat.category)"
+                      (change)="toggleCategory(t.type, cat.category)"
+                    />
+                    <span class="pane-check-label">{{ cat.category ?? 'Geen categorie' }}</span>
+                    <span class="pane-check-count">{{ cat.count }}</span>
+                  </label>
+                }
+              </div>
+            }
+
+          </div>
+        }
       }
     </div>
 

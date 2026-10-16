@@ -51,6 +51,7 @@ class CreateTopicDetectionForArchive:
         archive_analysis_id: uuid.UUID,
         task_id: uuid.UUID,
         model: str,
+        categories: list[str] | None = None,
     ) -> None:
         try:
             # ── Phase 0: start task and fetch file + folder list ──────────────
@@ -59,8 +60,8 @@ class CreateTopicDetectionForArchive:
                 processing_settings = await ProcessingSettingsRepository(session).get()
 
                 file_repo = FileRepository(session)
-                files = await file_repo.get_files_with_tika_content(archive_id)
-                folders = await file_repo.get_all_folders(archive_id)
+                files = await file_repo.get_files_with_tika_content(archive_id, categories)
+                folders = await file_repo.get_all_folders(archive_id) if categories is None else []
 
                 if processing_settings.minimum_text_length > 0:
                     files = [

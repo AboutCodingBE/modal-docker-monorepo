@@ -138,6 +138,11 @@ export interface AnalysisSummaryEntry {
   result: string;
 }
 
+export interface ArchiveCategoryCount {
+  category: string | null;
+  count: number;
+}
+
 export interface OcrVerifyResult {
   ok: boolean;
   matched?: number;
@@ -261,6 +266,10 @@ export class ArchiveService {
       archiveId,
       analysis,
     });
+  }
+
+  getArchiveCategories(archiveId: string): Observable<ArchiveCategoryCount[]> {
+    return this.http.get<ArchiveCategoryCount[]>(`/api/archives/${archiveId}/categories`);
   }
 
   verifyOcrSource(archiveId: string): Observable<OcrVerifyResult> {
