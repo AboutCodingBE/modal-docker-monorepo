@@ -6,7 +6,7 @@
         <h2>Analyse Configureren</h2>
         <p>Selecteer tools voor <strong>{{ archive().name }}</strong>.</p>
       </div>
-      <button class="btn-close" (click)="close()" [disabled]="submitting()">
+      <button class="btn-close" (click)="close()" [disabled]="submitting() || ocrBusy()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M18 6 6 18"/><path d="M6 6 18 18"/>
         </svg>
@@ -14,12 +14,78 @@
     </div>
 
     <div class="modal-body">
+
+      <!-- OCR section -->
+      <div class="section-label">Voorverwerking</div>
+      <div
+        class="tool-row ocr-row"
+        [class.tool-row--checked]="ocrSelected()"
+        [class.ocr-row--verified]="ocrStep() === 'verified'"
+      >
+        <input
+          type="checkbox"
+          class="tool-checkbox"
+          [checked]="ocrSelected()"
+          (change)="toggleOcr()"
+        />
+        <div class="tool-icon">🔎</div>
+        <div class="tool-info">
+          <div class="tool-name">
+            OCR
+            @if (!archive().ocr_enabled) {
+              <span class="ocr-not-done">Nog niet uitgevoerd</span>
+            }
+          </div>
+          <div class="tool-desc">
+            @if (ocrStep() === 'idle' || ocrStep() === 'verify_failed') {
+              Tekstherkenning op afbeeldingen en gescande PDF's via Tesseract. Vereist de originele bestanden.
+            } @else if (ocrStep() === 'verifying') {
+              Mapkeuze geopend — selecteer de archiefmap...
+            } @else if (ocrStep() === 'verified') {
+              Bronmap geverifieerd. Klaar om te starten.
+            } @else if (ocrStep() === 'starting') {
+              OCR wordt gestart...
+            }
+          </div>
+          @if (ocrWarning()) {
+            <div class="ocr-warning">
+              Let op: dit archief heeft al voltooide analyses. Na OCR zijn samenvattingen, entiteiten en onderwerpen mogelijk gebaseerd op de oude tekst.
+            </div>
+          }
+          @if (ocrError()) {
+            <div class="ocr-error">{{ ocrError() }}</div>
+          }
+        </div>
+        @if (ocrSelected()) {
+          <div class="ocr-status-area">
+            @if (ocrStep() === 'idle') {
+              <span class="ocr-badge ocr-badge--pending">Stap 1/2</span>
+            } @else if (ocrStep() === 'verifying') {
+              <span class="ocr-badge ocr-badge--active">Wachten...</span>
+            } @else if (ocrStep() === 'verified') {
+              <span class="ocr-badge ocr-badge--ok">✓ Geverifieerd</span>
+            } @else if (ocrStep() === 'verify_failed') {
+              <span class="ocr-badge ocr-badge--error">Mislukt</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Separator -->
+      <div class="section-label section-label--analyses">Analyses</div>
+
+      <!-- Regular analysis types -->
       @for (t of types(); track t.type) {
-        <div class="tool-row" [class.tool-row--checked]="isChecked(t.type)">
+        <div
+          class="tool-row"
+          [class.tool-row--checked]="isChecked(t.type)"
+          [class.tool-row--disabled]="ocrSelected()"
+        >
           <input
             type="checkbox"
             class="tool-checkbox"
             [checked]="isChecked(t.type)"
+            [disabled]="ocrSelected()"
             (change)="toggle(t.type)"
           />
           <div class="tool-icon">{{ t.icon }}</div>
@@ -36,6 +102,7 @@
               <button
                 class="btn-config"
                 [class.btn-config--active]="openPopover() === t.type"
+                [disabled]="ocrSelected()"
                 (click)="togglePopover(t.type, $event)"
                 title="Kies model"
               >
@@ -67,17 +134,50 @@
     </div>
 
     <div class="modal-footer">
-      <button class="btn-ghost" (click)="close()" [disabled]="submitting()">Annuleren</button>
-      <button class="btn-primary" (click)="submit()" [disabled]="!canStart()">
-        @if (submitting()) {
-          Bezig met starten...
-        } @else {
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="6 3 20 12 6 21 6 3"/>
-          </svg>
-          Start Analyse
-        }
-      </button>
+      <button class="btn-ghost" (click)="close()" [disabled]="submitting() || ocrBusy()">Annuleren</button>
+
+      @if (!ocrSelected()) {
+        <!-- Normal analysis mode -->
+        <button class="btn-primary" (click)="submit()" [disabled]="!canStart()">
+          @if (submitting()) {
+            Bezig met starten...
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="6 3 20 12 6 21 6 3"/>
+            </svg>
+            Start Analyse
+          }
+        </button>
+      } @else if (ocrStep() === 'idle' || ocrStep() === 'verifying') {
+        <!-- OCR step 1: verify -->
+        <button class="btn-primary" (click)="verifyOcr()" [disabled]="!canVerify()">
+          @if (ocrStep() === 'verifying') {
+            Mapkeuze geopend...
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
+            </svg>
+            Verifieer Bron
+          }
+        </button>
+      } @else if (ocrStep() === 'verify_failed') {
+        <!-- OCR verify failed: retry -->
+        <button class="btn-primary" (click)="retryVerify()">
+          Opnieuw Verifiëren
+        </button>
+      } @else {
+        <!-- OCR step 2: start -->
+        <button class="btn-primary" (click)="submitOcr()" [disabled]="!canStartOcr()">
+          @if (ocrStep() === 'starting') {
+            Bezig met starten...
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="6 3 20 12 6 21 6 3"/>
+            </svg>
+            Start OCR
+          }
+        </button>
+      }
     </div>
 
   </div>

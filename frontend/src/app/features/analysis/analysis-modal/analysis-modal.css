@@ -59,6 +59,86 @@
 .btn-close svg { width: 18px; height: 18px; }
 .btn-close:hover { color: #374151; background: #f3f4f6; }
 
+/* ── Section labels ── */
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  padding: 4px 0 2px;
+}
+
+.section-label--analyses {
+  padding-top: 8px;
+  border-top: 1px solid #f3f4f6;
+  margin-top: 4px;
+}
+
+/* ── OCR row specifics ── */
+.ocr-row {
+  border-color: #e5e7eb;
+  background: #fafafa;
+}
+
+.ocr-row:hover { border-color: #d1d5db; }
+.ocr-row.tool-row--checked { border-color: #7c3aed; background: #faf5ff; }
+.ocr-row.ocr-row--verified { border-color: #059669; background: #f0fdf4; }
+
+.ocr-not-done {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #fef9c3;
+  color: #854d0e;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.ocr-status-area {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.ocr-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.ocr-badge--pending { background: #ede9fe; color: #5b21b6; }
+.ocr-badge--active  { background: #dbeafe; color: #1e40af; }
+.ocr-badge--ok      { background: #dcfce7; color: #166534; }
+.ocr-badge--error   { background: #fee2e2; color: #991b1b; }
+
+.ocr-warning {
+  font-size: 11px;
+  color: #92400e;
+  background: #fef3c7;
+  border-radius: 5px;
+  padding: 6px 10px;
+  margin-top: 6px;
+}
+
+.ocr-error {
+  font-size: 11px;
+  color: #991b1b;
+  background: #fee2e2;
+  border-radius: 5px;
+  padding: 6px 10px;
+  margin-top: 6px;
+}
+
+/* ── Disabled tool rows (when OCR is selected) ── */
+.tool-row--disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 /* ── Done section ── */
 .done-section {
   padding: 12px 28px 4px;

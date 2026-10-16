@@ -2,12 +2,14 @@ import { Component, input, computed } from '@angular/core';
 
 export interface SseProgressEvent {
   task_id: string;
+  task_type?: string;
   status: string;
   total_files: number;
   processed: number;
   failed_count: number;
   current_file: string | null;
   percentage: number;
+  outcome?: Record<string, unknown> | null;
 }
 
 @Component({

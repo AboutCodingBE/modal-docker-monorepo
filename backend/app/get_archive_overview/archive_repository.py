@@ -30,6 +30,7 @@ class ArchiveRepository:
                 "date": a.created_at.date().isoformat() if a.created_at else "",
                 "files": a.file_count,
                 "status": _STATUS_MAP.get(a.analysis_status, "ingested"),
+                "ocr_enabled": a.ocr_enabled,
                 "completed_analysis_types": sorted(completed_by_archive.get(a.id, set())),
             }
             for a in archives

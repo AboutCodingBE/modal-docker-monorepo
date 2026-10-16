@@ -20,6 +20,7 @@ import subprocess
 import sys
 import threading
 import time
+import unicodedata
 import urllib.request
 import webbrowser
 from pathlib import Path
@@ -316,6 +317,186 @@ def export_write():
         return jsonify({"error": str(e)}), 500
 
     return jsonify({"path": str(export_root)})
+
+
+# ---------------------------------------------------------------------------
+# OCR filesystem bridge
+# ---------------------------------------------------------------------------
+# Maps archive_id (str) -> {"root": Path, "expires_at": float}
+_ocr_roots: dict[str, dict] = {}
+_OCR_VERIFY_TTL = 20.0      # seconds between verify and start
+_OCR_ACTIVE_TTL = 86400.0   # seconds while a run is in progress
+
+
+def _ocr_resolve(archive_id: str, relative_path: str) -> Path | None:
+    """Resolve a relative_path under the held OCR root for archive_id.
+
+    Returns the resolved Path if:
+    - a root is held and not expired
+    - the relative_path is not absolute and does not escape the root (path traversal check)
+    - the file exists (tries NFC then NFD Unicode normalisation)
+
+    Returns None otherwise.
+    """
+    entry = _ocr_roots.get(archive_id)
+    if entry is None:
+        return None
+    if time.time() > entry["expires_at"]:
+        _ocr_roots.pop(archive_id, None)
+        return None
+
+    root: Path = entry["root"]
+
+    # Reject absolute paths and obvious traversal attempts before joining
+    if os.path.isabs(relative_path) or relative_path.startswith(".."):
+        logger.warning("OCR path rejected (absolute or traversal): %s", relative_path)
+        return None
+
+    for form in ("NFC", "NFD"):
+        candidate = root / unicodedata.normalize(form, relative_path)
+        try:
+            real = candidate.resolve()
+            if not str(real).startswith(str(root.resolve())):
+                logger.warning("OCR path escaped root: %s", candidate)
+                return None
+            if real.is_file():
+                return real
+        except Exception:
+            continue
+
+    return None
+
+
+@app.post("/ocr/verify")
+def ocr_verify():
+    """
+    Open a native folder picker, then verify that all sample files exist at
+    the expected sizes under the chosen root.
+
+    Body: {
+        "archive_id": str,
+        "samples": [{"relative_path": str, "size_bytes": int | null}, ...],
+        "root_hint": str | null   (shown as a hint in future — currently unused)
+    }
+
+    On success: stores the root with a short TTL and returns
+        {"ok": true, "matched": N, "total": N, "root_path": str}
+    On mismatch: returns 400 with
+        {"ok": false, "matched": N, "total": N, "mismatches": [...up to 3 paths]}
+    On user cancel: returns 400 with {"ok": false, "reason": "cancelled"}
+    """
+    data = request.get_json(silent=True) or {}
+    archive_id = data.get("archive_id")
+    samples = data.get("samples", [])
+
+    if not archive_id:
+        return jsonify({"error": "Missing archive_id"}), 400
+
+    # Open folder picker
+    try:
+        root_str = _open_folder_dialog()
+    except FolderPickerError as e:
+        return jsonify({"ok": False, "reason": str(e)}), 400
+
+    if root_str is None:
+        return jsonify({"ok": False, "reason": "cancelled"}), 400
+
+    root = Path(root_str)
+    if not root.is_dir():
+        return jsonify({"ok": False, "reason": "folder_not_readable"}), 400
+
+    # Check each sample file
+    mismatches = []
+    matched = 0
+    for sample in samples:
+        rel = sample.get("relative_path", "")
+        expected_size = sample.get("size_bytes")
+
+        found = False
+        for form in ("NFC", "NFD"):
+            candidate = root / unicodedata.normalize(form, rel)
+            if candidate.is_file():
+                if expected_size is None or candidate.stat().st_size == expected_size:
+                    matched += 1
+                    found = True
+                    break
+                else:
+                    mismatches.append(rel)
+                    found = True
+                    break
+
+        if not found:
+            mismatches.append(rel)
+
+    total = len(samples)
+    if mismatches:
+        return jsonify({
+            "ok": False,
+            "matched": matched,
+            "total": total,
+            "mismatches": mismatches[:3],
+        }), 400
+
+    # All samples matched — store root with short TTL
+    _ocr_roots[archive_id] = {
+        "root": root,
+        "expires_at": time.time() + _OCR_VERIFY_TTL,
+    }
+    logger.info("OCR root verified for archive %s: %s", archive_id, root)
+    return jsonify({"ok": True, "matched": matched, "total": total, "root_path": str(root)})
+
+
+@app.post("/ocr/activate")
+def ocr_activate():
+    """
+    Extend the TTL of a verified root to the full run duration.
+    Called by the backend when an OCR run actually starts.
+    Body: {"archive_id": str}
+    """
+    data = request.get_json(silent=True) or {}
+    archive_id = data.get("archive_id")
+    if not archive_id or archive_id not in _ocr_roots:
+        return jsonify({"error": "No verified root for this archive"}), 404
+
+    _ocr_roots[archive_id]["expires_at"] = time.time() + _OCR_ACTIVE_TTL
+    return jsonify({"ok": True})
+
+
+@app.post("/ocr/clear")
+def ocr_clear():
+    """
+    Clear the held OCR root for an archive (called after a run finishes or fails).
+    Query param: archive_id
+    """
+    archive_id = request.args.get("archive_id")
+    if archive_id:
+        _ocr_roots.pop(archive_id, None)
+        logger.info("OCR root cleared for archive %s", archive_id)
+    return jsonify({"ok": True})
+
+
+@app.get("/ocr/file-content")
+def ocr_file_content():
+    """
+    Stream a file for OCR processing.
+    Query params: archive_id, relative_path
+
+    Returns 410 if the agent no longer holds a verified root for this archive
+    (e.g. after an agent restart), so the backend knows to stop the run.
+    """
+    archive_id = request.args.get("archive_id")
+    relative_path = request.args.get("relative_path")
+
+    if not archive_id or not relative_path:
+        return jsonify({"error": "Missing archive_id or relative_path"}), 400
+
+    resolved = _ocr_resolve(archive_id, relative_path)
+    if resolved is None:
+        # Either no root held or it expired — tell the backend to stop
+        return jsonify({"error": "Verification lost or expired"}), 410
+
+    mime_type = mimetypes.guess_type(str(resolved))[0] or "application/octet-stream"
+    return send_file(str(resolved), mimetype=mime_type)
 
 
 # ---------------------------------------------------------------------------
