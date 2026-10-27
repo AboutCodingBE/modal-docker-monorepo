@@ -5,9 +5,29 @@ the MODAL features and functionalities. This project relies on Docker to support
 
 The database is a Postgres datebase with PgVector enabled:  pgvector/pgvector:pg16. 
 
+## Understand the following about this project...
+There is a big difference between running the code locally as a developer and the application that runs on the computers
+of users. When you run the code as a developer, you run the code as it is on your computer. That is a python application, 
+which you can start using python start-up commands. You have a python developer setup on your computer. 
+
+We don't know if users have that python environment. Even worse... we don't know anything about the computer system of
+our users. So how do we make sure that the application can run on as many different kinds of computers? We do it by 
+transforming out code into a **docker image**. There is a docker image for the frontend and there is one for the backend. 
+
+Teh agent is an exception: that one is a native python application, needed to access the folders of computers. 
+
+The big difference between running the application code versus users starting the application is docker. When starting the
+code locally, the code does not run from inside a docker container. When a user runs the application, the code runs from 
+a docker container. 
+
+
 ## Developer guidelines
 
 ### DO NOT... 
+- ever use the production docker file for development (docker-compose.prod.yml). It works differently. During development, 
+you run the different parts of the application directly on your computer. The production docker file is a configuration file 
+that will end up on computers of the actual users. If you use the production docker file for development, you will feel the 
+urge to change that file, but... by doing so, you will break the application that users gets via releases. 
 - ever make changes to the database schema (like adding columns, new tables, indexes,... anything that is DDL) without
 Alembic. The application is one that needs to run locally on the computer of other users. Changes you apply on your local
 database do not get applied to the database of the user. Alembic is a library that makes sure that the databases of users
@@ -71,6 +91,46 @@ This way you can safely install the requirements for both the agent and the back
 pip install -r requirements.txt
 ```
 
+### Using Alembic
+
+Make sure that the database container has started!
+When you develop for the backend for the first time on this project or there are new migration files, you have to 
+execute the following:
+
+```bash
+cd backend                                                                                                                               
+DATABASE_URL=postgresql+psycopg://archiveuser:archivepass@localhost:5442/modaldb venv/bin/alembic upgrade head
+```
+
+_Remark: To get started on a windows 11 machine. Run before running uvicorn_
+```bash
+cd backend
+$env:DATABASE_URL="postgresql+psycopg://archiveuser:archivepass@localhost:5442/modaldb"
+alembic upgrade head
+```
+
+#### Verions and migrations
+
+Every migration file has a number. These version numbers are a sequence, meaning that the order of execution is important. This 
+makes sense, since they perform changes on the structure of the database. If one migration creates a table with column X and Y, 
+and in the next migration a column Z is added, it makes sense to run the first migration before hte other. 
+
+The database of the application keeps track of last the version in the table `alembic_version`. This means that you can manually
+undo the changes of a migration and then set the alembic_version to a previous number. 
+
+#### Example of how to locally undo or fix a migration
+Imagine ther are 2 migration files already. You have run alembic and thus the database is up to date. The alembic version in the `alembic_version`
+table should show: 0002. You create a new migration file (0003) in which you create a new table. You run alembic and so the version now is 0003
+in the database. 
+
+You realize that you made a mistake. You have not created a release, so the mistake is only on your machine. How can you fix this?
+
+You can manually connect to the database using a database manager like DBeaver or PGAdmin. Using the manager, you can delete / drop the 
+new table manually. Then you update the alembic version manually and set it back from 0003 to 0002. Then you can fix your mistake in 
+the migration file and run alembic again without troubles. 
+
+
+## Starting the application locally
 
 ### starting the agent
 The agent should be starting up everything for our users, but that is
@@ -115,23 +175,6 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 pip install -r requirements.txt
 $env:DATABASE_URL="postgresql+asyncpg://archiveuser:archivepass@127.0.0.1:5442/modaldb"
 uvicorn app.main:app --reload --port 8010
-```
-
-#### Using Alembic
-
-Make sure that the database container has started!
-When you develop for the first time on this project or you have new migration files, please execute the following:
-
-```bash
-cd backend                                                                                                                               
-DATABASE_URL=postgresql+psycopg://archiveuser:archivepass@localhost:5442/modaldb venv/bin/alembic upgrade head
-```
-
-_Remark: To get started on a windows 11 machine. Run before running uvicorn_
-```bash
-cd backend
-$env:DATABASE_URL="postgresql+psycopg://archiveuser:archivepass@localhost:5442/modaldb"
-alembic upgrade head
 ```
 
 
