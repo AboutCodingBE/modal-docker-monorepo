@@ -108,7 +108,6 @@ cd backend
 $env:DATABASE_URL="postgresql+psycopg://archiveuser:archivepass@localhost:5442/modaldb"
 alembic upgrade head
 ```
-
 #### Verions and migrations
 
 Every migration file has a number. These version numbers are a sequence, meaning that the order of execution is important. This 
@@ -128,69 +127,6 @@ You realize that you made a mistake. You have not created a release, so the mist
 You can manually connect to the database using a database manager like DBeaver or PGAdmin. Using the manager, you can delete / drop the 
 new table manually. Then you update the alembic version manually and set it back from 0003 to 0002. Then you can fix your mistake in 
 the migration file and run alembic again without troubles. 
-
-
-## Starting the application locally
-
-The first thing to do is to start up the required docker containers: That is ollama, the database and tika. On a **Linux or 
-a macOs machine**, you can start all those containers at once using the docker-compose.yml file using the command line. 
-
-You do this by navigating to the project root. Then you use the following command: 
-```shell
-cd <path-to-the-project-root>
-docker compose up -d db tika ollama
-```
-
-It is very important that you only start **db tika ollama**. Without specifying which services you want to start up with
-docker compose, a backend container and a frontend container also get started up. But since these containers would be based 
-on the current state of the code and thus they still have to 'constructed'. Docker will create containers on the fly and this
-might take a while. So it is way faster to
-
-### starting the agent
-The agent should be starting up everything for our users, but that is
-not something we want while developing. Therefore, we need to start the agent manually, with a development flag --dev. In order
-to not interfere with anything python related on our personal computers, we use venv. Here is the setup for
-From the agent directory:
-
-```bash
-cd agent
-python3.12 -m venv venv    # In case there is no virtual environment yet. 
-source venv/bin/activate        # on Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python agent.py --dev
-```
-
-_Remark: To get started on a windows 11 machine_
-```bash
-cd agent
-py -m venv .venv
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python agent.py --dev
-```
-
-### Backend
-
-```bash
-cd backend
-python3.12 -m venv venv    # In case there is no virtual environmnet yet
-pip install -r requirements.txt
-python -m spacy download nl_core_news_lg
-venv/bin/uvicorn app.main:app --reload --port 8010   #if you are working with a virtual environment called venv
-```
-
-_Remark: To get started on a windows 11 machine
-```bash
-cd backend
-py -m venv .venv
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-$env:DATABASE_URL="postgresql+asyncpg://archiveuser:archivepass@127.0.0.1:5442/modaldb"
-uvicorn app.main:app --reload --port 8010
-```
-
 
 #### The .env file
 
@@ -214,11 +150,83 @@ when your FastAPI app starts, pydantic-settings looks for values in this order (
 1. Environment variables — set by Docker, the OS, or the command line
 2. .env file — loaded from disk as a fallback
 
+## Starting the application locally
+
+The first thing to do is to start up the required docker containers: That is ollama, the database and tika. On a **Linux or 
+a macOs machine**, you can start all those containers at once using the docker-compose.yml file using the command line. 
+
+You do this by navigating to the project root. Then you use the following command: 
+```shell
+cd <path-to-the-project-root>
+docker compose up -d 
+```
+The result should be this: 
+
+```shell
+Container modal-docker-monorepo-tika-1    Started                                                                                                                                                                                   0.5s 
+Container modal-docker-monorepo-db-1      Started                                                                                                                                                                                   0.6s 
+Container modal-docker-monorepo-ollama-1  Started 
+```
+
+### Backend
+
+Do the following steps to run the code locally. You will notice a download of spacy. This is a library we use
+for doing NER analysis. You only have to do this **once**! 
+
+Every time there is one or more new alembic migrations, you should also run alembic. That is the line with the 
+DATABASE_URL. There is no harm in doing this every startup. Do mind that the line in the example below is making use
+of a virtual environment!
+
+```bash
+cd backend  # from the project root you go to the backend folder
+python3.12 -m venv venv    # In case there is no virtual environmnet yet
+pip install -r requirements.txt
+python -m spacy download nl_core_news_lg # Only needed the very first time you run the code!
+DATABASE_URL=postgresql+psycopg://archiveuser:archivepass@localhost:5442/modaldb venv/bin/alembic upgrade head
+venv/bin/uvicorn app.main:app --reload --port 8010   #if you are working with a virtual environment called venv
+```
+
+_Remark: To get started on a windows 11 machine
+```bash
+cd backend
+py -m venv .venv
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+$env:DATABASE_URL="postgresql+asyncpg://archiveuser:archivepass@127.0.0.1:5442/modaldb"
+uvicorn app.main:app --reload --port 8010
+```
+
+### starting the agent
+The agent should be starting up everything for our users, but that is
+not something we want while developing. Therefore, we need to start the agent manually, with a development flag --dev. The
+developer flag makes sure that the agent only starts the Flask filesystem bridge API on port 9090.  
+
+From a different terminal window, starting from the project root: 
+
+```bash
+cd agent
+python3.12 -m venv venv    # In case there is no virtual environment yet. 
+source venv/bin/activate        # on Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python agent.py --dev
+```
+
+_Remark: To get started on a windows 11 machine_
+```bash
+cd agent
+py -m venv .venv
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python agent.py --dev
+```
+
 ### Frontend
 
-Requires Node.js to be installed, https://nodejs.org/en/download
+Requires Node.js to be installed, https://nodejs.org/en/download: 
 ```bash
 cd frontend
-npm install
+npm install 
 npm start
 ```
