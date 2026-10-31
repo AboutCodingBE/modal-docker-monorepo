@@ -132,6 +132,20 @@ the migration file and run alembic again without troubles.
 
 ## Starting the application locally
 
+The first thing to do is to start up the required docker containers: That is ollama, the database and tika. On a **Linux or 
+a macOs machine**, you can start all those containers at once using the docker-compose.yml file using the command line. 
+
+You do this by navigating to the project root. Then you use the following command: 
+```shell
+cd <path-to-the-project-root>
+docker compose up -d db tika ollama
+```
+
+It is very important that you only start **db tika ollama**. Without specifying which services you want to start up with
+docker compose, a backend container and a frontend container also get started up. But since these containers would be based 
+on the current state of the code and thus they still have to 'constructed'. Docker will create containers on the fly and this
+might take a while. So it is way faster to
+
 ### starting the agent
 The agent should be starting up everything for our users, but that is
 not something we want while developing. Therefore, we need to start the agent manually, with a development flag --dev. In order
