@@ -7,7 +7,7 @@
 1. Unzip this archive to a folder of your choice
 2. Double-click archive-agent (or archive-agent.exe on Windows)
 3. The app will start all services and open your browser
-4. To stop: press Ctrl+C in the agent terminal or close it
+4. To stop: click the Stop button at the bottom of the left sidebar, or press Ctrl+C in the agent terminal
 
 ## Files
 - archive-agent: the application launcher

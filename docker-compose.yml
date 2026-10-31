@@ -1,39 +1,4 @@
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "4210:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "8010:8000"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - ~/.archive-app/logs:/app/logs
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://archiveuser:archivepass@db:5432/modaldb
-      - TIKA_URL=http://tika:9998
-      - AGENT_URL=http://host.docker.internal:9090
-    depends_on:
-      db:
-        condition: service_healthy
-      tika:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   tika:
     image: apache/tika:3.3.1.0-full
     ports:
